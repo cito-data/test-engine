@@ -1,0 +1,8 @@
+# Matches default configuration of SQLFluff
+# dbt templater also exists. Might be a better fit, however, cannot be used via the API atm.
+
+[sqlfluff]
+templater = jinja
+
+[sqlfluff:templater:jinja]
+apply_dbt_builtins = True
