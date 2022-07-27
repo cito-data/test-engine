@@ -28,7 +28,7 @@ class QuerySnowflake(IUseCase):
     try:
       querySnowflakeResponse = self._integrationApiRepo.querySnowflake(request.query, auth.jwt)
 
-      isExpectedResponse = validateJson(querySnowflakeResponse)
+      isExpectedResponse = validateJson(querySnowflakeResponse, SnowflakeQueryResultDto)
 
 
       if not isExpectedResponse:

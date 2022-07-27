@@ -1,6 +1,7 @@
+import base64
 from flask import Response, request
 from src.domain.account_api.get_accounts import GetAccounts
-from src.domain.services.token_required import ProcessedAuth
+from src.infrastructure.shared.token_required import ProcessedAuth
 from src.domain.test.execute_test import ExecuteTest, ExecuteTestAuthDto, ExecuteTestRequestDto
 from src.infrastructure.shared.base_controller import BaseController, CodeHttp, UserAccountInfo
 
@@ -34,7 +35,7 @@ class ExecuteTestController(BaseController):
 
   def executeImpl(self, req: request, res: Response, processedAuth: ProcessedAuth) -> Response:
     try:
-      getUserAccountInfoResult = ExecuteTestController.getUserAccountInfo(processedAuth.payload, self._getAccounts)
+      getUserAccountInfoResult = ExecuteTestController.getUserAccountInfo(processedAuth, self._getAccounts)
 
       if not getUserAccountInfoResult.success:
         return ExecuteTestController.unauthorized(res, getUserAccountInfoResult.error)

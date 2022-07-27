@@ -35,5 +35,5 @@ class Result(Generic(T)):
     return Result(True, value, None)
 
   @staticmethod
-  def fail(error: string):
+  def fail(error: str):
     return Result(False, None, error)

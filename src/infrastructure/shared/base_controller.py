@@ -6,7 +6,7 @@ from typing import Any, TypeVar, Union
 from src.domain.account_api.get_accounts import GetAccounts, GetAccountsAuthDto, GetAccountsRequestDto
 
 from flask import request, Response
-from src.domain.services.token_required import ProcessedAuth
+from src.infrastructure.shared.token_required import ProcessedAuth
 
 from src.domain.value_types.transient_types.result import Result
 import logging
@@ -80,19 +80,19 @@ class BaseController(ABC):
       logger.error(e)
       BaseController.fail(res, 'An unexpected error occurred')
     
-  def getUserAccountInfo(authPayload: dict[str, Any], getAccounts: GetAccounts) -> Result[UserAccountInfo]:
-    if not authPayload:
+  def getUserAccountInfo(processedAuth: ProcessedAuth, getAccounts: GetAccounts) -> Result[UserAccountInfo]:
+    if not processedAuth.payload:
       return Result.fail('Unauthorized - No auth payload')
 
     try:
-        getAccountResult = getAccounts.execute(GetAccountsRequestDto(authPayload.username), GetAccountsAuthDto(jwt))
+        getAccountResult = getAccounts.execute(GetAccountsRequestDto(processedAuth.payload.username), GetAccountsAuthDto(processedAuth.token))
 
         if not getAccountResult.value:
           raise Exception('No account found')
         if not len(getAccountResult.value) > 0:
           raise Exception('No account found')
 
-        return Result.ok(UserAccountInfo(authPayload.username, getAccountResult.value[0].id, getAccountResult.value[0].organizationId))
+        return Result.ok(UserAccountInfo(processedAuth.payload.username, getAccountResult.value[0].id, getAccountResult.value[0].organizationId))
     except Exception as e:
       logger.error(e)
       return Result.fail(e)

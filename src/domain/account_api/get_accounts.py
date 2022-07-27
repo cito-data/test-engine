@@ -28,7 +28,7 @@ class GetAccounts(IUseCase):
     try:
       getAccountsResponse = self._accountApiRepo.getBy({'userId': request.userId}, auth.jwt)
 
-      isExpectedResponse = validateJson(getAccountsResponse)
+      isExpectedResponse = validateJson(getAccountsResponse, AccountDto)
 
 
       if not isExpectedResponse:
