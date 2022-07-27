@@ -36,7 +36,7 @@ class BaseController(ABC):
   
   @staticmethod
   def jsonResponse(res: Response, code: int, message: str) -> Response:
-    res.status = code
+    res.status = str(code)
     res.mimetype = 'application/json'
     res.response = "{'message': " + message + "}"
     return res
@@ -46,7 +46,7 @@ class BaseController(ABC):
     codeHttp = code if code  else CodeHttp.OK
     if dto:
       res.mimetype = 'application/json'
-      res.status = codeHttp
+      res.status = str(codeHttp)
       res.response = dto
     return res
 
@@ -64,7 +64,7 @@ class BaseController(ABC):
 
   @staticmethod
   def fail(res: Response, error: Union[str, Exception]) -> Response:
-    res.status = CodeHttp.SERVER_ERROR
+    res.status = str(CodeHttp.SERVER_ERROR)
     res.mimetype = 'application/json'
     res.response = "{'message': " + str(error) + "}"
     return res
@@ -85,14 +85,14 @@ class BaseController(ABC):
       return Result.fail('Unauthorized - No auth payload')
 
     try:
-        getAccountResult = getAccounts.execute(GetAccountsRequestDto(processedAuth.payload.username), GetAccountsAuthDto(processedAuth.token))
+        getAccountResult = getAccounts.execute(GetAccountsRequestDto(processedAuth.payload['username']), GetAccountsAuthDto(processedAuth.token))
 
         if not getAccountResult.value:
           raise Exception('No account found')
         if not len(getAccountResult.value) > 0:
           raise Exception('No account found')
 
-        return Result.ok(UserAccountInfo(processedAuth.payload.username, getAccountResult.value[0].id, getAccountResult.value[0].organizationId))
+        return Result.ok(UserAccountInfo(processedAuth.payload['username'], getAccountResult.value[0].id, getAccountResult.value[0].organizationId))
     except Exception as e:
       logger.error(e)
       return Result.fail(e)

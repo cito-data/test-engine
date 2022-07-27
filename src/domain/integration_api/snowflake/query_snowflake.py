@@ -1,10 +1,9 @@
 from dataclasses import dataclass
 from src.domain.integration_api.snowflake.snowflake_query_result_dto import SnowflakeQueryResultDto
-from integration_api.i_integration_api_repo import IIntegrationApiRepo
+from src.domain.integration_api.i_integration_api_repo import IIntegrationApiRepo
 from src.domain.services.use_case import IUseCase
 import logging
 
-from src.domain.services.validate_json import validateJson
 from src.domain.value_types.transient_types.result import Result
 
 logger = logging.getLogger(__name__)
@@ -28,13 +27,7 @@ class QuerySnowflake(IUseCase):
     try:
       querySnowflakeResponse = self._integrationApiRepo.querySnowflake(request.query, auth.jwt)
 
-      isExpectedResponse = validateJson(querySnowflakeResponse, SnowflakeQueryResultDto)
-
-
-      if not isExpectedResponse:
-        raise Exception('Unexpected response format')
-
-      return querySnowflakeResponse
+      return Result.ok(querySnowflakeResponse)
     except Exception as e:
       logger.error(e)
       return Result.fail(e)

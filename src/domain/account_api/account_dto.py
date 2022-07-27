@@ -1,6 +1,9 @@
-AccountDto = {
-  'id': 'string',
-  'userId': 'string',
-  'organizationId': 'string',
-  'modifiedOn': 'number'
-  }
+from dataclasses import dataclass
+
+
+@dataclass
+class AccountDto:
+  id: str
+  userId: str
+  organizationId: str
+  modifiedOn: int

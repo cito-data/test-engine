@@ -1,8 +1,8 @@
-from src.domain.account_api.get_accounts import GetAccounts
-from src.domain.integration_api.snowflake.query_snowflake import QuerySnowflake
-from src.domain.test.execute_test import ExecuteTest
-from src.infrastructure.persistence.account_api_repo import AccountApiRepo
-from src.infrastructure.persistence.integration_api_repo import IntegrationApiRepo
+from domain.account_api.get_accounts import GetAccounts
+from domain.integration_api.snowflake.query_snowflake import QuerySnowflake
+from domain.test.execute_test import ExecuteTest
+from infrastructure.persistence.account_api_repo import AccountApiRepo
+from infrastructure.persistence.integration_api_repo import IntegrationApiRepo
 
 
 def register():

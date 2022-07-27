@@ -1,9 +1,9 @@
 
 
 from abc import ABC, abstractmethod
-from account_dto import AccountDto
+from src.domain.account_api.account_dto import AccountDto
 
 class IAccountApiRepo(ABC):
   @abstractmethod
-  def getBy(self, params: dict[str, str], jwt: str) -> AccountDto:
+  def getBy(self, params: dict[str, str], jwt: str) -> list[AccountDto]:
     raise NotImplementedError

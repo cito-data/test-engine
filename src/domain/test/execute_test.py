@@ -1,12 +1,11 @@
 from dataclasses import dataclass
 import jwt
 from src.domain.integration_api.snowflake.query_snowflake import QuerySnowflake, QuerySnowflakeAuthDto, QuerySnowflakeRequestDto
-from src.domain.test.test_result_dto import TestResultDto
-from integration_api.i_integration_api_repo import IIntegrationApiRepo
 from src.domain.services.use_case import IUseCase
+from src.domain.test.test_result_dto import TestResultDto
+from src.domain.integration_api.i_integration_api_repo import IIntegrationApiRepo
 import logging
 
-from src.domain.services.validate_json import validateJson
 from src.domain.value_types.transient_types.result import Result
 
 logger = logging.getLogger(__name__)
@@ -43,7 +42,7 @@ class ExecuteTest(IUseCase):
       if not newDataQueryResult.value:
         raise Exception('No new data received')
 
-      return Result.ok({'result': newDataQueryResult.value['content']})
+      return Result.ok(TestResultDto(newDataQueryResult.value['content']))
       
       # // POST test run - req to test-engine-service
 

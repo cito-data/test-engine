@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T")
 U = TypeVar("U")
 
-class Result(Generic(T)):
+class Result(Generic[T]):
 
   def __init__(self, success: bool, value: Union[T, None], error: Union[str, None]) -> None:
     self._error = error
