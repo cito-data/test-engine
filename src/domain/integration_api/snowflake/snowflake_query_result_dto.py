@@ -1,0 +1,3 @@
+SnowflakeQueryResultDto = {
+  'content': 'any'
+  }

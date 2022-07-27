@@ -1,0 +1,3 @@
+TestResultDto = {
+  'result': 'string'
+}
