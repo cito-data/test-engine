@@ -34,26 +34,25 @@ class ExecuteTestController(BaseController):
   def _buildAuthDto(self, jwt: str, userAccountInfo: UserAccountInfo) -> ExecuteTestAuthDto:
     return ExecuteTestAuthDto(jwt, userAccountInfo.organizationId)
 
-  def executeImpl(self, req: request, res: Response, processedAuth: ProcessedAuth) -> Response:
+  def executeImpl(self, req: request, processedAuth: ProcessedAuth) -> Response:
     try:
       getUserAccountInfoResult = ExecuteTestController.getUserAccountInfo(processedAuth, self._getAccounts)
-
+      
       if not getUserAccountInfoResult.success:
-        return ExecuteTestController.unauthorized(res, getUserAccountInfoResult.error)
+        return ExecuteTestController.unauthorized(getUserAccountInfoResult.error)
       if not getUserAccountInfoResult.value:
         raise Exception('Authorization failed')
 
       requestDto = self._buildRequestDto(req)
-      authDto = self._buildAuthDto(processedAuth.token, processedAuth.payload)
+      authDto = self._buildAuthDto(processedAuth.token, getUserAccountInfoResult.value)
 
       result = self._executeTest.execute(requestDto, authDto)
 
       if not result.success:
-        return ExecuteTestController.badRequest(res, result.error)
+        return ExecuteTestController.badRequest(result.error)
       if not result.value:
         raise Exception('Test result not provided')
-
-      return ExecuteTestController.ok(res, asdict(result.value), CodeHttp.OK)
+      return ExecuteTestController.ok(asdict(result.value), CodeHttp.OK.value)
     except Exception as e:
       logger.error(e)
-      return ExecuteTestController.fail(res, e)
+      return ExecuteTestController.fail(e)

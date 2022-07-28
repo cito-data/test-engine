@@ -4,4 +4,6 @@
 - venv\Scripts\activate
 - pip install -e . (Run in root; https://stackoverflow.com/questions/6323860/sibling-package-imports)
 - cd src
+
+- $env:FLASK_ENV = "development"; flask run
 - flask run

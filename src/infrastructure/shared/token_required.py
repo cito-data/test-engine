@@ -20,7 +20,6 @@ def tokenRequired(f):
    @wraps(f)
    def decorator(*args, **kwargs):
        token = None
-       print(request.headers)
        if 'Authorization' in request.headers:
             token = request.headers['Authorization'].split(' ')[1]
  

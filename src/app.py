@@ -17,9 +17,10 @@ app = Flask(__name__)
 @app.route("/execute", methods=['POST'])
 @tokenRequired
 def executeTest(*args):
-    response = Response()
     controller = ExecuteTestController(register['executeTest'], register['getAccounts'])
-    return controller.execute(request, response, args[0])
+    result = controller.execute(request, args[0])
+    
+    return result.payload, result.statusCode
     
 
 

@@ -32,17 +32,17 @@ class ExecuteTest(IUseCase):
     try:
 
       newDataQueryResult = self._querySnowflake.execute(QuerySnowflakeRequestDto(request.newDataQuery), QuerySnowflakeAuthDto(jwt))
-      print(newDataQueryResult)
+      print(newDataQueryResult.value)
 
-      historyDataQueryResult = self._querySnowflake.execute(QuerySnowflakeRequestDto(request.historyDataQuery), QuerySnowflakeAuthDto(request.jwt))
-      print(historyDataQueryResult)
+      historyDataQueryResult = self._querySnowflake.execute(QuerySnowflakeRequestDto(request.historyDataQuery), QuerySnowflakeAuthDto(auth.jwt))
+      print(historyDataQueryResult.value)
 
       if not newDataQueryResult.success:
         raise Exception(newDataQueryResult.error)
       if not newDataQueryResult.value:
         raise Exception('No new data received')
 
-      return Result.ok(TestResultDto(newDataQueryResult.value['content']))
+      return Result.ok(TestResultDto(newDataQueryResult.value.content))
       
       # // POST test run - req to test-engine-service
 

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
 class TestResultDto:
-  result:str
+  result:list[dict[str, Any]]

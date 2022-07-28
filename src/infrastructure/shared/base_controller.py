@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from enum import Enum
-from typing import Any, TypeVar, Union
+from enum import IntEnum
+from typing import TypeVar, Union
 
 from src.domain.account_api.get_accounts import GetAccounts, GetAccountsAuthDto, GetAccountsRequestDto
 
-from flask import request, Response
+from flask import request
 from src.infrastructure.shared.token_required import ProcessedAuth
 
 from src.domain.value_types.transient_types.result import Result
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
-class CodeHttp(Enum):
+class CodeHttp(IntEnum):
   OK = 200,
   CREATED = 201,
   BAD_REQUEST = 400,
@@ -32,53 +32,48 @@ class UserAccountInfo:
   accountId: str 
   organizationId: str
 
+@dataclass
+class Response:
+  payload: Union[str, None]
+  statusCode: int
+
 class BaseController(ABC):
   
   @staticmethod
-  def jsonResponse(res: Response, code: int, message: str) -> Response:
-    res.status = str(code)
-    res.mimetype = 'application/json'
-    res.response = "{'message': " + message + "}"
-    return res
+  def jsonResponse(code: int, message: str) -> Response:
+    return Response(message, code)
 
   @staticmethod
-  def ok(res: Response, dto: Union[T, None], code: Union[CodeHttp, None]) -> Response:
-    codeHttp = code if code  else CodeHttp.OK
-    if dto:
-      res.mimetype = 'application/json'
-      res.status = str(codeHttp)
-      res.response = dto
-    return res
+  def ok(dto: Union[T, None], code: Union[CodeHttp, None]) -> Response:
+    codeHttp = code if code  else CodeHttp.OK.value
+    return Response(dto, codeHttp)
 
   @staticmethod
   def badRequest(res: Response, message: Union[str, None]) -> Response:
-    return BaseController.jsonResponse(res, CodeHttp.BAD_REQUEST, (message if message else 'Bad Request'))
+    return BaseController.jsonResponse(CodeHttp.BAD_REQUEST.value, (message if message else 'Bad Request'))
 
   @staticmethod
-  def unauthorized(res: Response, message: Union[str, None]) -> Response:
-    return BaseController.jsonResponse(res, CodeHttp.UNAUTHORIZED, (message if message else 'Unauthorized'))
+  def unauthorized(message: Union[str, None]) -> Response:
+    return BaseController.jsonResponse(CodeHttp.UNAUTHORIZED.value, (message if message else 'Unauthorized'))
 
   @staticmethod
-  def notFound(res: Response, message: Union[str, None]) -> Response:
-    return BaseController.jsonResponse(res, CodeHttp.NOT_FOUND, (message if message else 'Not found'))
+  def notFound(message: Union[str, None]) -> Response:
+    return BaseController.jsonResponse(CodeHttp.NOT_FOUND.value, (message if message else 'Not found'))
 
   @staticmethod
-  def fail(res: Response, error: Union[str, Exception]) -> Response:
-    res.status = str(CodeHttp.SERVER_ERROR)
-    res.mimetype = 'application/json'
-    res.response = "{'message': " + str(error) + "}"
-    return res
+  def fail(error: Union[str, Exception]) -> Response:
+    return Response(error, CodeHttp.SERVER_ERROR.value)
 
   @abstractmethod
-  def executeImpl(self, req: request, res: Response, processedAuth: ProcessedAuth) -> Response:
+  def executeImpl(self, req: request, processedAuth: ProcessedAuth) -> Response:
     raise NotImplementedError
 
-  def execute(self, req: request, res: Response, processedAuth: ProcessedAuth) -> Union[Response, None]:
+  def execute(self, req: request, processedAuth: ProcessedAuth) -> Response:
     try:
-      self.executeImpl(req, res, processedAuth)
+      return self.executeImpl(req, processedAuth)
     except Exception as e:
       logger.error(e)
-      BaseController.fail(res, 'An unexpected error occurred')
+      return BaseController.fail('An unexpected error occurred')
     
   def getUserAccountInfo(processedAuth: ProcessedAuth, getAccounts: GetAccounts) -> Result[UserAccountInfo]:
     if not processedAuth.payload:
