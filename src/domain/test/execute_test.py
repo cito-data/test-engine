@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import jwt
+from domain.value_types.statistical_model import RowCountModel
 from src.domain.integration_api.snowflake.query_snowflake import QuerySnowflake, QuerySnowflakeAuthDto, QuerySnowflakeRequestDto
 from src.domain.services.use_case import IUseCase
 from src.domain.test.test_result_dto import TestResultDto
@@ -42,10 +43,8 @@ class ExecuteTest(IUseCase):
       if not newDataQueryResult.value:
         raise Exception('No new data received')
 
-      return Result.ok(TestResultDto(newDataQueryResult.value.content))
+      RowCountModel([1, 2, 3], [100, 101, 102, 103]).run()
       
-      # // POST test run - req to test-engine-service
-
       # // Write SF resources - write test result
 
       # // Write SF resources - write alert
@@ -64,6 +63,9 @@ class ExecuteTest(IUseCase):
       #   raise Exception('Unexpected response format')
 
       # return executeTestResponse
+
+      return Result.ok(TestResultDto(newDataQueryResult.value.content))
+
     except Exception as e:
       logger.error(e)
       return Result.fail(e)
