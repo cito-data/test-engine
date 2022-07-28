@@ -1,5 +1,6 @@
 import base64
 from dataclasses import asdict
+import json
 from flask import Response, request
 from src.domain.account_api.get_accounts import GetAccounts
 from src.infrastructure.shared.token_required import ProcessedAuth
@@ -52,7 +53,7 @@ class ExecuteTestController(BaseController):
         return ExecuteTestController.badRequest(result.error)
       if not result.value:
         raise Exception('Test result not provided')
-      return ExecuteTestController.ok(asdict(result.value), CodeHttp.OK.value)
+      return ExecuteTestController.ok(json.dumps(asdict(result.value)), CodeHttp.OK.value)
     except Exception as e:
       logger.error(e)
       return ExecuteTestController.fail(e)

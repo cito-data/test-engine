@@ -49,7 +49,7 @@ class BaseController(ABC):
     return Response(dto, codeHttp)
 
   @staticmethod
-  def badRequest(res: Response, message: Union[str, None]) -> Response:
+  def badRequest(message: Union[str, None]) -> Response:
     return BaseController.jsonResponse(CodeHttp.BAD_REQUEST.value, (message if message else 'Bad Request'))
 
   @staticmethod

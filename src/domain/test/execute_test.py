@@ -1,9 +1,8 @@
 from dataclasses import dataclass
 import jwt
-from domain.value_types.statistical_model import RowCountModel
+from domain.value_types.statistical_model import ResultDto, RowCountModel
 from src.domain.integration_api.snowflake.query_snowflake import QuerySnowflake, QuerySnowflakeAuthDto, QuerySnowflakeRequestDto
 from src.domain.services.use_case import IUseCase
-from src.domain.test.test_result_dto import TestResultDto
 from src.domain.integration_api.i_integration_api_repo import IIntegrationApiRepo
 import logging
 
@@ -21,7 +20,7 @@ class ExecuteTestAuthDto:
   jwt: str
   organizationId: str
 
-ExecuteTestResponseDto = Result[TestResultDto]
+ExecuteTestResponseDto = Result[ResultDto]
 
 class ExecuteTest(IUseCase):
   
@@ -35,6 +34,7 @@ class ExecuteTest(IUseCase):
       newDataQueryResult = self._querySnowflake.execute(QuerySnowflakeRequestDto(request.newDataQuery), QuerySnowflakeAuthDto(jwt))
       print(newDataQueryResult.value)
 
+      # todo - filter for non anomaly history values
       historyDataQueryResult = self._querySnowflake.execute(QuerySnowflakeRequestDto(request.historyDataQuery), QuerySnowflakeAuthDto(auth.jwt))
       print(historyDataQueryResult.value)
 
@@ -43,7 +43,7 @@ class ExecuteTest(IUseCase):
       if not newDataQueryResult.value:
         raise Exception('No new data received')
 
-      RowCountModel([1, 2, 3], [100, 101, 102, 103]).run()
+      result = RowCountModel([1, 2, 3], [100, 101, 102, 103], 3, 'todo').run()
       
       # // Write SF resources - write test result
 
@@ -64,7 +64,7 @@ class ExecuteTest(IUseCase):
 
       # return executeTestResponse
 
-      return Result.ok(TestResultDto(newDataQueryResult.value.content))
+      return Result.ok(result)
 
     except Exception as e:
       logger.error(e)
