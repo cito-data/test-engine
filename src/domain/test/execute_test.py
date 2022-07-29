@@ -1,12 +1,16 @@
 from dataclasses import dataclass
 from typing import Union
+from unittest import case
 import jwt
+from domain.services.models.cito_insert import CitoSnowflakeClient, MaterializationType, getInsert
 from domain.value_types.new_data_query import getRowCount
-from domain.value_types.statistical_model import ResultDto, RowCountModel
+from domain.value_types.statistical_model import AnomalyMessage, ModelType, ResultDto, RowCountModel
 from src.domain.integration_api.snowflake.query_snowflake import QuerySnowflake, QuerySnowflakeAuthDto, QuerySnowflakeRequestDto
 from src.domain.services.use_case import IUseCase
 from src.domain.integration_api.i_integration_api_repo import IIntegrationApiRepo
 import logging
+import datetime
+import uuid
 
 from src.domain.value_types.transient_types.result import Result
 
@@ -14,10 +18,11 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ExecuteTestRequestDto:
+  executionId: str
   materializationAddress: str
   columnName: Union[str, None]
+  testType: str
   threshold: int
-  executionId: str
 
 @dataclass
 class ExecuteTestAuthDto:
@@ -40,6 +45,8 @@ class ExecuteTest(IUseCase):
       print(newDataQueryResult.value)
 
       # todo - filter for non anomaly history values
+      # todo - what if empty
+      # what if mat does not exist
       historyDataQueryResult = self._querySnowflake.execute(QuerySnowflakeRequestDto(newDataQuery), QuerySnowflakeAuthDto(auth.jwt))
       print(historyDataQueryResult.value)
 
@@ -48,26 +55,31 @@ class ExecuteTest(IUseCase):
       if not newDataQueryResult.value:
         raise Exception('No new data received')
 
-      result = RowCountModel([1, 2, 3], [100, 101, 102, 103], request.threshold, request.executionId).run()
-      
-      # // Write SF resources - write test result
+      result = None
+      anomalyMessage = None
+      if request.testType == ModelType.ROW_COUNT.value:
+        result = RowCountModel([1, 2, 3], [100, 101, 102, 103], request.threshold).run()
+        anomalyMessage = AnomalyMessage.ROW_COUNT.value
+      else:
+        raise Exception('Test type mismatch')   
 
-      # // Write SF resources - write alert
-
-      # // Write SF resources - write new history values
-
-      # const currentRowCount = testRowCount;
-      # const currentHistory = testHistory;
-
-      # executeTestResponse = self._testApiRepo.execute({'userId': request.userId}, auth.jwt)
-
-      # isExpectedResponse = validateJson(executeTestResponse)
+      testsQuery = getInsert([(str(uuid.uuid4()), result.type, result.threshold, request.materializationAddress, request.columnName, datetime.datetime.now().isoformat(), request.executionId)], MaterializationType.TESTS)
+      testsQueryResult = self._querySnowflake.execute(QuerySnowflakeRequestDto(testsQuery), QuerySnowflakeAuthDto(auth.jwt))
+      print(testsQueryResult.value)
 
 
-      # if not isExpectedResponse:
-      #   raise Exception('Unexpected response format')
+      testHistoryQuery = getInsert([(str(uuid.uuid4()), result.type, result.newDatapoint, result.isAnomaly, None, request.executionId)], MaterializationType.TEST_HISTORY)
+      testHistoryResult = self._querySnowflake.execute(QuerySnowflakeRequestDto(testHistoryQuery), QuerySnowflakeAuthDto(auth.jwt))
+      print(testHistoryResult.value)
 
-      # return executeTestResponse
+      testResultQuery = getInsert([(str(uuid.uuid4()), result.type, result.meanAbsoluteDeviation, result.medianAbsoluteDeviation, result.modifiedZScore, result.expectedValue, result.expectedValueUpperBoundary, result.expectedValueLowerBoundary, result.deviation, result.isAnomaly, request.executionId)], MaterializationType.TEST_RESULTS)
+      testResultResult = self._querySnowflake.execute(QuerySnowflakeRequestDto(testResultQuery), QuerySnowflakeAuthDto(auth.jwt))
+      print(testResultResult.value)
+
+      if result.isAnomaly:
+        testAlertQuery = getInsert([(str(uuid.uuid4()), result.type, anomalyMessage, request.executionId)], MaterializationType.ALERTS)
+        testAlertResult = self._querySnowflake.execute(QuerySnowflakeRequestDto(testAlertQuery), QuerySnowflakeAuthDto(auth.jwt))
+        print(testAlertResult.value)
 
       return Result.ok(result)
 

@@ -27,12 +27,13 @@ class ExecuteTestController(BaseController):
   def _buildRequestDto(self, req: request) -> ExecuteTestRequestDto:
     body = req.json
 
+    executionId = body['executionId']
     materializationAddress = body['materializationAddress']
     columnName = body['columnName']
+    testType = body['testType'].upper()
     threshold = body['threshold']
-    executionId = body['executionId']
     
-    return ExecuteTestRequestDto(materializationAddress, columnName, threshold, executionId)
+    return ExecuteTestRequestDto(executionId, materializationAddress, columnName, testType, threshold )
 
   def _buildAuthDto(self, jwt: str, userAccountInfo: UserAccountInfo) -> ExecuteTestAuthDto:
     return ExecuteTestAuthDto(jwt, userAccountInfo.organizationId)

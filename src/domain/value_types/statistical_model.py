@@ -5,12 +5,14 @@ from enum import Enum
 from typing import Sequence, Union
 import pandas as pd 
 
+class AnomalyMessage(Enum):
+  ROW_COUNT = 'todo - row count message'
+
 class ModelType(Enum):
   ROW_COUNT = 'ROW_COUNT'
 
 @dataclass
 class ResultDto:
-  executionId: str
   threshold: int
   type: str
 
@@ -33,7 +35,6 @@ class StatisticalModel(ABC):
   _historicalData: list[float]
   _type: ModelType
   _threshold: int
-  _executionId: str
 
   _newDataPoint: float
   _dataSeries: pd.Series
@@ -51,12 +52,11 @@ class StatisticalModel(ABC):
   
 
   @abstractmethod
-  def __init__(self, newData: list[float] , historicalData: list[float], type: ModelType, threshold: int, executionId: str) -> None:
+  def __init__(self, newData: list[float] , historicalData: list[float], type: ModelType, threshold: int) -> None:
     self._newData = newData
     self._historicalData = historicalData
     self._type = type
     self._threshold = threshold
-    self._executionId = executionId
   
   def _absoluteDeviation(self, x) -> float:
     return abs(x - self._median)
@@ -95,11 +95,11 @@ class StatisticalModel(ABC):
 
     self._deviation = self._newDataPoint/self._expectedValue
 
-    return ResultDto(self._executionId, self._threshold, self._type.value, self._meanAbsoluteDeviation, self._medianAbsoluteDeviation, self._modifiedZScore, self._newDataPoint, self._isAnomaly(), self._expectedValue, self._expectedValueUpperBoundary, self._expectedValueLowerBoundary, self._deviation)
+    return ResultDto(self._threshold, self._type.value, self._meanAbsoluteDeviation, self._medianAbsoluteDeviation, self._modifiedZScore, self._newDataPoint, self._isAnomaly(), self._expectedValue, self._expectedValueUpperBoundary, self._expectedValueLowerBoundary, self._deviation)
 
 class RowCountModel(StatisticalModel):
-  def __init__(self, newData: list[float], historicalData: list[float], threshold: int, executionId: str) -> None:
-    super().__init__(newData, historicalData, ModelType.ROW_COUNT, threshold, executionId)
+  def __init__(self, newData: list[float], historicalData: list[float], threshold: int, ) -> None:
+    super().__init__(newData, historicalData, ModelType.ROW_COUNT, threshold)
 
   
 
