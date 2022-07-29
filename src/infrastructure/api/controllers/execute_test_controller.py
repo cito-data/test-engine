@@ -11,10 +11,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def base64toUTF8(base64String):
-    base64Encoded = base64String.encode("UTF-8")
-    base64BytesDecoded = base64.b64decode(base64Encoded)
-    return base64BytesDecoded.decode('utf-8') 
+# def base64toUTF8(base64String):
+#     base64Encoded = base64String.encode("UTF-8")
+#     base64BytesDecoded = base64.b64decode(base64Encoded)
+#     return base64BytesDecoded.decode('utf-8') 
 
 class ExecuteTestController(BaseController):
 
@@ -27,10 +27,12 @@ class ExecuteTestController(BaseController):
   def _buildRequestDto(self, req: request) -> ExecuteTestRequestDto:
     body = req.json
 
-    newDataQuery = base64toUTF8(body['newDataQuery'])
-    historyDataQuery = base64toUTF8(body['historyDataQuery'])
+    materializationAddress = body['materializationAddress']
+    columnName = body['columnName']
+    threshold = body['threshold']
+    executionId = body['executionId']
     
-    return ExecuteTestRequestDto(newDataQuery, historyDataQuery)
+    return ExecuteTestRequestDto(materializationAddress, columnName, threshold, executionId)
 
   def _buildAuthDto(self, jwt: str, userAccountInfo: UserAccountInfo) -> ExecuteTestAuthDto:
     return ExecuteTestAuthDto(jwt, userAccountInfo.organizationId)

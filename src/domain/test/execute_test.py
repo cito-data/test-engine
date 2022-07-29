@@ -1,5 +1,7 @@
 from dataclasses import dataclass
+from typing import Union
 import jwt
+from domain.value_types.new_data_query import getRowCount
 from domain.value_types.statistical_model import ResultDto, RowCountModel
 from src.domain.integration_api.snowflake.query_snowflake import QuerySnowflake, QuerySnowflakeAuthDto, QuerySnowflakeRequestDto
 from src.domain.services.use_case import IUseCase
@@ -12,8 +14,10 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ExecuteTestRequestDto:
-  newDataQuery: str
-  historyDataQuery: str
+  materializationAddress: str
+  columnName: Union[str, None]
+  threshold: int
+  executionId: str
 
 @dataclass
 class ExecuteTestAuthDto:
@@ -31,11 +35,12 @@ class ExecuteTest(IUseCase):
   def execute(self, request: ExecuteTestRequestDto, auth: ExecuteTestAuthDto) -> ExecuteTestResponseDto:
     try:
 
-      newDataQueryResult = self._querySnowflake.execute(QuerySnowflakeRequestDto(request.newDataQuery), QuerySnowflakeAuthDto(jwt))
+      newDataQuery = getRowCount('dbt_test.information_schema.tables', 'PUBLIC', 'APPLIED_RULE_ID')
+      newDataQueryResult = self._querySnowflake.execute(QuerySnowflakeRequestDto(newDataQuery), QuerySnowflakeAuthDto(jwt))
       print(newDataQueryResult.value)
 
       # todo - filter for non anomaly history values
-      historyDataQueryResult = self._querySnowflake.execute(QuerySnowflakeRequestDto(request.historyDataQuery), QuerySnowflakeAuthDto(auth.jwt))
+      historyDataQueryResult = self._querySnowflake.execute(QuerySnowflakeRequestDto(newDataQuery), QuerySnowflakeAuthDto(auth.jwt))
       print(historyDataQueryResult.value)
 
       if not newDataQueryResult.success:
@@ -43,7 +48,7 @@ class ExecuteTest(IUseCase):
       if not newDataQueryResult.value:
         raise Exception('No new data received')
 
-      result = RowCountModel([1, 2, 3], [100, 101, 102, 103], 3, 'todo').run()
+      result = RowCountModel([1, 2, 3], [100, 101, 102, 103], request.threshold, request.executionId).run()
       
       # // Write SF resources - write test result
 

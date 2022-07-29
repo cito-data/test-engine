@@ -21,6 +21,12 @@ class ResultDto:
   newDatapoint: float
   isAnomaly: bool
 
+  expectedValue: float
+  expectedValueUpperBoundary: float
+  expectedValueLowerBoundary: float
+
+  deviation: float
+
 class StatisticalModel(ABC):
 
   _newData: list[float]
@@ -32,10 +38,17 @@ class StatisticalModel(ABC):
   _newDataPoint: float
   _dataSeries: pd.Series
 
-  _median: int
+  _median: float
   _medianAbsoluteDeviation: float
   _meanAbsoluteDeviation: Union[float, None] = None
   _modifiedZScore: float
+
+  _expectedValue: float
+  _expectedValueUpperBoundary: float
+  _expectedValueLowerBoundary: float
+
+  _deviation: float
+  
 
   @abstractmethod
   def __init__(self, newData: list[float] , historicalData: list[float], type: ModelType, threshold: int, executionId: str) -> None:
@@ -60,6 +73,12 @@ class StatisticalModel(ABC):
       return (x - self._median)/(1.253314*self._meanAbsoluteDeviation)
     return (x - self._median)/(1.486*self._medianAbsoluteDeviation)
 
+  def _calculateBoundary(self, modifiedZScore: int) -> float:
+    if self._medianAbsoluteDeviation == 0:
+      self._meanAbsoluteDeviation = self._dataSeries.mad()
+      return (1.253314*self._meanAbsoluteDeviation)*modifiedZScore + self._median
+    return (1.486*self._medianAbsoluteDeviation)*modifiedZScore + self._median
+
   def _isAnomaly(self) -> bool:
     return bool(abs(self._modifiedZScore) > self._threshold)
     
@@ -69,7 +88,14 @@ class StatisticalModel(ABC):
     self._medianAbsoluteDeviation = self._calculateMedianAbsoluteDeviation()
 
     self._modifiedZScore = self._calculateModifiedZScore(self._newDataPoint)
-    return ResultDto(self._executionId, self._threshold, self._type.value, self._meanAbsoluteDeviation, self._medianAbsoluteDeviation, self._modifiedZScore, self._newDataPoint, self._isAnomaly())
+
+    self._expectedValue = self._median
+    self._expectedValueUpperBoundary = self._calculateBoundary(self._threshold*1)
+    self._expectedValueLowerBoundary = self._calculateBoundary(self._threshold*-1)
+
+    self._deviation = self._newDataPoint/self._expectedValue
+
+    return ResultDto(self._executionId, self._threshold, self._type.value, self._meanAbsoluteDeviation, self._medianAbsoluteDeviation, self._modifiedZScore, self._newDataPoint, self._isAnomaly(), self._expectedValue, self._expectedValueUpperBoundary, self._expectedValueLowerBoundary, self._deviation)
 
 class RowCountModel(StatisticalModel):
   def __init__(self, newData: list[float], historicalData: list[float], threshold: int, executionId: str) -> None:
