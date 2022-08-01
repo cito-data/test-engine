@@ -62,7 +62,7 @@ class BaseController(ABC):
 
   @staticmethod
   def fail(error: Union[str, Exception]) -> Response:
-    return Response(error, CodeHttp.SERVER_ERROR.value)
+    return Response(str(error), CodeHttp.SERVER_ERROR.value)
 
   @abstractmethod
   def executeImpl(self, req: request, processedAuth: ProcessedAuth) -> Response:
