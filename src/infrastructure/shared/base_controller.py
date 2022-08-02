@@ -68,9 +68,9 @@ class BaseController(ABC):
   def executeImpl(self, req: request, processedAuth: ProcessedAuth) -> Response:
     raise NotImplementedError
 
-  def execute(self, req: request, processedAuth: ProcessedAuth) -> Response:
+  def execute(self, req: request, processedAuth: ProcessedAuth, urlParams: dict[str, str] = None) -> Response:
     try:
-      return self.executeImpl(req, processedAuth)
+      return self.executeImpl(req, processedAuth, urlParams)
     except Exception as e:
       logger.error(e)
       return BaseController.fail('An unexpected error occurred')

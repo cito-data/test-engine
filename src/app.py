@@ -14,11 +14,11 @@ register = register()
 
 app = Flask(__name__)
 
-@app.route("/execute", methods=['POST'])
+@app.route("/tests/<testId>/execute", methods=['POST'])
 @tokenRequired
-def executeTest(*args):
+def executeTest(*args, testId):
     controller = ExecuteTestController(register['executeTest'], register['getAccounts'])
-    result = controller.execute(request, args[0])
+    result = controller.execute(request, args[0], {'testId': testId})
     
     return result.payload, result.statusCode
     

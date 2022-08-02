@@ -24,21 +24,17 @@ class ExecuteTestController(BaseController):
     self._getAccounts = getAccounts
 
 
-  def _buildRequestDto(self, req: request) -> ExecuteTestRequestDto:
+  def _buildRequestDto(self, req: request, urlParams: dict[str, str]) -> ExecuteTestRequestDto:
     body = req.json
 
-    executionId = body['executionId']
-    materializationAddress = body['materializationAddress']
-    columnName = body['columnName']
-    testType = body['testType'].upper()
-    threshold = body['threshold']
+    testId = urlParams['testId']
     
-    return ExecuteTestRequestDto(executionId, materializationAddress, columnName, testType, threshold )
+    return ExecuteTestRequestDto(testId)
 
   def _buildAuthDto(self, jwt: str, userAccountInfo: UserAccountInfo) -> ExecuteTestAuthDto:
     return ExecuteTestAuthDto(jwt, userAccountInfo.organizationId)
 
-  def executeImpl(self, req: request, processedAuth: ProcessedAuth) -> Response:
+  def executeImpl(self, req: request, processedAuth: ProcessedAuth, urlParams: dict[str, str]) -> Response:
     try:
       getUserAccountInfoResult = ExecuteTestController.getUserAccountInfo(processedAuth, self._getAccounts)
       
@@ -47,7 +43,7 @@ class ExecuteTestController(BaseController):
       if not getUserAccountInfoResult.value:
         raise Exception('Authorization failed')
 
-      requestDto = self._buildRequestDto(req)
+      requestDto = self._buildRequestDto(req, urlParams)
       authDto = self._buildAuthDto(processedAuth.token, getUserAccountInfoResult.value)
 
       result = self._executeTest.execute(requestDto, authDto)
