@@ -31,12 +31,11 @@ class ResultDto:
 
 class StatisticalModel(ABC):
 
-  _newData: list[float]
+  _newDataPoint: float
   _historicalData: list[float]
   _type: ModelType
   _threshold: int
 
-  _newDataPoint: float
   _dataSeries: pd.Series
 
   _median: float
@@ -52,8 +51,8 @@ class StatisticalModel(ABC):
   
 
   @abstractmethod
-  def __init__(self, newData: list[float] , historicalData: list[float], type: ModelType, threshold: int) -> None:
-    self._newData = newData
+  def __init__(self, newData: float, historicalData: list[float], type: ModelType, threshold: int) -> None:
+    self._newDataPoint = newData
     self._historicalData = historicalData
     self._type = type
     self._threshold = threshold
@@ -83,7 +82,6 @@ class StatisticalModel(ABC):
     return bool(abs(self._modifiedZScore) > self._threshold)
     
   def run(self) -> ResultDto:
-    self._newDataPoint = pd.Series(self._newData).median()
     self._dataSeries = pd.Series(self._newDataPoint + self._historicalData)
     self._medianAbsoluteDeviation = self._calculateMedianAbsoluteDeviation()
 

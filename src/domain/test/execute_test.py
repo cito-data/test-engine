@@ -90,7 +90,7 @@ class ExecuteTest(IUseCase):
             threshold = result.threshold
             materializationAddress = request.materializationAddress
             columnName = request.columnName
-            executedOn = datetime.datetime.now().isoformat()
+            executedOn = datetime.datetime.utcnow().isoformat()
 
             testsQuery = getInsert([testId, testType, threshold, materializationAddress,
                                    columnName, executedOn, executionId], MaterializationType.TESTS)
