@@ -1,20 +1,12 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from enum import Enum
-from typing import Sequence, Union
+from typing import Union
 import pandas as pd 
-
-class AnomalyMessage(Enum):
-  ROW_COUNT = 'todo - row count message'
-
-class ModelType(Enum):
-  ROW_COUNT = 'ROW_COUNT'
 
 @dataclass
 class ResultDto:
   threshold: int
-  type: str
 
   meanAbsoluteDeviation: Union[float, None]
   medianAbsoluteDeviation: float
@@ -24,8 +16,8 @@ class ResultDto:
   isAnomaly: bool
 
   expectedValue: float
-  expectedValueUpperBoundary: float
-  expectedValueLowerBoundary: float
+  expectedValueUpperBound: float
+  expectedValueLowerBound: float
 
   deviation: float
 
@@ -33,7 +25,6 @@ class StatisticalModel(ABC):
 
   _newDataPoint: float
   _historicalData: list[float]
-  _type: ModelType
   _threshold: int
 
   _dataSeries: pd.Series
@@ -44,17 +35,16 @@ class StatisticalModel(ABC):
   _modifiedZScore: float
 
   _expectedValue: float
-  _expectedValueUpperBoundary: float
-  _expectedValueLowerBoundary: float
+  _expectedValueUpperBound: float
+  _expectedValueLowerBound: float
 
   _deviation: float
   
 
   @abstractmethod
-  def __init__(self, newData: float, historicalData: list[float], type: ModelType, threshold: int) -> None:
+  def __init__(self, newData: float, historicalData: list[float], threshold: int) -> None:
     self._newDataPoint = newData
     self._historicalData = historicalData
-    self._type = type
     self._threshold = threshold
   
   def _absoluteDeviation(self, x) -> float:
@@ -72,7 +62,7 @@ class StatisticalModel(ABC):
       return (x - self._median)/(1.253314*self._meanAbsoluteDeviation)
     return (x - self._median)/(1.486*self._medianAbsoluteDeviation)
 
-  def _calculateBoundary(self, modifiedZScore: int) -> float:
+  def _calculateBound(self, modifiedZScore: int) -> float:
     if self._medianAbsoluteDeviation == 0:
       self._meanAbsoluteDeviation = self._dataSeries.mad()
       return (1.253314*self._meanAbsoluteDeviation)*modifiedZScore + self._median
@@ -88,16 +78,16 @@ class StatisticalModel(ABC):
     self._modifiedZScore = self._calculateModifiedZScore(self._newDataPoint)
 
     self._expectedValue = self._median
-    self._expectedValueUpperBoundary = self._calculateBoundary(self._threshold*1)
-    self._expectedValueLowerBoundary = self._calculateBoundary(self._threshold*-1)
+    self._expectedValueUpperBound = self._calculateBound(self._threshold*1)
+    self._expectedValueLowerBound = self._calculateBound(self._threshold*-1)
 
     self._deviation = self._newDataPoint/self._expectedValue
 
-    return ResultDto(self._threshold, self._type.value, self._meanAbsoluteDeviation, self._medianAbsoluteDeviation, self._modifiedZScore, self._newDataPoint, self._isAnomaly(), self._expectedValue, self._expectedValueUpperBoundary, self._expectedValueLowerBoundary, self._deviation)
+    return ResultDto(self._threshold, self._meanAbsoluteDeviation, self._medianAbsoluteDeviation, self._modifiedZScore, self._newDataPoint, self._isAnomaly(), self._expectedValue, self._expectedValueUpperBound, self._expectedValueLowerBound, self._deviation)
 
 class RowCountModel(StatisticalModel):
   def __init__(self, newData: list[float], historicalData: list[float], threshold: int, ) -> None:
-    super().__init__(newData, historicalData, ModelType.ROW_COUNT, threshold)
+    super().__init__(newData, historicalData, threshold)
 
   
 
