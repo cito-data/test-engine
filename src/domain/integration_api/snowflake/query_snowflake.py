@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class QuerySnowflakeRequestDto:
   query: str
+  targetOrganizationId: str
 
 @dataclass
 class QuerySnowflakeAuthDto:
@@ -25,7 +26,7 @@ class QuerySnowflake(IUseCase):
 
   def execute(self, request: QuerySnowflakeRequestDto, auth: QuerySnowflakeAuthDto) -> QuerySnowflakeResponseDto:
     try:
-      querySnowflakeResponse = self._integrationApiRepo.querySnowflake(request.query, auth.jwt)
+      querySnowflakeResponse = self._integrationApiRepo.querySnowflake(request.query, request.targetOrganizationId, auth.jwt)
 
       return Result.ok(querySnowflakeResponse)
     except Exception as e:

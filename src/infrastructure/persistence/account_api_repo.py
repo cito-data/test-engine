@@ -21,7 +21,7 @@ class AccountApiRepo(IAccountApiRepo):
 
       if response.status_code == 200:
         return list(map((lambda x: AccountDto(x['id'], x['userId'], x['organizationId'], x['modifiedOn'])), jsonPayload))
-      raise Exception(jsonPayload.message)
+      raise Exception(jsonPayload['message'] if jsonPayload['message'] else 'Unknown Error')
     except Exception as e:
       logger.error(e)
 

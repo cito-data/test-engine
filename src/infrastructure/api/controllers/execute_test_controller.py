@@ -1,4 +1,5 @@
 import base64
+from cmath import log
 from dataclasses import asdict
 import json
 from flask import Response, request
@@ -28,8 +29,9 @@ class ExecuteTestController(BaseController):
     body = req.json
 
     testId = urlParams['testId']
+    targetOrganizationId = body['targetOrganizationId']
     
-    return ExecuteTestRequestDto(testId)
+    return ExecuteTestRequestDto(testId, targetOrganizationId)
 
   def _buildAuthDto(self, jwt: str, userAccountInfo: UserAccountInfo) -> ExecuteTestAuthDto:
     return ExecuteTestAuthDto(jwt, userAccountInfo.organizationId)

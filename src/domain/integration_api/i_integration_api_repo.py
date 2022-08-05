@@ -6,5 +6,5 @@ from src.domain.integration_api.snowflake.snowflake_query_result_dto import Snow
 
 class IIntegrationApiRepo(ABC):
   @abstractmethod
-  def querySnowflake(self, query: str, jwt: str) -> SnowflakeQueryResultDto:
+  def querySnowflake(self, query: str, targetOrganizationId: str, jwt: str) -> SnowflakeQueryResultDto:
     raise NotImplementedError

@@ -12,14 +12,14 @@ class IntegrationApiRepo(IIntegrationApiRepo):
     self._serviceName: str = 'integration'
     self._port = '3002'
 
-  def querySnowflake(self, query: str, jwt: str) -> SnowflakeQueryResultDto:
+  def querySnowflake(self, query: str, targetOrganizationId: str,  jwt: str) -> SnowflakeQueryResultDto:
     try:
       apiRoot = getRoot(self._serviceName, self._port, self._path)
 
-      response = requests.post(f'{apiRoot}/snowflake/query', data={'query': query}, headers={'Authorization': f'Bearer {jwt}'})
+      response = requests.post(f'{apiRoot}/snowflake/query', data={'query': query, 'targetOrganizationId': targetOrganizationId}, headers={'Authorization': f'Bearer {jwt}'})
       jsonPayload = response.json()
-      if response.status_code == 200:
+      if response.status_code == 201:
         return SnowflakeQueryResultDto(jsonPayload)
-      raise Exception(jsonPayload.message)
+      raise Exception(jsonPayload['message'] if jsonPayload['message'] else 'Unknown Error')
     except Exception as e:
       logger.error(e)

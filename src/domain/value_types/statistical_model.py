@@ -40,7 +40,6 @@ class StatisticalModel(ABC):
 
   _deviation: float
   
-
   @abstractmethod
   def __init__(self, newData: float, historicalData: list[float], threshold: int) -> None:
     self._newDataPoint = newData
