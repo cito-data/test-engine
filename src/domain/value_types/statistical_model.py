@@ -87,7 +87,7 @@ class StatisticalModel(ABC):
     return ResultDto(self._meanAbsoluteDeviation, self._medianAbsoluteDeviation, self._modifiedZScore, self._isAnomaly(), self._expectedValue, self._expectedValueUpperBound, self._expectedValueLowerBound, self._deviation, datetime.datetime.utcnow().isoformat())
 
 class RowCountModel(StatisticalModel):
-  def __init__(self, newData: list[float], historicalData: list[float], threshold: int, ) -> None:
+  def __init__(self, newData: float, historicalData: list[float], threshold: int, ) -> None:
     super().__init__(newData, historicalData, threshold)
 
   

@@ -9,7 +9,7 @@ class CitoTableType(Enum):
   Alerts = 'alerts'
 
 def getInsertQuery(valueSets: list[dict[str, Any]], type: CitoTableType):
-  valueString = ', '.join(f"'{str(set['value'])}'" if set['value'] else 'NULL' for set in valueSets)
+  valueString = ', '.join(f"'{str(set['value'])}'" if set['value'] or set['value'] == 0 else 'NULL' for set in valueSets)
 
   return f"""
   insert into cito.public.{type.value}
