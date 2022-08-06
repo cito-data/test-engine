@@ -1,11 +1,16 @@
 from enum import Enum
 class MaterializationType(Enum):
-  Table = 'table'
-  View = 'view'
+  Table = 'Table'
+  View = 'View'
 
 def getRowCountQuery(db: str, schema: str, materializationName: str, materializationType: MaterializationType):
-  return f"""select row_count from {db}.information_schema.{materializationType.value}s 
-  where table_schema = '{schema}' and table_name = '{materializationName}' limit 1;
+  
+  if materializationType == MaterializationType.Table:
+    return f"""select row_count from {db}.information_schema.tables 
+    where table_schema = '{schema}' and table_name = '{materializationName}' limit 1;
+    """
+
+  return f"""select count(*) as row_count from {db}.{schema}.{materializationName};
   """
 
 def getColumnCountQuery(db: str, materializationName: str):

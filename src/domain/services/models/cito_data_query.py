@@ -9,19 +9,19 @@ class CitoTableType(Enum):
   Alerts = 'alerts'
 
 def getInsertQuery(valueSets: list[dict[str, Any]], type: CitoTableType):
-  valueString = ', '.join(f"'{str(set.value)}'" if set.value else 'NULL' for set in valueSets)
+  valueString = ', '.join(f"'{str(set['value'])}'" if set['value'] else 'NULL' for set in valueSets)
 
   return f"""
   insert into cito.public.{type.value}
   values
   ({valueString});"""
 
-def getHistoryQuery(testId: str):
+def getHistoryQuery(testSuiteId: str):
   return f""" select value from cito.public.test_history
-    where test_id = '{testId}' not is_anomaly or user_feedback_is_anomaly = 0;
+    where test_suite_id = '{testSuiteId}' and (not is_anomaly or user_feedback_is_anomaly = 0);
   """
 
-def getTestQuery(testId: str):
+def getTestQuery(testSuiteId: str):
   return f""" select * from cito.public.test_suites
-  where id = '{testId}';
+  where id = '{testSuiteId}';
   """

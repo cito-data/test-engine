@@ -1,18 +1,16 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+import datetime
 from typing import Union
 import pandas as pd 
 
 @dataclass
 class ResultDto:
-  threshold: int
-
   meanAbsoluteDeviation: Union[float, None]
   medianAbsoluteDeviation: float
   modifiedZScore: float
   
-  newDatapoint: float
   isAnomaly: bool
 
   expectedValue: float
@@ -20,6 +18,8 @@ class ResultDto:
   expectedValueLowerBound: float
 
   deviation: float
+
+  executedOn: str
 
 class StatisticalModel(ABC):
 
@@ -50,29 +50,31 @@ class StatisticalModel(ABC):
     return abs(x - self._median)
 
   def _calculateMedianAbsoluteDeviation(self) -> float:
-    self._median = self._dataSeries.median()
+    self._median = float(self._dataSeries.median())
     absoluteDeviation = self._dataSeries.apply(self._absoluteDeviation)
-    return absoluteDeviation.median()
+    return float(absoluteDeviation.median())
 
   def _calculateModifiedZScore(self, x) -> float:
     # https://www.ibm.com/docs/en/cognos-analytics/11.1.0?topic=terms-modified-z-score
+    if self._medianAbsoluteDeviation == 0 and self._meanAbsoluteDeviation == 0:
+      return 0.0
     if self._medianAbsoluteDeviation == 0:
       self._meanAbsoluteDeviation = self._dataSeries.mad()
       return (x - self._median)/(1.253314*self._meanAbsoluteDeviation)
     return (x - self._median)/(1.486*self._medianAbsoluteDeviation)
 
-  def _calculateBound(self, modifiedZScore: int) -> float:
+  def _calculateBound(self, zScoreThreshold: int) -> float:
     if self._medianAbsoluteDeviation == 0:
-      self._meanAbsoluteDeviation = self._dataSeries.mad()
-      return (1.253314*self._meanAbsoluteDeviation)*modifiedZScore + self._median
-    return (1.486*self._medianAbsoluteDeviation)*modifiedZScore + self._median
+      return (1.253314*self._meanAbsoluteDeviation)*zScoreThreshold + self._median
+    return (1.486*self._medianAbsoluteDeviation)*zScoreThreshold + self._median
 
   def _isAnomaly(self) -> bool:
     return bool(abs(self._modifiedZScore) > self._threshold)
     
   def run(self) -> ResultDto:
-    self._dataSeries = pd.Series(self._newDataPoint + self._historicalData)
+    self._dataSeries = pd.Series([self._newDataPoint] + self._historicalData)
     self._medianAbsoluteDeviation = self._calculateMedianAbsoluteDeviation()
+    self._meanAbsoluteDeviation = self._dataSeries.mad()
 
     self._modifiedZScore = self._calculateModifiedZScore(self._newDataPoint)
 
@@ -82,7 +84,7 @@ class StatisticalModel(ABC):
 
     self._deviation = self._newDataPoint/self._expectedValue
 
-    return ResultDto(self._threshold, self._meanAbsoluteDeviation, self._medianAbsoluteDeviation, self._modifiedZScore, self._newDataPoint, self._isAnomaly(), self._expectedValue, self._expectedValueUpperBound, self._expectedValueLowerBound, self._deviation)
+    return ResultDto(self._meanAbsoluteDeviation, self._medianAbsoluteDeviation, self._modifiedZScore, self._isAnomaly(), self._expectedValue, self._expectedValueUpperBound, self._expectedValueLowerBound, self._deviation, datetime.datetime.utcnow().isoformat())
 
 class RowCountModel(StatisticalModel):
   def __init__(self, newData: list[float], historicalData: list[float], threshold: int, ) -> None:

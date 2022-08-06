@@ -54,6 +54,7 @@ class ExecuteTestController(BaseController):
         return ExecuteTestController.badRequest(result.error)
       if not result.value:
         raise Exception('Test result not provided')
+
       return ExecuteTestController.ok(json.dumps(asdict(result.value)), CodeHttp.OK.value)
     except Exception as e:
       logger.error(e)

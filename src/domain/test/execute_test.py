@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 import json
 from typing import Any, Union
-from unittest import case
+from unittest import TestSuite, case
 import jwt
 from numpy import integer
 from domain.services.models.cito_data_query import CitoTableType, getHistoryQuery, getInsertQuery, getTestQuery
@@ -21,29 +21,64 @@ logger = logging.getLogger(__name__)
 
 
 class TestType(Enum):
-  ColumnFreshness = 'ColumnFreshness'
-  ColumnCardinality = 'ColumnCardinality'
-  ColumnUniqueness = 'ColumnUniqueness'
-  ColumnNullness = 'ColumnNullness'
-  ColumnSortednessIncreasing = 'ColumnSortednessIncreasing'
-  ColumnSortednessDecreasing = 'ColumnSortednessDecreasing'
-  ColumnDistribution = 'ColumnDistribution'
-  MaterializationRowCount = 'MaterializationRowCount'
-  MaterializationColumnCount = 'MaterializationColumnCount'
-  MaterializationFreshness = 'MaterializationFreshness'
+    ColumnFreshness = 'ColumnFreshness'
+    ColumnCardinality = 'ColumnCardinality'
+    ColumnUniqueness = 'ColumnUniqueness'
+    ColumnNullness = 'ColumnNullness'
+    ColumnSortednessIncreasing = 'ColumnSortednessIncreasing'
+    ColumnSortednessDecreasing = 'ColumnSortednessDecreasing'
+    ColumnDistribution = 'ColumnDistribution'
+    MaterializationRowCount = 'MaterializationRowCount'
+    MaterializationColumnCount = 'MaterializationColumnCount'
+    MaterializationFreshness = 'MaterializationFreshness'
 
 
 class AnomalyMessage(Enum):
-  ColumnFreshness = 'todo - anomaly message1'
-  ColumnCardinality = 'todo - anomaly message2'
-  ColumnUniqueness = 'todo - anomaly message0'
-  ColumnNullness = 'todo - anomaly message3'
-  ColumnSortednessIncreasing = 'todo - anomaly message4'
-  ColumnSortednessDecreasing = 'todo - anomaly message5'
-  ColumnDistribution = 'todo - anomaly message6'
-  MaterializationRowCount = 'todo - anomaly message7'
-  MaterializationColumnCount = 'todo - anomaly message8'
-  MaterializationFreshness = 'todo - anomaly message9'
+    ColumnFreshness = 'todo - anomaly message1'
+    ColumnCardinality = 'todo - anomaly message2'
+    ColumnUniqueness = 'todo - anomaly message0'
+    ColumnNullness = 'todo - anomaly message3'
+    ColumnSortednessIncreasing = 'todo - anomaly message4'
+    ColumnSortednessDecreasing = 'todo - anomaly message5'
+    ColumnDistribution = 'todo - anomaly message6'
+    MaterializationRowCount = 'todo - anomaly message7'
+    MaterializationColumnCount = 'todo - anomaly message8'
+    MaterializationFreshness = 'todo - anomaly message9'
+
+
+@dataclass
+class TestSpecificData:
+    executedOn: str
+    isAnomolous: bool
+    modifiedZScore: float
+    deviation: float
+
+
+@dataclass
+class AlertSpecificData:
+    alertId: str
+    message: str
+    value: float
+    expectedUpperBound: float
+    expectedLowerBound: float
+    databaseName: str
+    schemaName: str
+    materializationName: str
+    materializationType: str
+    columnName: Union[str, None]
+
+
+@dataclass
+class TestExecutionResult:
+    testSuiteId: str
+    testType: str
+    threshold: integer
+    executionFrequency: integer
+    executionId: str
+    isWarmup: bool
+    testSpecificData: Union[TestSpecificData, None]
+    alertSpecificData: Union[AlertSpecificData, None]
+    organizationId: str
 
 
 @dataclass
@@ -58,13 +93,14 @@ class ExecuteTestAuthDto:
     organizationId: str
 
 
-ExecuteTestResponseDto = Result[ResultDto]
+ExecuteTestResponseDto = Result[TestExecutionResult]
 
 
 class ExecuteTest(IUseCase):
 
     _MIN_HISTORICAL_DATA_NUMBER_TEST_CONDITION = 5
     _testSuiteId: str
+    _testType: str
     _targetOrganizationId: str
     _executionId: str
     _jwt: str
@@ -73,177 +109,217 @@ class ExecuteTest(IUseCase):
         self._integrationApiRepo = integrationApiRepo
         self._querySnowflake = querySnowflake
 
-    def _insertExecutionEntry(self):
-      executedOn = datetime.datetime.utcnow().isoformat()
+    def _insertExecutionEntry(self, executedOn: str):
+        valueSets = [
+            {'name': 'id', 'value': self._executionId, 'type': 'string'},
+            {'name': 'executedOn', 'value': executedOn, 'type': 'timestamp_tz'},
+            {'name': 'testSuiteId', 'value': self._testSuiteId, 'type': 'string'},
+        ]
 
-      valueSets = [
-        {'name': 'id', 'value': self._executionId, 'type': 'string'},
-        {'name': 'executedOn', 'value': executedOn, 'type': 'timestamp_tz'},
-        {'name': 'testSuiteId', 'value': self._testSuiteId, 'type': 'string'},
-      ]
+        executionQuery = getInsertQuery(
+            valueSets, CitoTableType.Executions)
+        return self._querySnowflake.execute(
+            QuerySnowflakeRequestDto(executionQuery, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
 
-      executionQuery = getInsertQuery(
-          valueSets, CitoTableType.Executions)
-      return self._querySnowflake.execute(
-          QuerySnowflakeRequestDto(executionQuery, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
+    def _insertHistoryEntry(self, value: str, isAnomaly: bool):
+        valueSets = [
+            {'name': 'id', 'type': 'string', 'value': str(uuid.uuid4())},
+            {'name': 'test_type', 'type': 'string', 'value': self._testType},
+            {'name': 'value', 'type': 'float', 'value': value},
+            {'name': 'is_anomaly', 'type': 'boolean',
+                'value': 'true' if isAnomaly else 'false'},
+            {'name': 'user_feedback_is_anomaly', 'type': 'integer', 'value': -1},
+            {'name': 'test_id', 'type': 'string', 'value': self._testSuiteId},
+            {'name': 'execution_id', 'type': 'string', 'value': self._executionId},
+        ]
 
-    def _insertHistoryEntry(self, testType: TestType, value: str, isAnomaly: bool):
-      valueSets = [
-        {'name': 'id', 'type': 'string', 'value': str(uuid.uuid4())},
-        {'name': 'test_type', 'type': 'string', 'value': testType.value},
-        {'name': 'value', 'type': 'float', 'value': value},
-        {'name': 'is_anomaly', 'type': 'boolean', 'value': isAnomaly},
-        {'name': 'user_feedback_is_anomaly', 'type': 'integer', 'value': -1},
-        {'name': 'test_id', 'type': 'string', 'value': self._testSuiteId},
-        {'name': 'execution_id', 'type': 'string', 'value': self._executionId},
-      ]
-
-      testHistoryQuery = getInsertQuery(
-          valueSets, CitoTableType.TestHistory)
-      return self._querySnowflake.execute(
-          QuerySnowflakeRequestDto(testHistoryQuery, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
+        testHistoryQuery = getInsertQuery(
+            valueSets, CitoTableType.TestHistory)
+        return self._querySnowflake.execute(
+            QuerySnowflakeRequestDto(testHistoryQuery, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
 
     def _insertResultEntry(self, testResult: ResultDto):
-      valueSets = [
-        {'name': 'id', 'type': 'string', 'value': str(uuid.uuid4())},
-        {'name': 'test_type', 'type': 'string', 'value': testResult.type},
-        {'name': 'mean_ad', 'type': 'float',
-            'value': testResult.meanAbsoluteDeviation},
-        {'name': 'median_ad', 'type': 'float',
-            'value': testResult.medianAbsoluteDeviation},
-        {'name': 'modified_z_score', 'type': 'float',
-            'value': testResult.modifiedZScore},
-        {'name': 'expected_value', 'type': 'float',
-            'value': testResult.expectedValue},
-        {'name': 'expected_value_upper_bound', 'type': 'float',
-            'value': testResult.expectedValueUpperBound},
-        {'name': 'expected_value_lower_bound', 'type': 'float',
-            'value': testResult.expectedValueLowerBound},
-        {'name': 'deviation', 'type': 'float', 'value': testResult.deviation},
-        {'name': 'is_anomalous', 'type': 'boolean', 'value': testResult.isAnomaly},
-        {'name': 'test_id', 'type': 'string', 'value': self._testSuiteId},
-        {'name': 'execution_id', 'type': 'string', 'value': self._executionId},
-      ]
+        valueSets = [
+            {'name': 'id', 'type': 'string', 'value': str(uuid.uuid4())},
+            {'name': 'test_type', 'type': 'string', 'value': self._testType},
+            {'name': 'mean_ad', 'type': 'float',
+             'value': testResult.meanAbsoluteDeviation},
+            {'name': 'median_ad', 'type': 'float',
+             'value': testResult.medianAbsoluteDeviation},
+            {'name': 'modified_z_score', 'type': 'float',
+             'value': testResult.modifiedZScore},
+            {'name': 'expected_value', 'type': 'float',
+             'value': testResult.expectedValue},
+            {'name': 'expected_value_upper_bound', 'type': 'float',
+             'value': testResult.expectedValueUpperBound},
+            {'name': 'expected_value_lower_bound', 'type': 'float',
+             'value': testResult.expectedValueLowerBound},
+            {'name': 'deviation', 'type': 'float', 'value': testResult.deviation},
+            {'name': 'is_anomalous', 'type': 'boolean',
+                'value': testResult.isAnomaly},
+            {'name': 'test_id', 'type': 'string', 'value': self._testSuiteId},
+            {'name': 'execution_id', 'type': 'string', 'value': self._executionId},
+        ]
 
-      testResultQuery = getInsertQuery(
-          valueSets, CitoTableType.TestResults)
-      return self._querySnowflake.execute(
-          QuerySnowflakeRequestDto(testResultQuery, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
+        testResultQuery = getInsertQuery(
+            valueSets, CitoTableType.TestResults)
+        return self._querySnowflake.execute(
+            QuerySnowflakeRequestDto(testResultQuery, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
 
-    def _insertAlertEntry(self, testType: TestType, message: str):
-      valueSets = [
-        {'name': 'id', 'type': 'string', 'value': str(uuid.uuid4())},
-        {'name': 'test_type', 'type': 'string', 'value': testType.value},
-        {'name': 'message', 'type': 'string', 'value': message},
-        {'name': 'test_id', 'type': 'string', 'value': self._testSuiteId},
-        {'name': 'execution_id', 'type': 'string', 'value': self._executionId},
-      ]
+    def _insertAlertEntry(self, id, message: str):
+        valueSets = [
+            {'name': 'id', 'type': 'string', 'value': id},
+            {'name': 'test_type', 'type': 'string', 'value': self._testType},
+            {'name': 'message', 'type': 'string', 'value': message},
+            {'name': 'test_id', 'type': 'string', 'value': self._testSuiteId},
+            {'name': 'execution_id', 'type': 'string', 'value': self._executionId},
+        ]
 
-      testAlertQuery = getInsertQuery(
-          valueSets, CitoTableType.Alerts)
-      return self._querySnowflake.execute(
-          QuerySnowflakeRequestDto(testAlertQuery, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
+        testAlertQuery = getInsertQuery(
+            valueSets, CitoTableType.Alerts)
+        return self._querySnowflake.execute(
+            QuerySnowflakeRequestDto(testAlertQuery, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
 
     def _getTestEntry(self) -> QuerySnowflakeResponseDto:
-      query = getTestQuery(self._testSuiteId)
+        query = getTestQuery(self._testSuiteId)
 
-      return self._querySnowflake.execute(QuerySnowflakeRequestDto(query, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
+        return self._querySnowflake.execute(QuerySnowflakeRequestDto(query, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
 
     def _getHistoricalData(self) -> QuerySnowflakeResponseDto:
-      query = getHistoryQuery(self._testSuiteId)
-      return self._querySnowflake.execute(
-        QuerySnowflakeRequestDto(query, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
+        query = getHistoryQuery(self._testSuiteId)
+        return self._querySnowflake.execute(
+            QuerySnowflakeRequestDto(query, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
 
-    def _runTest(self, testType: TestType, threshold: integer, newData: list[Any], historicalData: list[float]) -> ResultDto:
-      if testType == TestType.MaterializationRowCount:
+    def _runTest(self, threshold: integer, newData: list[Any], historicalData: list[float]) -> ResultDto:
         return RowCountModel(newData, historicalData, threshold).run()
-      else:
-          raise Exception('Test type mismatch')
-     
-    def _runMaterializationRowCountTest(self, testDefinition: dict[str: Any]):
-      newDataQuery = getRowCountQuery(
-        testDefinition['DATABASE_NAME'], testDefinition['SCHEMA_NAME'], testDefinition['MATERIALIZATION_NAME'], testDefinition['MATERIALIZATION_TYPE'])
-      getNewDataResult = self._querySnowflake.execute(
-          QuerySnowflakeRequestDto(newDataQuery, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
 
-      if not getNewDataResult.success:
-        raise Exception(getNewDataResult.error)
-      if not getNewDataResult.value:
-        raise Exception('Sf query error - operation: new row count data')
-    
-      newData = getNewDataResult.value.content[self._targetOrganizationId]
-      if(len(newData) != 1):
-        raise Exception('More than one or no matching row_count test found')
+    def _runMaterializationRowCountTest(self, testDefinition: dict[str: Any]) -> TestExecutionResult:
+        databaseName = testDefinition['DATABASE_NAME']
+        schemaName = testDefinition['SCHEMA_NAME']
+        materializationName = testDefinition['MATERIALIZATION_NAME']
+        materializationType = testDefinition['MATERIALIZATION_TYPE']
 
-      getHistoricalDataResult = self._getHistoricalData()
+        newDataQuery = getRowCountQuery(
+            databaseName, schemaName, materializationName, MaterializationType[materializationType])
+        getNewDataResult = self._querySnowflake.execute(
+            QuerySnowflakeRequestDto(newDataQuery, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
 
-      if not getHistoricalDataResult.success:
-          raise Exception(getHistoricalDataResult.error)
-      if not getHistoricalDataResult.value:
-          raise Exception('Sf query error - operation: history row count data')
+        if not getNewDataResult.success:
+            raise Exception(getNewDataResult.error)
+        if not getNewDataResult.value:
+            raise Exception('Sf query error - operation: new row count data')
 
-      historicalData = getHistoricalDataResult.value.content[self._targetOrganizationId]
-      if(len(historicalData) <= self._MIN_HISTORICAL_DATA_NUMBER_TEST_CONDITION):
-        historyEntryInsertResult = self._insertHistoryEntry(newData, False, self._jwt)
-              
+        newData = getNewDataResult.value.content[self._targetOrganizationId]
+        if(len(newData) != 1):
+            raise Exception(
+                'More than one or no matching row_count test found')
+
+        newDataPoint = newData[0]['ROW_COUNT']
+
+        getHistoricalDataResult = self._getHistoricalData()
+
+        if not getHistoricalDataResult.success:
+            raise Exception(getHistoricalDataResult.error)
+        if not getHistoricalDataResult.value:
+            raise Exception(
+                'Sf query error - operation: history row count data')
+
+        historicalData = [element['VALUE']
+                          for element in getHistoricalDataResult.value.content[self._targetOrganizationId]]
+
+        testSuiteId = testDefinition['ID']
+        threshold = testDefinition['THRESHOLD']
+        executionFrequency = testDefinition['EXECUTION_FREQUENCY']
+
+        if(len(historicalData) <= self._MIN_HISTORICAL_DATA_NUMBER_TEST_CONDITION):
+            historyEntryInsertResult = self._insertHistoryEntry(
+                                                                newDataPoint, False)
+
+            if not historyEntryInsertResult.success:
+                raise Exception(historyEntryInsertResult.error)
+            if not historyEntryInsertResult.value:
+                raise Exception(
+                    'Sf query error - operation: inserting new history data')
+
+            return TestExecutionResult(testSuiteId, self._testType, threshold, executionFrequency, self._executionId, True, None, None, self._targetOrganizationId)
+
+        testResult = self._runTest(
+            threshold, newDataPoint, historicalData)
+
+        executionEntryInsertResult = self._insertExecutionEntry(
+            testResult.executedOn)
+
+        if not executionEntryInsertResult.success:
+            raise Exception(executionEntryInsertResult.error)
+
+        historyEntryInsertResult = self._insertHistoryEntry(
+            newDataPoint, testResult.isAnomaly)
+
         if not historyEntryInsertResult.success:
-          raise Exception(historyEntryInsertResult.error)
-        if not historyEntryInsertResult.value:
-          raise Exception('Sf query error - operation: inserting new history data')
+            raise Exception(historyEntryInsertResult.error)
 
-        return something
-      
-      testResult = self._runTest(testDefinition['TEST_TYPE'], testDefinition['THRESHOLD'], newData, historicalData)
+        resultEntryInsertResult = self._insertResultEntry(testResult)
 
-      executionEntryInsertResult = self._insertExecutionEntry(self._jwt)
-      historyEntryInsertResult = self._insertHistoryEntry(testResult.newDatapoint, testResult.isAnomaly, self._jwt)
-      resultEntryInsertResult = self._insertResultEntry(testResult, self._jwt)
-      
-      if result.isAnomaly:
-        alertEntryInsertResult = self._insertAlertEntry(result.type, AnomalyMessage.MaterializationRowCount, self._jwt)
+        if not resultEntryInsertResult.success:
+            raise Exception(resultEntryInsertResult.error)
 
-      return something
+        alertSpecificData = None
+        if testResult.isAnomaly:
+            alertId = str(uuid.uuid4())
+            alertEntryInsertResult = self._insertAlertEntry(
+                alertId, AnomalyMessage.MaterializationRowCount)
+
+            if not alertEntryInsertResult.success:
+                raise Exception(alertEntryInsertResult.error)
+
+            alertSpecificData = AlertSpecificData(alertId, AnomalyMessage.MaterializationRowCount, newDataPoint, testResult.expectedValueUpperBound,
+                                                  testResult.expectedValueLowerBound, databaseName, schemaName, materializationName, materializationType, None)
+
+        testSpecificData = TestSpecificData(
+            testResult.executedOn, testResult.isAnomaly, testResult.modifiedZScore, testResult.deviation)
+
+        return TestExecutionResult(testSuiteId, self._testType, threshold, executionFrequency, self._executionId, False, testSpecificData, alertSpecificData, self._targetOrganizationId)
 
     def _runMaterializationColumnCountTest(self):
-      pass
+        pass
 
     def _runMaterializationFreshnessTest(self):
-      pass
+        pass
 
     def _runColumnCardinalityTest(self):
-      pass
+        pass
 
     def _runColumnDistributionTest(self):
-      pass
+        pass
 
     def _runColumnFreshnessTest(self):
-      pass
+        pass
 
     def _runColumnNullnessTest(self):
-      pass
+        pass
 
     def _runColumnSortednessDecreasingTest(self):
-      pass
+        pass
 
     def _runColumnSortednessIncreasingTest(self):
-      pass
+        pass
 
     def _runColumnUniquenessTest(self):
-      pass
+        pass
 
     def _getTestDefinition(self):
-      getTestEntryResult = self._getTestEntry()
+        getTestEntryResult = self._getTestEntry()
 
-      if not getTestEntryResult.success:
-        raise Exception(getTestEntryResult.error)
-      if not getTestEntryResult.value:
-        raise Exception(f'Sf query error - operation: test entry')
-      
-      organizationResult = getTestEntryResult.value.content[self._targetOrganizationId]
-      if not len(organizationResult) == 1:
-        raise Exception('More than one or no test found')
+        if not getTestEntryResult.success:
+            raise Exception(getTestEntryResult.error)
+        if not getTestEntryResult.value:
+            raise Exception(f'Sf query error - operation: test entry')
 
-      return organizationResult[0]
+        organizationResult = getTestEntryResult.value.content[self._targetOrganizationId]
+        if not len(organizationResult) == 1:
+            raise Exception('More than one or no test found')
+
+        return organizationResult[0]
 
     def execute(self, request: ExecuteTestRequestDto, auth: ExecuteTestAuthDto) -> ExecuteTestResponseDto:
         try:
@@ -254,47 +330,33 @@ class ExecuteTest(IUseCase):
 
             testDefinition = self._getTestDefinition()
 
-            testType = testDefinition['TEST_TYPE']
+            self._testType = testDefinition['TEST_TYPE']
 
-            if testType == TestType.MaterializationRowCount.value:
-              testResult = self._runMaterializationRowCountTest()
-            elif testType == TestType.MaterializationColumnCount.value:
-              testResult = self._runMaterializationColumnCountTest()
-            elif testType == TestType.MaterializationFreshness.value:
-              testResult = self._runMaterializationFreshnessTest()
-            elif testType == TestType.ColumnCardinality.value:
-              testResult = self._runColumnCardinalityTest()
-            elif testType == TestType.ColumnDistribution.value:
-              testResult = self._runColumnDistributionTest()
-            elif testType == TestType.ColumnFreshness.value:
-              testResult = self._runColumnFreshnessTest()
-            elif testType == TestType.ColumnNullness.value:
-              testResult = self._runColumnNullnessTest()
-            elif testType == TestType.ColumnSortednessDecreasing.value:
-              testResult = self._runColumnSortednessDecreasingTest()
-            elif testType == TestType.ColumnSortednessIncreasing.value:
-              testResult = self._runColumnSortednessIncreasingTest()
-            elif testType == TestType.ColumnUniqueness.value:
-              testResult = self._runColumnUniquenessTest()
+            if self._testType == TestType.MaterializationRowCount.value:
+                testResult = self._runMaterializationRowCountTest(
+                    testDefinition)
+            elif self._testType == TestType.MaterializationColumnCount.value:
+                testResult = self._runMaterializationColumnCountTest()
+            elif self._testType == TestType.MaterializationFreshness.value:
+                testResult = self._runMaterializationFreshnessTest()
+            elif self._testType == TestType.ColumnCardinality.value:
+                testResult = self._runColumnCardinalityTest()
+            elif self._testType == TestType.ColumnDistribution.value:
+                testResult = self._runColumnDistributionTest()
+            elif self._testType == TestType.ColumnFreshness.value:
+                testResult = self._runColumnFreshnessTest()
+            elif self._testType == TestType.ColumnNullness.value:
+                testResult = self._runColumnNullnessTest()
+            elif self._testType == TestType.ColumnSortednessDecreasing.value:
+                testResult = self._runColumnSortednessDecreasingTest()
+            elif self._testType == TestType.ColumnSortednessIncreasing.value:
+                testResult = self._runColumnSortednessIncreasingTest()
+            elif self._testType == TestType.ColumnUniqueness.value:
+                testResult = self._runColumnUniquenessTest()
             else:
-              raise Exception('Test type mismatch')
+                raise Exception('Test type mismatch')
 
-
-
-
-            """ return
-            testSuiteId
-            testType
-            executionId
-            executedOn
-            isAnomolous
-            modified z score
-            deviation
-            """
-
-
-            # return Result.ok(result)
-            return Result.ok('result')
+            return Result.ok(testResult)
 
         except Exception as e:
             logger.error(e)
