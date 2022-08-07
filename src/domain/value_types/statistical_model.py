@@ -41,8 +41,8 @@ class StatisticalModel(ABC):
   _deviation: float
   
   @abstractmethod
-  def __init__(self, newData: float, historicalData: list[float], threshold: int) -> None:
-    self._newDataPoint = newData
+  def __init__(self, newDataPoint: float, historicalData: list[float], threshold: int) -> None:
+    self._newDataPoint = newDataPoint
     self._historicalData = historicalData
     self._threshold = threshold
   
@@ -86,7 +86,7 @@ class StatisticalModel(ABC):
 
     return ResultDto(self._meanAbsoluteDeviation, self._medianAbsoluteDeviation, self._modifiedZScore, self._isAnomaly(), self._expectedValue, self._expectedValueUpperBound, self._expectedValueLowerBound, self._deviation, datetime.datetime.utcnow().isoformat())
 
-class RowCountModel(StatisticalModel):
+class CommonModel(StatisticalModel):
   def __init__(self, newData: float, historicalData: list[float], threshold: int, ) -> None:
     super().__init__(newData, historicalData, threshold)
 

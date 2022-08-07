@@ -24,7 +24,7 @@ def getUniquenessQuery(dbName: str, schemaName: str, materializationName: str, c
 def getNullnessQuery(dbName: str, schemaName: str, materializationName: str, columnName: str):
     return f"""
     select sum(case when {columnName} is null then 1 else 0 end) as null_value_count,
-    count({columnName}) as non_null_value_count 
+    count({columnName}) as non_null_value_count, null_value_count/(null_value_count + non_null_value_count) as nullness_rate 
     from {dbName}.{schemaName}.{materializationName};
   """
 

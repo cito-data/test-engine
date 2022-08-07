@@ -6,9 +6,9 @@ from unittest import TestSuite, case
 import jwt
 from numpy import integer
 from domain.services.models.cito_data_query import CitoTableType, getHistoryQuery, getInsertQuery, getTestQuery
-from domain.services.models.new_column_data_query import getCardinalityQuery, getDistributionQuery
+from domain.services.models.new_column_data_query import getCardinalityQuery, getDistributionQuery, getNullnessQuery
 from domain.services.models.new_materialization_data_query import MaterializationType, getRowCountQuery
-from domain.value_types.statistical_model import ResultDto, RowCountModel
+from domain.value_types.statistical_model import ResultDto, CommonModel
 from src.domain.integration_api.snowflake.query_snowflake import QuerySnowflake, QuerySnowflakeAuthDto, QuerySnowflakeRequestDto, QuerySnowflakeResponseDto
 from src.domain.services.use_case import IUseCase
 from src.domain.integration_api.i_integration_api_repo import IIntegrationApiRepo
@@ -232,7 +232,7 @@ class ExecuteTest(IUseCase):
         return newData
 
     def _runModel(self, threshold: integer, newData: float, historicalData: list[float]) -> ResultDto:
-        return RowCountModel(newData, historicalData, threshold).run()
+        return CommonModel(newData, historicalData, threshold).run()
 
     def _runTest(self, newDataPoint, historicalData: list[float], anomalyMessage: AnomalyMessage ):
         databaseName = self._testDefinition['DATABASE_NAME']
@@ -343,7 +343,23 @@ class ExecuteTest(IUseCase):
         pass
 
     def _runColumnNullnessTest(self):
-        pass
+        databaseName = self._testDefinition['DATABASE_NAME']
+        schemaName = self._testDefinition['SCHEMA_NAME']
+        materializationName = self._testDefinition['MATERIALIZATION_NAME']
+        columnName = self._testDefinition['COLUMN_NAME']
+
+        newDataQuery = getNullnessQuery(
+            databaseName, schemaName, materializationName, columnName)
+
+        newData = self._getNewData(newDataQuery)
+
+        newDataPoint = newData[0]['NULLNESS_RATE']
+
+        historicalData = self._getHistoricalData()
+
+        testResult = self._runTest(newDataPoint, historicalData, AnomalyMessage.ColumnNullness)
+
+        return testResult
 
     def _runColumnSortednessDecreasingTest(self):
         pass
