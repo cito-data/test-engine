@@ -26,8 +26,6 @@ class TestType(Enum):
     ColumnCardinality = 'ColumnCardinality'
     ColumnUniqueness = 'ColumnUniqueness'
     ColumnNullness = 'ColumnNullness'
-    ColumnSortednessIncreasing = 'ColumnSortednessIncreasing'
-    ColumnSortednessDecreasing = 'ColumnSortednessDecreasing'
     ColumnDistribution = 'ColumnDistribution'
     MaterializationRowCount = 'MaterializationRowCount'
     MaterializationColumnCount = 'MaterializationColumnCount'
@@ -39,8 +37,6 @@ class AnomalyMessage(Enum):
     ColumnCardinality = 'todo - anomaly message2'
     ColumnUniqueness = 'todo - anomaly message0'
     ColumnNullness = 'todo - anomaly message3'
-    ColumnSortednessIncreasing = 'todo - anomaly message4'
-    ColumnSortednessDecreasing = 'todo - anomaly message5'
     ColumnDistribution = 'todo - anomaly message6'
     MaterializationRowCount = 'todo - anomaly message7'
     MaterializationColumnCount = 'todo - anomaly message8'
@@ -407,12 +403,6 @@ class ExecuteTest(IUseCase):
 
         return testResult
 
-    def _runColumnSortednessDecreasingTest(self) -> TestExecutionResult:
-        pass
-
-    def _runColumnSortednessIncreasingTest(self) -> TestExecutionResult:
-        pass
-
     def _runColumnUniquenessTest(self) -> TestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
         schemaName = self._testDefinition['SCHEMA_NAME']
@@ -470,10 +460,6 @@ class ExecuteTest(IUseCase):
                 testResult = self._runColumnFreshnessTest()
             elif self._testDefinition[testTypeKey] == TestType.ColumnNullness.value:
                 testResult = self._runColumnNullnessTest()
-            elif self._testDefinition[testTypeKey] == TestType.ColumnSortednessDecreasing.value:
-                testResult = self._runColumnSortednessDecreasingTest()
-            elif self._testDefinition[testTypeKey] == TestType.ColumnSortednessIncreasing.value:
-                testResult = self._runColumnSortednessIncreasingTest()
             elif self._testDefinition[testTypeKey] == TestType.ColumnUniqueness.value:
                 testResult = self._runColumnUniquenessTest()
             else:
