@@ -6,8 +6,8 @@ from unittest import TestSuite, case
 import jwt
 from numpy import integer
 from domain.services.models.cito_data_query import CitoTableType, getHistoryQuery, getInsertQuery, getTestQuery
-from domain.services.models.new_column_data_query import getCardinalityQuery, getDistributionQuery, getNullnessQuery
-from domain.services.models.new_materialization_data_query import MaterializationType, getRowCountQuery
+from domain.services.models.new_column_data_query import getCardinalityQuery, getDistributionQuery, getNullnessQuery, getUniquenessQuery, getFreshnessQuery as getColumnFreshnessQuery
+from domain.services.models.new_materialization_data_query import MaterializationType, getColumnCountQuery, getFreshnessQuery, getRowCountQuery
 from domain.value_types.statistical_model import ResultDto, CommonModel
 from src.domain.integration_api.snowflake.query_snowflake import QuerySnowflake, QuerySnowflakeAuthDto, QuerySnowflakeRequestDto, QuerySnowflakeResponseDto
 from src.domain.services.use_case import IUseCase
@@ -102,7 +102,6 @@ class ExecuteTest(IUseCase):
     _MIN_HISTORICAL_DATA_NUMBER_TEST_CONDITION = 5
 
     _testSuiteId: str
-    _testType: str
     _testDefinition: dict[str, Any]
 
     _targetOrganizationId: str
@@ -116,7 +115,7 @@ class ExecuteTest(IUseCase):
     def _insertExecutionEntry(self, executedOn: str):
         valueSets = [
             {'name': 'id', 'value': self._executionId, 'type': 'string'},
-            {'name': 'executedOn', 'value': executedOn, 'type': 'timestamp_tz'},
+            {'name': 'executedOn', 'value': executedOn, 'type': 'timestamp_ntz'},
             {'name': 'testSuiteId', 'value': self._testSuiteId, 'type': 'string'},
         ]
 
@@ -131,7 +130,7 @@ class ExecuteTest(IUseCase):
     def _insertHistoryEntry(self, value: str, isAnomaly: bool):
         valueSets = [
             {'name': 'id', 'type': 'string', 'value': str(uuid.uuid4())},
-            {'name': 'test_type', 'type': 'string', 'value': self._testType},
+            {'name': 'test_type', 'type': 'string', 'value': self._testDefinition['TEST_TYPE']},
             {'name': 'value', 'type': 'float', 'value': value},
             {'name': 'is_anomaly', 'type': 'boolean',
                 'value': 'true' if isAnomaly else 'false'},
@@ -151,7 +150,7 @@ class ExecuteTest(IUseCase):
     def _insertResultEntry(self, testResult: ResultDto):
         valueSets = [
             {'name': 'id', 'type': 'string', 'value': str(uuid.uuid4())},
-            {'name': 'test_type', 'type': 'string', 'value': self._testType},
+            {'name': 'test_type', 'type': 'string', 'value': self._testDefinition['TEST_TYPE']},
             {'name': 'mean_ad', 'type': 'float',
              'value': testResult.meanAbsoluteDeviation},
             {'name': 'median_ad', 'type': 'float',
@@ -182,7 +181,7 @@ class ExecuteTest(IUseCase):
     def _insertAlertEntry(self, id, message: str):
         valueSets = [
             {'name': 'id', 'type': 'string', 'value': id},
-            {'name': 'test_type', 'type': 'string', 'value': self._testType},
+            {'name': 'test_type', 'type': 'string', 'value': self._testDefinition['TEST_TYPE']},
             {'name': 'message', 'type': 'string', 'value': message},
             {'name': 'test_id', 'type': 'string', 'value': self._testSuiteId},
             {'name': 'execution_id', 'type': 'string', 'value': self._executionId},
@@ -248,7 +247,7 @@ class ExecuteTest(IUseCase):
             self._insertHistoryEntry(
                 newDataPoint, False)
 
-            return TestExecutionResult(testSuiteId, self._testType, threshold, executionFrequency, self._executionId, True, None, None, self._targetOrganizationId)
+            return TestExecutionResult(testSuiteId, self._testDefinition['TEST_TYPE'], threshold, executionFrequency, self._executionId, True, None, None, self._targetOrganizationId)
 
         testResult = self._runModel(
             threshold, newDataPoint, historicalData)
@@ -273,7 +272,7 @@ class ExecuteTest(IUseCase):
         testSpecificData = TestSpecificData(
             testResult.executedOn, testResult.isAnomaly, testResult.modifiedZScore, testResult.deviation)
 
-        return TestExecutionResult(testSuiteId, self._testType, threshold, executionFrequency, self._executionId, False, testSpecificData, alertSpecificData, self._targetOrganizationId)
+        return TestExecutionResult(testSuiteId, self._testDefinition['TEST_TYPE'], threshold, executionFrequency, self._executionId, False, testSpecificData, alertSpecificData, self._targetOrganizationId)
         
 
     def _runMaterializationRowCountTest(self) -> TestExecutionResult:
@@ -295,13 +294,44 @@ class ExecuteTest(IUseCase):
 
         return testResult
 
-    def _runMaterializationColumnCountTest(self):
-        pass
+    def _runMaterializationColumnCountTest(self) -> TestExecutionResult:
+        databaseName = self._testDefinition['DATABASE_NAME']
+        schemaName = self._testDefinition['SCHEMA_NAME']
+        materializationName = self._testDefinition['MATERIALIZATION_NAME']
 
-    def _runMaterializationFreshnessTest(self):
-        pass
+        newDataQuery = getColumnCountQuery(
+            databaseName, schemaName, materializationName)
 
-    def _runColumnCardinalityTest(self):
+        newData = self._getNewData(newDataQuery)
+
+        newDataPoint = newData[0]['COLUMN_COUNT']
+
+        historicalData = self._getHistoricalData()
+
+        testResult = self._runTest(newDataPoint, historicalData, AnomalyMessage.MaterializationColumnCount)
+
+        return testResult
+
+    def _runMaterializationFreshnessTest(self) -> TestExecutionResult:
+        databaseName = self._testDefinition['DATABASE_NAME']
+        schemaName = self._testDefinition['SCHEMA_NAME']
+        materializationName = self._testDefinition['MATERIALIZATION_NAME']
+        materializationType = self._testDefinition['MATERIALIZATION_TYPE']
+
+        newDataQuery = getFreshnessQuery(
+            databaseName, schemaName, materializationName, materializationType)
+
+        newData = self._getNewData(newDataQuery)
+
+        newDataPoint = newData[0]['TIME_DIFF']
+
+        historicalData = self._getHistoricalData()
+
+        testResult = self._runTest(newDataPoint, historicalData, AnomalyMessage.MaterializationFreshness)
+
+        return testResult
+
+    def _runColumnCardinalityTest(self) -> TestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
         schemaName = self._testDefinition['SCHEMA_NAME']
         materializationName = self._testDefinition['MATERIALIZATION_NAME']
@@ -320,7 +350,7 @@ class ExecuteTest(IUseCase):
 
         return testResult
 
-    def _runColumnDistributionTest(self):
+    def _runColumnDistributionTest(self) -> TestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
         schemaName = self._testDefinition['SCHEMA_NAME']
         materializationName = self._testDefinition['MATERIALIZATION_NAME']
@@ -339,10 +369,26 @@ class ExecuteTest(IUseCase):
 
         return testResult
 
-    def _runColumnFreshnessTest(self):
-        pass
+    def _runColumnFreshnessTest(self) -> TestExecutionResult:
+        databaseName = self._testDefinition['DATABASE_NAME']
+        schemaName = self._testDefinition['SCHEMA_NAME']
+        materializationName = self._testDefinition['MATERIALIZATION_NAME']
+        columnName = self._testDefinition['COLUMN_NAME']
 
-    def _runColumnNullnessTest(self):
+        newDataQuery = getColumnFreshnessQuery(
+            databaseName, schemaName, materializationName, columnName)
+
+        newData = self._getNewData(newDataQuery)
+
+        newDataPoint = newData[0]['TIME_DIFF']
+
+        historicalData = self._getHistoricalData()
+
+        testResult = self._runTest(newDataPoint, historicalData, AnomalyMessage.ColumnFreshness)
+
+        return testResult
+
+    def _runColumnNullnessTest(self) -> TestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
         schemaName = self._testDefinition['SCHEMA_NAME']
         materializationName = self._testDefinition['MATERIALIZATION_NAME']
@@ -361,14 +407,30 @@ class ExecuteTest(IUseCase):
 
         return testResult
 
-    def _runColumnSortednessDecreasingTest(self):
+    def _runColumnSortednessDecreasingTest(self) -> TestExecutionResult:
         pass
 
-    def _runColumnSortednessIncreasingTest(self):
+    def _runColumnSortednessIncreasingTest(self) -> TestExecutionResult:
         pass
 
-    def _runColumnUniquenessTest(self):
-        pass
+    def _runColumnUniquenessTest(self) -> TestExecutionResult:
+        databaseName = self._testDefinition['DATABASE_NAME']
+        schemaName = self._testDefinition['SCHEMA_NAME']
+        materializationName = self._testDefinition['MATERIALIZATION_NAME']
+        columnName = self._testDefinition['COLUMN_NAME']
+
+        newDataQuery = getUniquenessQuery(
+            databaseName, schemaName, materializationName, columnName)
+
+        newData = self._getNewData(newDataQuery)
+
+        newDataPoint = newData[0]['UNIQUENESS_RATE']
+
+        historicalData = self._getHistoricalData()
+
+        testResult = self._runTest(newDataPoint, historicalData, AnomalyMessage.ColumnUniqueness)
+
+        return testResult
 
     def _getTestDefinition(self):
         getTestEntryResult = self._getTestEntry()
@@ -391,27 +453,28 @@ class ExecuteTest(IUseCase):
             self._executionId = str(uuid.uuid4())
             self._jwt = auth.jwt
             self._testDefinition = self._getTestDefinition()
-            self._testType = self._testDefinition['TEST_TYPE']
 
-            if self._testType == TestType.MaterializationRowCount.value:
+            testTypeKey = 'TEST_TYPE'
+
+            if self._testDefinition[testTypeKey] == TestType.MaterializationRowCount.value:
                 testResult = self._runMaterializationRowCountTest()
-            elif self._testType == TestType.MaterializationColumnCount.value:
+            elif self._testDefinition[testTypeKey] == TestType.MaterializationColumnCount.value:
                 testResult = self._runMaterializationColumnCountTest()
-            elif self._testType == TestType.MaterializationFreshness.value:
+            elif self._testDefinition[testTypeKey] == TestType.MaterializationFreshness.value:
                 testResult = self._runMaterializationFreshnessTest()
-            elif self._testType == TestType.ColumnCardinality.value:
+            elif self._testDefinition[testTypeKey] == TestType.ColumnCardinality.value:
                 testResult = self._runColumnCardinalityTest()
-            elif self._testType == TestType.ColumnDistribution.value:
+            elif self._testDefinition[testTypeKey] == TestType.ColumnDistribution.value:
                 testResult = self._runColumnDistributionTest()
-            elif self._testType == TestType.ColumnFreshness.value:
+            elif self._testDefinition[testTypeKey] == TestType.ColumnFreshness.value:
                 testResult = self._runColumnFreshnessTest()
-            elif self._testType == TestType.ColumnNullness.value:
+            elif self._testDefinition[testTypeKey] == TestType.ColumnNullness.value:
                 testResult = self._runColumnNullnessTest()
-            elif self._testType == TestType.ColumnSortednessDecreasing.value:
+            elif self._testDefinition[testTypeKey] == TestType.ColumnSortednessDecreasing.value:
                 testResult = self._runColumnSortednessDecreasingTest()
-            elif self._testType == TestType.ColumnSortednessIncreasing.value:
+            elif self._testDefinition[testTypeKey] == TestType.ColumnSortednessIncreasing.value:
                 testResult = self._runColumnSortednessIncreasingTest()
-            elif self._testType == TestType.ColumnUniqueness.value:
+            elif self._testDefinition[testTypeKey] == TestType.ColumnUniqueness.value:
                 testResult = self._runColumnUniquenessTest()
             else:
                 raise Exception('Test type mismatch')
