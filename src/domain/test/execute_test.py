@@ -33,14 +33,14 @@ class TestType(Enum):
 
 
 class AnomalyMessage(Enum):
-    ColumnFreshness = 'todo - anomaly message1'
-    ColumnCardinality = 'todo - anomaly message2'
-    ColumnUniqueness = 'todo - anomaly message0'
-    ColumnNullness = 'todo - anomaly message3'
-    ColumnDistribution = 'todo - anomaly message6'
-    MaterializationRowCount = 'todo - anomaly message7'
-    MaterializationColumnCount = 'todo - anomaly message8'
-    MaterializationFreshness = 'todo - anomaly message9'
+    ColumnFreshness = 'Significant freshness deviation detected for column:'
+    ColumnCardinality = 'Significant cardinality deviation detected for column:'
+    ColumnUniqueness = 'Significant uniqueness deviation detected for column:'
+    ColumnNullness = 'Significant nullness deviation detected for column:'
+    ColumnDistribution = 'Significant distribution deviation detected for column:'
+    MaterializationRowCount = 'Significant row count deviation detected for materialization:'
+    MaterializationColumnCount = 'Significant column count deviation detected for materialization:'
+    MaterializationFreshness = 'Significant freshness deviation detected for materialization:'
 
 
 @dataclass
