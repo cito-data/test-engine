@@ -32,16 +32,23 @@ class TestType(Enum):
     MaterializationFreshness = 'MaterializationFreshness'
 
 
-class AnomalyMessage(Enum):
-    ColumnFreshness = 'Significant column freshness deviation detected'
-    ColumnCardinality = 'Significant column cardinality deviation detected'
-    ColumnUniqueness = 'Significant column uniqueness deviation detected'
-    ColumnNullness = 'Significant column nullness deviation detected'
-    ColumnDistribution = 'Significant column distribution deviation detected'
-    MaterializationRowCount = 'Significant materialization row count deviation detected'
-    MaterializationColumnCount = 'Significant materialization column count deviation detected'
-    MaterializationFreshness = 'Significant materialization freshness deviation detected'
-
+def getAnomalyMessage(databaseName: str, schemaName: str, materializationName: str, columnName: Union[str, None], testType: TestType):
+    if(testType == TestType.ColumnFreshness):
+        return f"Significant freshness deviation for column <__link_to_resource__|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
+    elif(testType == TestType.ColumnDistribution):
+        return f"Significant distribution deviation for column <__link_to_resource__|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
+    elif(testType == TestType.ColumnCardinality):
+        return f"Significant cardinality deviation for column <__link_to_resource__|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
+    elif(testType == TestType.ColumnNullness):
+        return f"Significant nullness deviation for column <__link_to_resource__|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
+    elif(testType == TestType.ColumnUniqueness):
+        return f"Significant uniqueness deviation for column <__link_to_resource__|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
+    elif(testType == TestType.MaterializationColumnCount):
+        return f"Significant column count deviation for materialization <__link_to_resource__|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
+    elif(testType == TestType.MaterializationRowCount):
+        return f"Significant row count deviation for materialization <__link_to_resource__|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
+    elif(testType == TestType.MaterializationFreshness):
+        return f"Significant freshness deviation for materialization <__link_to_resource__|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
 
 @dataclass
 class TestSpecificData:
@@ -126,7 +133,8 @@ class ExecuteTest(IUseCase):
     def _insertHistoryEntry(self, value: str, isAnomaly: bool):
         valueSets = [
             {'name': 'id', 'type': 'string', 'value': str(uuid.uuid4())},
-            {'name': 'test_type', 'type': 'string', 'value': self._testDefinition['TEST_TYPE']},
+            {'name': 'test_type', 'type': 'string',
+                'value': self._testDefinition['TEST_TYPE']},
             {'name': 'value', 'type': 'float', 'value': value},
             {'name': 'is_anomaly', 'type': 'boolean',
                 'value': 'true' if isAnomaly else 'false'},
@@ -146,7 +154,8 @@ class ExecuteTest(IUseCase):
     def _insertResultEntry(self, testResult: ResultDto):
         valueSets = [
             {'name': 'id', 'type': 'string', 'value': str(uuid.uuid4())},
-            {'name': 'test_type', 'type': 'string', 'value': self._testDefinition['TEST_TYPE']},
+            {'name': 'test_type', 'type': 'string',
+                'value': self._testDefinition['TEST_TYPE']},
             {'name': 'mean_ad', 'type': 'float',
              'value': testResult.meanAbsoluteDeviation},
             {'name': 'median_ad', 'type': 'float',
@@ -177,7 +186,8 @@ class ExecuteTest(IUseCase):
     def _insertAlertEntry(self, id, message: str):
         valueSets = [
             {'name': 'id', 'type': 'string', 'value': id},
-            {'name': 'test_type', 'type': 'string', 'value': self._testDefinition['TEST_TYPE']},
+            {'name': 'test_type', 'type': 'string',
+                'value': self._testDefinition['TEST_TYPE']},
             {'name': 'message', 'type': 'string', 'value': message},
             {'name': 'test_id', 'type': 'string', 'value': self._testSuiteId},
             {'name': 'execution_id', 'type': 'string', 'value': self._executionId},
@@ -229,7 +239,7 @@ class ExecuteTest(IUseCase):
     def _runModel(self, threshold: integer, newData: float, historicalData: list[float]) -> ResultDto:
         return CommonModel(newData, historicalData, threshold).run()
 
-    def _runTest(self, newDataPoint, historicalData: list[float], anomalyMessage: AnomalyMessage ):
+    def _runTest(self, newDataPoint, historicalData: list[float]):
         databaseName = self._testDefinition['DATABASE_NAME']
         schemaName = self._testDefinition['SCHEMA_NAME']
         materializationName = self._testDefinition['MATERIALIZATION_NAME']
@@ -256,20 +266,21 @@ class ExecuteTest(IUseCase):
 
         self._insertResultEntry(testResult)
 
+        anomalyMessage = getAnomalyMessage(databaseName, schemaName, materializationName, columnName, self._testDefinition['TEST_TYPE'])
+
         alertSpecificData = None
         if testResult.isAnomaly:
             alertId = str(uuid.uuid4())
             self._insertAlertEntry(
-                alertId, anomalyMessage.value)
+                alertId, anomalyMessage)
 
-            alertSpecificData = AlertSpecificData(alertId, anomalyMessage.value, newDataPoint, testResult.expectedValueUpperBound,
+            alertSpecificData = AlertSpecificData(alertId, anomalyMessage, newDataPoint, testResult.expectedValueUpperBound,
                                                   testResult.expectedValueLowerBound, databaseName, schemaName, materializationName, materializationType, columnName)
 
         testSpecificData = TestSpecificData(
             testResult.executedOn, testResult.isAnomaly, testResult.modifiedZScore, testResult.deviation)
 
         return TestExecutionResult(testSuiteId, self._testDefinition['TEST_TYPE'], threshold, executionFrequency, self._executionId, False, testSpecificData, alertSpecificData, self._targetOrganizationId)
-        
 
     def _runMaterializationRowCountTest(self) -> TestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
@@ -286,7 +297,8 @@ class ExecuteTest(IUseCase):
 
         historicalData = self._getHistoricalData()
 
-        testResult = self._runTest(newDataPoint, historicalData, AnomalyMessage.MaterializationRowCount)
+        testResult = self._runTest(
+            newDataPoint, historicalData)
 
         return testResult
 
@@ -304,7 +316,8 @@ class ExecuteTest(IUseCase):
 
         historicalData = self._getHistoricalData()
 
-        testResult = self._runTest(newDataPoint, historicalData, AnomalyMessage.MaterializationColumnCount)
+        testResult = self._runTest(
+            newDataPoint, historicalData)
 
         return testResult
 
@@ -323,7 +336,8 @@ class ExecuteTest(IUseCase):
 
         historicalData = self._getHistoricalData()
 
-        testResult = self._runTest(newDataPoint, historicalData, AnomalyMessage.MaterializationFreshness)
+        testResult = self._runTest(
+            newDataPoint, historicalData)
 
         return testResult
 
@@ -342,7 +356,8 @@ class ExecuteTest(IUseCase):
 
         historicalData = self._getHistoricalData()
 
-        testResult = self._runTest(newDataPoint, historicalData, AnomalyMessage.ColumnCardinality)
+        testResult = self._runTest(
+            newDataPoint, historicalData)
 
         return testResult
 
@@ -361,7 +376,8 @@ class ExecuteTest(IUseCase):
 
         historicalData = self._getHistoricalData()
 
-        testResult = self._runTest(newDataPoint, historicalData, AnomalyMessage.ColumnDistribution)
+        testResult = self._runTest(
+            newDataPoint, historicalData)
 
         return testResult
 
@@ -380,7 +396,8 @@ class ExecuteTest(IUseCase):
 
         historicalData = self._getHistoricalData()
 
-        testResult = self._runTest(newDataPoint, historicalData, AnomalyMessage.ColumnFreshness)
+        testResult = self._runTest(
+            newDataPoint, historicalData)
 
         return testResult
 
@@ -399,7 +416,8 @@ class ExecuteTest(IUseCase):
 
         historicalData = self._getHistoricalData()
 
-        testResult = self._runTest(newDataPoint, historicalData, AnomalyMessage.ColumnNullness)
+        testResult = self._runTest(
+            newDataPoint, historicalData)
 
         return testResult
 
@@ -418,7 +436,8 @@ class ExecuteTest(IUseCase):
 
         historicalData = self._getHistoricalData()
 
-        testResult = self._runTest(newDataPoint, historicalData, AnomalyMessage.ColumnUniqueness)
+        testResult = self._runTest(
+            newDataPoint, historicalData)
 
         return testResult
 
