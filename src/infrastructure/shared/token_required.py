@@ -5,8 +5,9 @@ import requests
 from functools import wraps
 import jwt
 import json
-import os 
 import logging
+
+from ...config import getCognitoRegion, getCognitoUserPoolId
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ def tokenRequired(f):
            return jsonify({'message': 'a valid token is missing'})
        try:
             #for JWKS that contain multiple JWK
-            jwks = requests.get(f'https://cognito-idp.{os.environ.get("COGNITO_REGION")}.amazonaws.com/{os.environ.get("COGNITO_USER_POOL_ID")}/.well-known/jwks.json').json()
+            jwks = requests.get(f'https://cognito-idp.{getCognitoRegion()}.amazonaws.com/{getCognitoUserPoolId()}/.well-known/jwks.json').json()
             for jwk in jwks['keys']:
                 kid = jwk['kid']
                 jwks[kid] = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(jwk))
