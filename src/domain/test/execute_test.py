@@ -84,6 +84,7 @@ class TestExecutionResult:
     isWarmup: bool
     testSpecificData: Union[TestSpecificData, None]
     alertSpecificData: Union[AlertSpecificData, None]
+    targetResourceId: str
     organizationId: str
 
 
@@ -250,6 +251,7 @@ class ExecuteTest(IUseCase):
         testSuiteId = self._testDefinition['ID']
         threshold = self._testDefinition['THRESHOLD']
         executionFrequency = self._testDefinition['EXECUTION_FREQUENCY']
+        targetResourceId = self._testDefinition['TARGET_RESOURCE_ID']
 
         if(len(historicalData) <= self._MIN_HISTORICAL_DATA_NUMBER_TEST_CONDITION):
             self._insertHistoryEntry(
@@ -268,7 +270,7 @@ class ExecuteTest(IUseCase):
 
         self._insertResultEntry(testResult)
 
-        anomalyMessage = getAnomalyMessage(self._getTestDefinition['TARGET_RESOURCE_ID'], databaseName, schemaName, materializationName, columnName, self._testDefinition['TEST_TYPE'])
+        anomalyMessage = getAnomalyMessage(targetResourceId, databaseName, schemaName, materializationName, columnName, self._testDefinition['TEST_TYPE'])
 
         alertSpecificData = None
         if testResult.isAnomaly:
@@ -282,7 +284,7 @@ class ExecuteTest(IUseCase):
         testSpecificData = TestSpecificData(
             testResult.executedOn, testResult.isAnomaly, testResult.modifiedZScore, testResult.deviation)
 
-        return TestExecutionResult(testSuiteId, self._testDefinition['TEST_TYPE'], threshold, executionFrequency, self._executionId, False, testSpecificData, alertSpecificData, self._targetOrganizationId)
+        return TestExecutionResult(testSuiteId, self._testDefinition['TEST_TYPE'], threshold, executionFrequency, self._executionId, False, testSpecificData, alertSpecificData, targetResourceId, self._targetOrganizationId)
 
     def _runMaterializationRowCountTest(self) -> TestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
