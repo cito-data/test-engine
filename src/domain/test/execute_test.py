@@ -33,22 +33,24 @@ class TestType(Enum):
 
 
 def getAnomalyMessage(targetResourceId: str, databaseName: str, schemaName: str, materializationName: str, columnName: Union[str, None], testType: TestType):
+    targetResourceUrlTemplate = f'__base_url__?targetResourceId={targetResourceId}&ampisColumn={not not columnName}'
+
     if(testType == TestType.ColumnFreshness):
-        return f"Significant freshness deviation for column <__base_url__?targetResourceId={targetResourceId}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
+        return f"Significant freshness deviation for column <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
     elif(testType == TestType.ColumnDistribution):
-        return f"Significant distribution deviation for column <__base_url__?targetResourceId={targetResourceId}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
+        return f"Significant distribution deviation for column <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
     elif(testType == TestType.ColumnCardinality):
-        return f"Significant cardinality deviation for column <__base_url__?targetResourceId={targetResourceId}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
+        return f"Significant cardinality deviation for column <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
     elif(testType == TestType.ColumnNullness):
-        return f"Significant nullness deviation for column <__base_url__?targetResourceId={targetResourceId}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
+        return f"Significant nullness deviation for column <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
     elif(testType == TestType.ColumnUniqueness):
-        return f"Significant uniqueness deviation for column <__base_url__?targetResourceId={targetResourceId}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
+        return f"Significant uniqueness deviation for column <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
     elif(testType == TestType.MaterializationColumnCount):
-        return f"Significant column count deviation for materialization <__base_url__?targetResourceId={targetResourceId}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
+        return f"Significant column count deviation for materialization <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
     elif(testType == TestType.MaterializationRowCount):
-        return f"Significant row count deviation for materialization <__base_url__?targetResourceId={targetResourceId}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
+        return f"Significant row count deviation for materialization <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
     elif(testType == TestType.MaterializationFreshness):
-        return f"Significant freshness deviation for materialization <__base_url__?targetResourceId={targetResourceId}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
+        return f"Significant freshness deviation for materialization <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
 
 @dataclass
 class TestSpecificData:
