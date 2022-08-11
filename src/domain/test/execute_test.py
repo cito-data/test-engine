@@ -133,7 +133,7 @@ class ExecuteTest(IUseCase):
         if not executionEntryInsertResult.success:
             raise Exception(executionEntryInsertResult.error)
 
-    def _insertHistoryEntry(self, value: str, isAnomaly: bool):
+    def _insertHistoryEntry(self, value: str, isAnomaly: bool, alertId: Union[str, None]):
         valueSets = [
             {'name': 'id', 'type': 'string', 'value': str(uuid.uuid4())},
             {'name': 'test_type', 'type': 'string',
@@ -144,6 +144,7 @@ class ExecuteTest(IUseCase):
             {'name': 'user_feedback_is_anomaly', 'type': 'integer', 'value': -1},
             {'name': 'test_id', 'type': 'string', 'value': self._testSuiteId},
             {'name': 'execution_id', 'type': 'string', 'value': self._executionId},
+            {'name': 'alert_id', 'type': 'string', 'value': alertId},
         ]
 
         testHistoryQuery = getInsertQuery(
@@ -265,14 +266,12 @@ class ExecuteTest(IUseCase):
         self._insertExecutionEntry(
             testResult.executedOn)
 
-        self._insertHistoryEntry(
-            newDataPoint, testResult.isAnomaly)
-
         self._insertResultEntry(testResult)
 
         anomalyMessage = getAnomalyMessage(targetResourceId, databaseName, schemaName, materializationName, columnName, self._testDefinition['TEST_TYPE'])
 
         alertSpecificData = None
+        alertId = None
         if testResult.isAnomaly:
             alertId = str(uuid.uuid4())
             self._insertAlertEntry(
@@ -283,6 +282,9 @@ class ExecuteTest(IUseCase):
 
         testSpecificData = TestSpecificData(
             testResult.executedOn, testResult.isAnomaly, testResult.modifiedZScore, testResult.deviation)
+
+        self._insertHistoryEntry(
+            newDataPoint, testResult.isAnomaly, alertId)
 
         return TestExecutionResult(testSuiteId, self._testDefinition['TEST_TYPE'], threshold, executionFrequency, self._executionId, False, testSpecificData, alertSpecificData, targetResourceId, self._targetOrganizationId)
 
