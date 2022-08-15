@@ -28,9 +28,10 @@ class CodeHttp(IntEnum):
 
 @dataclass
 class UserAccountInfo:
-  userId: str
-  accountId: str 
-  organizationId: str
+  userId: Union[str, None]
+  accountId: Union[str, None]
+  callerOrganizationId: Union[str, None]
+  isSystemInternal: bool
 
 @dataclass
 class Response:
@@ -80,6 +81,12 @@ class BaseController(ABC):
       return Result.fail('Unauthorized - No auth payload')
 
     try:
+        isSystemInternal = 'system-internal/system-internal' in processedAuth.payload['scope'] if 'scope' in processedAuth.payload else False
+
+        if isSystemInternal:
+          return Result.ok(UserAccountInfo(None, None, None, isSystemInternal))
+
+
         getAccountResult = getAccounts.execute(GetAccountsRequestDto(processedAuth.payload['username']), GetAccountsAuthDto(processedAuth.token))
 
         if not getAccountResult.value:
@@ -87,7 +94,7 @@ class BaseController(ABC):
         if not len(getAccountResult.value) > 0:
           raise Exception('No account found')
 
-        return Result.ok(UserAccountInfo(processedAuth.payload['username'], getAccountResult.value[0].id, getAccountResult.value[0].organizationId))
+        return Result.ok(UserAccountInfo(processedAuth.payload['username'], getAccountResult.value[0].id, getAccountResult.value[0].organizationId, isSystemInternal))
     except Exception as e:
       logger.error(e)
       return Result.fail(e)

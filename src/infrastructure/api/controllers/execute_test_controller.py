@@ -34,7 +34,7 @@ class ExecuteTestController(BaseController):
     return ExecuteTestRequestDto(testId, targetOrganizationId)
 
   def _buildAuthDto(self, jwt: str, userAccountInfo: UserAccountInfo) -> ExecuteTestAuthDto:
-    return ExecuteTestAuthDto(jwt, userAccountInfo.organizationId)
+    return ExecuteTestAuthDto(jwt)
 
   def executeImpl(self, req: request, processedAuth: ProcessedAuth, urlParams: dict[str, str]) -> Response:
     try:

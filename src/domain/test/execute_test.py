@@ -97,8 +97,6 @@ class ExecuteTestRequestDto:
 @dataclass
 class ExecuteTestAuthDto:
     jwt: str
-    organizationId: str
-
 
 ExecuteTestResponseDto = Result[TestExecutionResult]
 
