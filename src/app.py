@@ -14,6 +14,10 @@ register = register()
 
 app = Flask(__name__)
 
+@app.route("/")
+def running():
+    return "I'm running"
+
 @app.route("/tests/<testId>/execute", methods=['POST'])
 @tokenRequired
 def executeTest(*args, testId):

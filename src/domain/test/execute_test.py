@@ -254,9 +254,9 @@ class ExecuteTest(IUseCase):
 
         if(len(historicalData) <= self._MIN_HISTORICAL_DATA_NUMBER_TEST_CONDITION):
             self._insertHistoryEntry(
-                newDataPoint, False)
+                newDataPoint, False, None)
 
-            return TestExecutionResult(testSuiteId, self._testDefinition['TEST_TYPE'], threshold, executionFrequency, self._executionId, True, None, None, self._targetOrganizationId)
+            return TestExecutionResult(testSuiteId, self._testDefinition['TEST_TYPE'], threshold, executionFrequency, self._executionId, True, None, None, targetResourceId, self._targetOrganizationId)
 
         testResult = self._runModel(
             threshold, newDataPoint, historicalData)
