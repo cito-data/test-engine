@@ -1,7 +1,7 @@
 
 
 from abc import ABC, abstractmethod
-from src.domain.account_api.account_dto import AccountDto
+from test_engine.src.domain.account_api.account_dto import AccountDto
 
 class IAccountApiRepo(ABC):
   @abstractmethod

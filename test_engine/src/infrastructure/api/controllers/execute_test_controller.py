@@ -3,10 +3,10 @@ from cmath import log
 from dataclasses import asdict
 import json
 from flask import Response, request
-from src.domain.account_api.get_accounts import GetAccounts
-from src.infrastructure.shared.token_required import ProcessedAuth
-from src.domain.test.execute_test import ExecuteTest, ExecuteTestAuthDto, ExecuteTestRequestDto
-from src.infrastructure.shared.base_controller import BaseController, CodeHttp, UserAccountInfo
+from test_engine.src.domain.account_api.get_accounts import GetAccounts
+from test_engine.src.infrastructure.shared.token_required import ProcessedAuth
+from test_engine.src.domain.test.execute_test import ExecuteTest, ExecuteTestAuthDto, ExecuteTestRequestDto
+from test_engine.src.infrastructure.shared.base_controller import BaseController, CodeHttp, UserAccountInfo
 
 import logging
 

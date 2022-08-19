@@ -9,14 +9,14 @@ from domain.services.models.cito_data_query import CitoTableType, getHistoryQuer
 from domain.services.models.new_column_data_query import getCardinalityQuery, getDistributionQuery, getNullnessQuery, getUniquenessQuery, getFreshnessQuery as getColumnFreshnessQuery
 from domain.services.models.new_materialization_data_query import MaterializationType, getColumnCountQuery, getFreshnessQuery, getRowCountQuery
 from domain.value_types.statistical_model import ResultDto, CommonModel
-from src.domain.integration_api.snowflake.query_snowflake import QuerySnowflake, QuerySnowflakeAuthDto, QuerySnowflakeRequestDto, QuerySnowflakeResponseDto
-from src.domain.services.use_case import IUseCase
-from src.domain.integration_api.i_integration_api_repo import IIntegrationApiRepo
+from test_engine.src.domain.integration_api.snowflake.query_snowflake import QuerySnowflake, QuerySnowflakeAuthDto, QuerySnowflakeRequestDto, QuerySnowflakeResponseDto
+from test_engine.src.domain.services.use_case import IUseCase
+from test_engine.src.domain.integration_api.i_integration_api_repo import IIntegrationApiRepo
 import logging
 import datetime
 import uuid
 
-from src.domain.value_types.transient_types.result import Result
+from test_engine.src.domain.value_types.transient_types.result import Result
 
 logger = logging.getLogger(__name__)
 

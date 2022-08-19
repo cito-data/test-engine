@@ -7,7 +7,7 @@ import jwt
 import json
 import logging
 
-from src.config import getCognitoRegion, getCognitoUserPoolId
+from test_engine.src.config import getCognitoRegion, getCognitoUserPoolId
 
 logger = logging.getLogger(__name__)
 

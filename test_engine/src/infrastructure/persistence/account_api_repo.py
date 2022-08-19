@@ -1,7 +1,7 @@
 import requests
-from src.domain.account_api.i_account_api_repo import IAccountApiRepo
-from src.domain.account_api.account_dto import AccountDto
-from src.infrastructure.shared.api_root_builder import getRoot
+from test_engine.src.domain.account_api.i_account_api_repo import IAccountApiRepo
+from test_engine.src.domain.account_api.account_dto import AccountDto
+from test_engine.src.infrastructure.shared.api_root_builder import getRoot
 import logging
 from ...config import getMode
 

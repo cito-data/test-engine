@@ -1,10 +1,10 @@
 from dataclasses import dataclass
-from src.domain.integration_api.snowflake.snowflake_query_result_dto import SnowflakeQueryResultDto
-from src.domain.integration_api.i_integration_api_repo import IIntegrationApiRepo
-from src.domain.services.use_case import IUseCase
+from test_engine.src.domain.integration_api.snowflake.snowflake_query_result_dto import SnowflakeQueryResultDto
+from test_engine.src.domain.integration_api.i_integration_api_repo import IIntegrationApiRepo
+from test_engine.src.domain.services.use_case import IUseCase
 import logging
 
-from src.domain.value_types.transient_types.result import Result
+from test_engine.src.domain.value_types.transient_types.result import Result
 
 logger = logging.getLogger(__name__)
 

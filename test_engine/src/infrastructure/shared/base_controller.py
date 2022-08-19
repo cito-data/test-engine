@@ -3,12 +3,12 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import TypeVar, Union
 
-from src.domain.account_api.get_accounts import GetAccounts, GetAccountsAuthDto, GetAccountsRequestDto
+from test_engine.src.domain.account_api.get_accounts import GetAccounts, GetAccountsAuthDto, GetAccountsRequestDto
 
 from flask import request
-from src.infrastructure.shared.token_required import ProcessedAuth
+from test_engine.src.infrastructure.shared.token_required import ProcessedAuth
 
-from src.domain.value_types.transient_types.result import Result
+from test_engine.src.domain.value_types.transient_types.result import Result
 import logging
 
 logger = logging.getLogger(__name__)

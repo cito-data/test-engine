@@ -1,7 +1,7 @@
 import requests
-from src.domain.integration_api.i_integration_api_repo import IIntegrationApiRepo
-from src.domain.integration_api.snowflake.snowflake_query_result_dto import SnowflakeQueryResultDto
-from src.infrastructure.shared.api_root_builder import getRoot
+from test_engine.src.domain.integration_api.i_integration_api_repo import IIntegrationApiRepo
+from test_engine.src.domain.integration_api.snowflake.snowflake_query_result_dto import SnowflakeQueryResultDto
+from test_engine.src.infrastructure.shared.api_root_builder import getRoot
 import logging
 from ...config import getMode
 
