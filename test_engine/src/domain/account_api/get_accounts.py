@@ -1,8 +1,8 @@
 from dataclasses import dataclass
-from test_engine.src.domain.account_api.account_dto import AccountDto
-from test_engine.src.domain.account_api.i_account_api_repo import IAccountApiRepo
-from test_engine.src.domain.services.use_case import IUseCase
-from test_engine.src.domain.value_types.transient_types.result import Result
+from domain.account_api.account_dto import AccountDto
+from domain.account_api.i_account_api_repo import IAccountApiRepo
+from domain.services.use_case import IUseCase
+from domain.value_types.transient_types.result import Result
 import logging
 
 

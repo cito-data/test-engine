@@ -1,6 +1,6 @@
 import logging
 
-from ...config import getMode
+from config import getMode
 
 logger = logging.getLogger(__name__)
 
