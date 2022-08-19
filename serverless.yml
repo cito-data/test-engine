@@ -9,7 +9,7 @@ provider:
   memorySize: 128
 custom:
  wsgi:
-   app: src/app.app
+   app: test_engine/src/app.app
    packRequirements: false
  pythonRequirements:
     pythonBin: python3
