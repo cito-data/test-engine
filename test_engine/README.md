@@ -1,5 +1,7 @@
 # sql-parse
 
+npm i
+
 - py -3 -m venv venv (Run in root)
 
 
@@ -12,4 +14,5 @@
 - flask run
 
 "pip freeze > requirements.txt" in Powershell (and maybe other tools) results in UTF16 encoding which cannot be processed by serverless
+Run in project folder and then move to root level (run in test-engine/test_engine; move to test-engine) to avoid interference with node env
 - pip freeze | Out-File -Encoding UTF8 requirements.txt

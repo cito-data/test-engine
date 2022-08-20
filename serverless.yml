@@ -11,18 +11,24 @@ custom:
   wsgi:
     app: test_engine/src/app.app
     packRequirements: false
+  pythonRequirements:
+    dockerizePip: non-linux
 plugins:
   - serverless-wsgi
   - serverless-python-requirements
 functions:
   app:
     handler: wsgi_handler.handler
-    events: 
-      - http: 
+    events:
+      - http:
           path: /
           method: ANY
           cors: true
-      - http: 
+      - http:
           path: /{proxy+}
           method: ANY
           cors: true
+package:
+  patterns:
+    - "!node_modules/**"
+    - "!venv/**"
