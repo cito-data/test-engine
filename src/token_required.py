@@ -20,10 +20,10 @@ class ProcessedAuth:
 def processAuth(request):
        token = None
        if 'Authorization' in request['headers']:
-            token = request['headers']['Authorization'].split(' ')[1]
+            token = request['headers']['Authorization'].split('Bearer')[1]
  
        if not token:
-           return jsonify({'message': 'a valid token is missing'})
+           return ProcessedAuth(token, {}, False)
        try:
             #for JWKS that contain multiple JWK
             jwks = requests.get(f'https://cognito-idp.{getCognitoRegion()}.amazonaws.com/{getCognitoUserPoolId()}/.well-known/jwks.json').json()

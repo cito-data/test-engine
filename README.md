@@ -1,6 +1,7 @@
 # sql-parse
 
 sam build; sam local start-api
+sam build; sam deploy
 
 <!-- npm i
 

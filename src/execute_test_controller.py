@@ -27,7 +27,7 @@ class ExecuteTestController(BaseController):
 
 
   def _buildRequestDto(self, req: Any, urlParams: dict[str, str]) -> ExecuteTestRequestDto:
-    body = req.json
+    body = req['body']
 
     testId = urlParams['testId']
     targetOrganizationId = body['targetOrganizationId']

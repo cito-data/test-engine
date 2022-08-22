@@ -5,20 +5,30 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python: Flask",
-      "type": "python",
-      "request": "launch",
-      "module": "flask",
-      "env": {
-        "FLASK_APP": "src/app.py",
-        "FLASK_ENV": "development"
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "test-engine:HelloWorldFunction",
+      "invokeTarget": {
+        "target": "template",
+        "templatePath": "${workspaceFolder}/template.yaml",
+        "logicalId": "HelloWorldFunction"
       },
-      "args": [
-        "run",
-        "--no-debugger"
-      ],
-      "jinja": true,
-      "justMyCode": true
+      "lambda": {
+        "payload": {
+          "json": {
+            "body": {
+              "targetOrganizationId": "someCustId"
+            },
+            "headers": {
+              "Authorization": "BearereyJraWQiOiJrVkFzOUJSbGE5M3IrUStZdm5tS1I1UTlcL21WcEVyQlphRUNXZitFdnpVWT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJmODkwNDBjNS02MTQxLTRlZjEtODU0MS1hZDdhNzllNjdlNjYiLCJjb2duaXRvOmdyb3VwcyI6WyJhZG1pbiJdLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAuZXUtY2VudHJhbC0xLmFtYXpvbmF3cy5jb21cL2V1LWNlbnRyYWwtMV8wWjhKaEZqOHoiLCJ2ZXJzaW9uIjoyLCJjbGllbnRfaWQiOiIyNXU4ZTFvMm4xbGJpczJwOHVpbDc5Y2dqZSIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoicGhvbmUgb3BlbmlkIGVtYWlsIiwiYXV0aF90aW1lIjoxNjYxMTYxNDc5LCJleHAiOjE2NjExNjUwNzksImlhdCI6MTY2MTE2MTQ3OSwianRpIjoiNWE2YjY2YzQtMzc5YS00NmZlLTgxYzEtZDk3NmM3MDA2MmJlIiwidXNlcm5hbWUiOiJmODkwNDBjNS02MTQxLTRlZjEtODU0MS1hZDdhNzllNjdlNjYifQ.SbWHeZYoSMzmZOPqoSQV2Trwu16NB0lPClxiIZnKsGqXRcsR0eN17tvS4bWegghBjwGCtiDHLpnWsQDD7DZCsHfVhaVeDg806AgrJAu-UQY_q1kdRZ8Uy3RWAi8epfVif58kT_PGEoxUrj86bW4QoGzC-RQ1ys50aV-glOz0UjM4HsYh1VA1mU3QcUmUZaj5w55tfEhHg9cok_IMukXN35W9LyceRDggIiSMZoyiJ9qjgB0Y7fEgSzGqgtWFqxYwxiit3G5fwrMxh5E7UXZclrV7ouPz1x_vm4NlX0OJu6zVFDWkfncpsSRb4vZwiKrKTMq5hbiOgX27xf3WcHT-iA"
+            },
+            "pathParameters": {
+              "testSuiteId": "62fd0bcb2295b02e2adc5a13"
+            }
+          }
+        },
+        "environmentVariables": {}
+      }
     }
   ]
 }
