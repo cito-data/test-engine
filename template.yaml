@@ -15,7 +15,7 @@ Parameters:
   Environment:
     Type: String
     Description: Environment Var
-    Default: development
+    Default: production
 
 Resources:
   TestSuiteExecution:
