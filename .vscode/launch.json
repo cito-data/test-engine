@@ -7,11 +7,11 @@
     {
       "type": "aws-sam",
       "request": "direct-invoke",
-      "name": "test-engine:HelloWorldFunction",
+      "name": "test-engine:TestSuiteExecution",
       "invokeTarget": {
         "target": "template",
         "templatePath": "${workspaceFolder}/template.yaml",
-        "logicalId": "HelloWorldFunction"
+        "logicalId": "TestSuiteExecution"
       },
       "lambda": {
         "payload": {

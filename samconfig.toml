@@ -2,9 +2,9 @@ version = 0.1
 [default]
 [default.deploy]
 [default.deploy.parameters]
-stack_name = "sam-app"
+stack_name = "test-engine"
 s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-15swed306cxfx"
-s3_prefix = "sam-app"
+s3_prefix = "test-engine"
 region = "eu-central-1"
 capabilities = "CAPABILITY_IAM"
 image_repositories = []
