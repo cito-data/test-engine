@@ -8,6 +8,8 @@ from numpy import integer
 from cito_data_query import CitoTableType, getHistoryQuery, getInsertQuery, getTestQuery
 from new_column_data_query import getCardinalityQuery, getDistributionQuery, getNullnessQuery, getUniquenessQuery, getFreshnessQuery as getColumnFreshnessQuery
 from new_materialization_data_query import MaterializationType, getColumnCountQuery, getFreshnessQuery, getRowCountQuery
+from src.cito_data_query import getLastMatSchemaQuery
+from src.new_materialization_data_query import getSchemaChangeQuery
 from statistical_model import ResultDto, CommonModel
 from query_snowflake import QuerySnowflake, QuerySnowflakeAuthDto, QuerySnowflakeRequestDto, QuerySnowflakeResponseDto
 from use_case import IUseCase
@@ -30,6 +32,7 @@ class TestType(Enum):
     MaterializationRowCount = 'MaterializationRowCount'
     MaterializationColumnCount = 'MaterializationColumnCount'
     MaterializationFreshness = 'MaterializationFreshness'
+    MaterializationSchemaChange = 'MaterializationSchemaChange'
 
 
 def getAnomalyMessage(targetResourceId: str, databaseName: str, schemaName: str, materializationName: str, columnName: Union[str, None], testType: TestType):
@@ -51,6 +54,8 @@ def getAnomalyMessage(targetResourceId: str, databaseName: str, schemaName: str,
         return f"Row count deviation for materialization <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
     elif(testType == TestType.MaterializationFreshness):
         return f"Freshness deviation for materialization <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
+    elif(testType == TestType.MaterializationSchemaChange):
+        return f"Schema change for materialization <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
 
 @dataclass
 class TestSpecificData:
@@ -97,6 +102,15 @@ class ExecuteTestRequestDto:
 @dataclass
 class ExecuteTestAuthDto:
     jwt: str
+
+@dataclass
+class SchemaDiff:
+    xxx
+
+@dataclass
+class SchemaComparisonResult:
+    areIdentical: bool
+
 
 ExecuteTestResponseDto = Result[TestExecutionResult]
 
@@ -222,6 +236,18 @@ class ExecuteTest(IUseCase):
         return [element['VALUE']
                 for element in getHistoricalDataResult.value.content[self._targetOrganizationId]]
 
+    def _getLastMatSchema(self) -> QuerySnowflakeResponseDto:
+        query = getLastMatSchemaQuery(self._testSuiteId)
+        queryResult = self._querySnowflake.execute(QuerySnowflakeRequestDto(query, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
+
+        if not queryResult.success:
+            raise Exception(getHistoricalDataResult.error)
+        if not queryResult.value:
+            raise Exception(
+                'Sf query error - operation: last mat schema')
+
+        return queryResult.value.content[self._targetOrganizationId][0]['Value']
+
     def _getNewData(self, query):
         getNewDataResult = self._querySnowflake.execute(
             QuerySnowflakeRequestDto(query, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
@@ -286,6 +312,8 @@ class ExecuteTest(IUseCase):
 
         return TestExecutionResult(testSuiteId, self._testDefinition['TEST_TYPE'], threshold, executionFrequency, self._executionId, False, testSpecificData, alertSpecificData, targetResourceId, self._targetOrganizationId)
 
+    def _compareMatSchemas(self) ->
+
     def _runMaterializationRowCountTest(self) -> TestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
         schemaName = self._testDefinition['SCHEMA_NAME']
@@ -339,6 +367,28 @@ class ExecuteTest(IUseCase):
         newDataPoint = newData[0]['TIME_DIFF']
 
         historicalData = self._getHistoricalData()
+
+        testResult = self._runTest(
+            newDataPoint, historicalData)
+
+        return testResult
+
+    def _runMaterializationSchemaChange(self) -> TestExecutionResult:
+        databaseName = self._testDefinition['DATABASE_NAME']
+        schemaName = self._testDefinition['SCHEMA_NAME']
+        materializationName = self._testDefinition['MATERIALIZATION_NAME']
+
+        newDataQuery = getSchemaChangeQuery(
+            databaseName, schemaName, materializationName)
+
+        newData = self._getNewData(newDataQuery)
+
+        tableSchema = {}
+        for columnDefinition in newData[0]['COLUMN_DEFINITION']:
+            ordinalPosition = columnDefinition['ORDINAL_POSITION']
+            tableSchema[ordinalPosition] = columnDefinition
+
+        lastSchema = self._getLastMatSchema()
 
         testResult = self._runTest(
             newDataPoint, historicalData)

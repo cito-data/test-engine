@@ -7,7 +7,7 @@ def getRowCountQuery(dbName: str, schemaName: str, materializationName: str, mat
   
   if materializationType == MaterializationType.Table:
     return f"""select row_count from {dbName}.information_schema.tables 
-    where table_schema = '{schemaName}' and table_name = '{materializationName}' limit 1;
+    where table_schema = '{schemaName.capitalize()}' and table_name = '{materializationName.capitalize()}' limit 1;
     """
 
   return f"""select count(*) as row_count from {dbName}.{schemaName}.{materializationName};
@@ -15,7 +15,7 @@ def getRowCountQuery(dbName: str, schemaName: str, materializationName: str, mat
 
 def getColumnCountQuery(dbName: str, schemaName: str, materializationName: str):
   return f"""select count(column_name) as column_count from {dbName}.information_schema.columns
-  where table_schema = {schemaName} and table_name = {materializationName};
+  where table_schema = '{schemaName.capitalize()}' and table_name = '{materializationName.capitalize()}';
   """
 
 def getFreshnessQuery(dbName: str, schemaName: str, materializationName: str, materializationType: MaterializationType):
@@ -23,4 +23,12 @@ def getFreshnessQuery(dbName: str, schemaName: str, materializationName: str, ma
   sysdate() as now, 
   datediff(minute, last_altered_converted, now) as time_diff
   from {dbName}.information_schema.{materializationType.value}s
-  where table_schema = '{schemaName}' and table_name = '{materializationName}' limit 1;"""
+  where table_schema = '{schemaName.capitalize()}' and table_name = '{materializationName.capitalize()}' limit 1;"""
+
+def getSchemaChangeQuery(dbName: str, schemaName: str, tableName: str):
+  return f"""with
+  schema_cte as (select column_name, data_type, is_identity, is_nullable, ordinal_position, table_catalog, table_name, table_schema from {dbName}.information_schema.columns 
+  where table_catalog = '{dbName.capitalize()}' and table_schema = '{schemaName.capitalize()}' and table_name = '{tableName.capitalize()}'
+  order by ordinal_position)
+  select object_construct(*) from schema_cte
+  """
