@@ -1,12 +1,19 @@
 from enum import Enum
 from typing import Any, Tuple
 
+from src.test_type import TestType
+
 class CitoTableType(Enum):
   TestSuites = 'test_suites'
-  Executions = 'executions'
   TestHistory = 'test_history'
   TestResults = 'test_results'
-  Alerts = 'alerts'
+  TestExecutions = 'test_executions'
+  TestAlerts = 'test_alerts'
+  TestSuitesNominal = 'test_suites_nominal'
+  TestHistoryNominal = 'test_history_nominal'
+  TestResultsNominal = 'test_results_nominal'
+  TestExecutionsNominal = 'test_executions_nominal'
+  TestAlertsNominal = 'test_alerts_nominal'
 
 def getInsertQuery(valueSets: list[dict[str, Any]], type: CitoTableType):
   valueString = ', '.join(f"'{str(set['value'])}'" if set['value'] or set['value'] == 0 else 'NULL' for set in valueSets)
@@ -24,12 +31,12 @@ def getHistoryQuery(testSuiteId: str):
 def getLastMatSchemaQuery(testSuiteId: str):
   return f"""
   with
-  execution_id_cte as (select id from cito.public.executions where test_suite_id = '{testSuiteId}' order by executed_on limit 1)
-  select execution_id_cte.id, test_history.value from execution_id_cte join (select value, execution_id from cito.public.test_history) as test_history
-  on execution_id_cte.id = test_history.execution_id
+  execution_id_cte as (select id from cito.public.{CitoTableType.TestExecutionsNominal} where test_suite_id = '{testSuiteId}' order by executed_on limit 1)
+  select execution_id_cte.id, test_history_nominal.value from execution_id_cte join (select value, execution_id from cito.public.{CitoTableType.TestHistoryNominal}) as test_history_nominal
+  on execution_id_cte.id = test_history_nominal.execution_id
   """
 
-def getTestQuery(testSuiteId: str):
-  return f""" select * from cito.public.test_suites
+def getTestQuery(testSuiteId: str, testType: TestType):
+  return f""" select * from cito.public.{CitoTableType.TestSuites if testType == TestType.Anomaly else CitoTableType.TestSuitesNominal}
   where id = '{testSuiteId}';
   """

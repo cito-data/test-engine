@@ -27,7 +27,7 @@ def getFreshnessQuery(dbName: str, schemaName: str, materializationName: str, ma
 
 def getSchemaChangeQuery(dbName: str, schemaName: str, tableName: str):
   return f"""with
-  schema_cte as (select column_name, data_type, is_identity, is_nullable, ordinal_position, table_catalog, table_name, table_schema from {dbName}.information_schema.columns 
+  schema_cte as (select column_name, data_type, is_identity, is_nullable, ordinal_position from {dbName}.information_schema.columns 
   where table_catalog = '{dbName.capitalize()}' and table_schema = '{schemaName.capitalize()}' and table_name = '{tableName.capitalize()}'
   order by ordinal_position)
   select object_construct(*) from schema_cte

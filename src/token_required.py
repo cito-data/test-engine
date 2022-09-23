@@ -17,10 +17,8 @@ class ProcessedAuth:
     success: bool 
 
 
-def processAuth(request):
-       token = None
-       if 'Authorization' in request['headers']:
-            token = request['headers']['Authorization'].split('Bearer')[1]
+def processAuth(authHeader: str):
+       token = authHeader.split('Bearer')[1]
  
        if not token:
            return ProcessedAuth(token, {}, False)

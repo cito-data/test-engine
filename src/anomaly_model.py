@@ -21,7 +21,7 @@ class ResultDto:
 
   executedOn: str
 
-class StatisticalModel(ABC):
+class AnomalyModel(ABC):
 
   _newDataPoint: float
   _historicalData: list[float]
@@ -86,7 +86,7 @@ class StatisticalModel(ABC):
 
     return ResultDto(self._meanAbsoluteDeviation, self._medianAbsoluteDeviation, self._modifiedZScore, self._isAnomaly(), self._expectedValue, self._expectedValueUpperBound, self._expectedValueLowerBound, self._deviation, datetime.datetime.utcnow().isoformat())
 
-class CommonModel(StatisticalModel):
+class CommonModel(AnomalyModel):
   def __init__(self, newData: float, historicalData: list[float], threshold: int, ) -> None:
     super().__init__(newData, historicalData, threshold)
 

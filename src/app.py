@@ -38,7 +38,8 @@ def lambda_handler(event, context):
 
     #     raise e
     request = event
-    processedAuthObject = processAuth(request)
+
+    processedAuthObject = processAuth(request['headers']['Authorization'])
 
     if(not processedAuthObject.success):
         return {

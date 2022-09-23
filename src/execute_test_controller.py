@@ -31,8 +31,9 @@ class ExecuteTestController(BaseController):
 
     testId = urlParams['testId']
     targetOrganizationId = body['targetOrganizationId']
+    testType = body['testType']
     
-    return ExecuteTestRequestDto(testId, targetOrganizationId)
+    return ExecuteTestRequestDto(testId, testType, targetOrganizationId)
 
   def _buildAuthDto(self, jwt: str, userAccountInfo: UserAccountInfo) -> ExecuteTestAuthDto:
     return ExecuteTestAuthDto(jwt)
