@@ -6,7 +6,7 @@ def getMode():
 def getCognitoUserPoolId():
   if os.environ.get('ENVIRONMENT') == 'development':
     return 'eu-central-1_0Z8JhFj8z'
-  elif os.environ.get('MENVIRONMENTODE') == 'staging':
+  elif os.environ.get('ENVIRONMENT') == 'staging':
     return ''
   elif os.environ.get('ENVIRONMENT') == 'production':
     return 'eu-central-1_0muGtKMk3'

@@ -1,13 +1,11 @@
-import base64
-from cmath import log
 from dataclasses import asdict
 import json
 from typing import Any
-from get_accounts import GetAccounts
-from base_controller import Response
-from token_required import ProcessedAuth
-from execute_test import ExecuteTest, ExecuteTestAuthDto, ExecuteTestRequestDto
-from base_controller import BaseController, CodeHttp, UserAccountInfo
+from .get_accounts import GetAccounts
+from .base_controller import Request, Response
+from .token_required import ProcessedAuth
+from .execute_test import ExecuteTest, ExecuteTestAuthDto, ExecuteTestRequestDto
+from .base_controller import BaseController, CodeHttp, UserAccountInfo
 
 import logging
 
@@ -26,10 +24,8 @@ class ExecuteTestController(BaseController):
     self._getAccounts = getAccounts
 
 
-  def _buildRequestDto(self, req: Any, urlParams: dict[str, str]) -> ExecuteTestRequestDto:
-    body = json.loads(req['body']) if isinstance(req['body'], str) else req['body']
-
-    testId = urlParams['testId']
+  def _buildRequestDto(self, body: dict[str, Any], pathParams: dict[str, str]) -> ExecuteTestRequestDto:
+    testId = pathParams['testId']
     targetOrganizationId = body['targetOrganizationId']
     testType = body['testType']
     
@@ -38,17 +34,17 @@ class ExecuteTestController(BaseController):
   def _buildAuthDto(self, jwt: str, userAccountInfo: UserAccountInfo) -> ExecuteTestAuthDto:
     return ExecuteTestAuthDto(jwt)
 
-  def executeImpl(self, req: Any, processedAuth: ProcessedAuth, urlParams: dict[str, str]) -> Response:
+  def executeImpl(self, req: Request) -> Response:
     try:
-      getUserAccountInfoResult = ExecuteTestController.getUserAccountInfo(processedAuth, self._getAccounts)
+      getUserAccountInfoResult = ExecuteTestController.getUserAccountInfo(req.processedAuth, self._getAccounts)
       
       if not getUserAccountInfoResult.success:
         return ExecuteTestController.unauthorized(getUserAccountInfoResult.error)
       if not getUserAccountInfoResult.value:
         raise Exception('Authorization failed')
 
-      requestDto = self._buildRequestDto(req, urlParams)
-      authDto = self._buildAuthDto(processedAuth.token, getUserAccountInfoResult.value)
+      requestDto = self._buildRequestDto(req.body, req.pathParams)
+      authDto = self._buildAuthDto(req.processedAuth.token, getUserAccountInfoResult.value)
 
       result = self._executeTest.execute(requestDto, authDto)
 

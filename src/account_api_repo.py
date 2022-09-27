@@ -1,9 +1,9 @@
 import requests
-from i_account_api_repo import IAccountApiRepo
-from account_dto import AccountDto
-from api_root_builder import getRoot
+from .i_account_api_repo import IAccountApiRepo
+from .account_dto import AccountDto
+from .api_root_builder import getRoot
 import logging
-from config import getMode
+from .config import getMode
 
 logger = logging.getLogger(__name__)
 

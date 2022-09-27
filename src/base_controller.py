@@ -3,11 +3,11 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import Any, TypeVar, Union
 
-from get_accounts import GetAccounts, GetAccountsAuthDto, GetAccountsRequestDto
+from .get_accounts import GetAccounts, GetAccountsAuthDto, GetAccountsRequestDto
 
-from token_required import ProcessedAuth
+from .token_required import ProcessedAuth
 
-from result import Result
+from .result import Result
 import logging
 
 logger = logging.getLogger(__name__)
@@ -37,6 +37,14 @@ class Response:
   body: Union[str, None]
   statusCode: int
 
+@dataclass
+class Request:
+  headers: Union[dict[str, str], None]
+  pathParams: Union[dict[str, str], None]
+  queryParams: Union[dict[str, str], None]
+  body: Union[dict[str, Any], None]
+  auth: ProcessedAuth
+
 class BaseController(ABC):
   
   @staticmethod
@@ -65,12 +73,12 @@ class BaseController(ABC):
     return Response(str(error), CodeHttp.SERVER_ERROR.value)
 
   @abstractmethod
-  def executeImpl(self, req: Any, processedAuth: ProcessedAuth) -> Response:
+  def executeImpl(self, req: Request) -> Response:
     raise NotImplementedError
 
-  def execute(self, req: Any, processedAuth: ProcessedAuth, urlParams: dict[str, str] = None) -> Response:
+  def execute(self, req: Request) -> Response:
     try:
-      return self.executeImpl(req, processedAuth, urlParams)
+      return self.executeImpl(req)
     except Exception as e:
       logger.error(e)
       return BaseController.fail('An unexpected error occurred')

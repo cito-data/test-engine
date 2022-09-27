@@ -1,9 +1,9 @@
 import requests
-from i_integration_api_repo import IIntegrationApiRepo
-from snowflake_query_result_dto import SnowflakeQueryResultDto
-from api_root_builder import getRoot
+from .i_integration_api_repo import IIntegrationApiRepo
+from .snowflake_query_result_dto import SnowflakeQueryResultDto
+from .api_root_builder import getRoot
 import logging
-from config import getMode
+from .config import getMode
 
 logger = logging.getLogger(__name__)
 

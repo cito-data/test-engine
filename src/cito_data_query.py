@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import Any, Tuple
+from typing import Any
 
-from src.test_type import TestType
+from .test_type import TestType
 
 class CitoTableType(Enum):
   TestSuites = 'test_suites'

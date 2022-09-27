@@ -2,19 +2,19 @@ from dataclasses import dataclass
 import json
 from typing import Any, Union
 from numpy import integer
-from cito_data_query import CitoTableType, getHistoryQuery, getInsertQuery, getTestQuery, getLastMatSchemaQuery
-from new_column_data_query import getCardinalityQuery, getDistributionQuery, getNullnessQuery, getUniquenessQuery, getFreshnessQuery as getColumnFreshnessQuery
-from new_materialization_data_query import MaterializationType, getColumnCountQuery, getFreshnessQuery, getRowCountQuery, getSchemaChangeQuery
-from nominal_model import MaterializationSchema, SchemaChangeModel, ResultDto as NominalResultDto, SchemaDiff
-from anomaly_model import ResultDto as AnomalyTestResultDto, CommonModel
-from query_snowflake import QuerySnowflake, QuerySnowflakeAuthDto, QuerySnowflakeRequestDto, QuerySnowflakeResponseDto
-from test_type import TestType, AnomalyTest, NominalTest
-from use_case import IUseCase
-from i_integration_api_repo import IIntegrationApiRepo
+from .cito_data_query import CitoTableType, getHistoryQuery, getInsertQuery, getTestQuery, getLastMatSchemaQuery
+from .new_column_data_query import getCardinalityQuery, getDistributionQuery, getNullnessQuery, getUniquenessQuery, getFreshnessQuery as getColumnFreshnessQuery
+from .new_materialization_data_query import MaterializationType, getColumnCountQuery, getFreshnessQuery, getRowCountQuery, getSchemaChangeQuery
+from .nominal_model import MaterializationSchema, SchemaChangeModel, ResultDto as NominalResultDto, SchemaDiff
+from .anomaly_model import ResultDto as AnomalyTestResultDto, CommonModel
+from .query_snowflake import QuerySnowflake, QuerySnowflakeAuthDto, QuerySnowflakeRequestDto, QuerySnowflakeResponseDto
+from .test_type import TestType, AnomalyTest, NominalTest
+from .use_case import IUseCase
+from .i_integration_api_repo import IIntegrationApiRepo
 import logging
 import uuid
 
-from result import Result
+from .result import Result
 
 logger = logging.getLogger(__name__)
 

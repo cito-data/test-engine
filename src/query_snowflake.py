@@ -1,10 +1,10 @@
 from dataclasses import dataclass
-from snowflake_query_result_dto import SnowflakeQueryResultDto
-from i_integration_api_repo import IIntegrationApiRepo
-from use_case import IUseCase
+from .snowflake_query_result_dto import SnowflakeQueryResultDto
+from .i_integration_api_repo import IIntegrationApiRepo
+from .use_case import IUseCase
 import logging
 
-from result import Result
+from .result import Result
 
 logger = logging.getLogger(__name__)
 
