@@ -11,4 +11,4 @@ sam build --use-container; sam deploy
 py -3 -m venv venv
 venv\Scripts\activate
 
-flask --app app_dev run --port=3047
+venv\Scripts\activate; cd src; flask --app app_dev run --port=3047
