@@ -32,11 +32,11 @@ class ExecuteTestController(BaseController):
     return ExecuteTestRequestDto(testId, testType, targetOrganizationId)
 
   def _buildAuthDto(self, jwt: str, userAccountInfo: UserAccountInfo) -> ExecuteTestAuthDto:
-    return ExecuteTestAuthDto(jwt)
+    return ExecuteTestAuthDto(jwt, userAccountInfo.callerOrganizationId, userAccountInfo.isSystemInternal)
 
   def executeImpl(self, req: Request) -> Response:
     try:
-      getUserAccountInfoResult = ExecuteTestController.getUserAccountInfo(req.processedAuth, self._getAccounts)
+      getUserAccountInfoResult = ExecuteTestController.getUserAccountInfo(req.auth, self._getAccounts)
       
       if not getUserAccountInfoResult.success:
         return ExecuteTestController.unauthorized(getUserAccountInfoResult.error)
@@ -44,7 +44,7 @@ class ExecuteTestController(BaseController):
         raise Exception('Authorization failed')
 
       requestDto = self._buildRequestDto(req.body, req.pathParams)
-      authDto = self._buildAuthDto(req.processedAuth.token, getUserAccountInfoResult.value)
+      authDto = self._buildAuthDto(req.auth.token, getUserAccountInfoResult.value)
 
       result = self._executeTest.execute(requestDto, authDto)
 

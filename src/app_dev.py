@@ -27,12 +27,18 @@ def executeTest(testSuiteId):
             return json.dumps({'message': 'Unauthorized'}), 401
 
         body = request.json
-        controllerRequest = Request(None, {'testId': testSuiteId}, None, {'targetOrganizationId': body['targetOrganizationId'], 'testType': body['testType']}, processedAuthObject)
+        mappedBody = {'testType': body['testType']}
+
+        targetOrganizationIdKey = 'targetOrganizationId'
+
+        mappedBody[targetOrganizationIdKey] = body[targetOrganizationIdKey] if targetOrganizationIdKey in body else None
+
+        controllerRequest = Request(None, {'testId': testSuiteId}, None, mappedBody, processedAuthObject)
 
         controller = ExecuteTestController(register['executeTest'], register['getAccounts'])
         result = controller.execute(controllerRequest)
 
-        return 'response', 201
+        return result.body, result.statusCode
     except Exception as e:
         logging.error(traceback.format_exc())
         return json.dumps({'error':{'message': str(e)}}), 500

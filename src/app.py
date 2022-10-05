@@ -56,8 +56,14 @@ def lambda_handler(event, context):
 
         body = json.loads(request['body']) if isinstance(
             request['body'], str) else request['body']
-        controllerRequest = Request(None, {'testId': request['pathParameters']['testSuiteId']}, None, {
-                                    'targetOrganizationId': body['targetOrganizationId'], 'testType': body['testType']}, processedAuthObject)
+
+        mappedBody = {'testType': body['testType']}
+
+        targetOrganizationIdKey = 'targetOrganizationId'
+
+        mappedBody[targetOrganizationIdKey] = body[targetOrganizationIdKey] if targetOrganizationIdKey in body else None
+
+        controllerRequest = Request(None, {'testId': request['pathParameters']['testSuiteId']}, None, mappedBody, processedAuthObject)
 
         controller = ExecuteTestController(
             register['executeTest'], register['getAccounts'])
