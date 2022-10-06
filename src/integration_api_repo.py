@@ -1,3 +1,4 @@
+from typing import Union
 import requests
 from .i_integration_api_repo import IIntegrationApiRepo
 from .snowflake_query_result_dto import SnowflakeQueryResultDto
@@ -16,7 +17,7 @@ class IntegrationApiRepo(IIntegrationApiRepo):
     self._mode = getMode()
 
 
-  def querySnowflake(self, query: str, targetOrganizationId: str,  jwt: str) -> SnowflakeQueryResultDto:
+  def querySnowflake(self, query: str, jwt: str, targetOrganizationId: Union[str, None]) -> SnowflakeQueryResultDto:
     try:
       gateway = self._port
       if(self._mode == 'production'):
@@ -24,7 +25,11 @@ class IntegrationApiRepo(IIntegrationApiRepo):
 
       apiRoot = getRoot(gateway, self._path)
 
-      response = requests.post(f'{apiRoot}/snowflake/query', data={'query': query, 'targetOrganizationId': targetOrganizationId}, headers={'Authorization': f'Bearer {jwt}'})
+      data = {'query': query}
+
+      data['targetOrganizationId'] = targetOrganizationId if targetOrganizationId else None
+
+      response = requests.post(f'{apiRoot}/snowflake/query', data=data, headers={'Authorization': f'Bearer {jwt}'})
       jsonPayload = response.json()
       if response.status_code == 201:
         return SnowflakeQueryResultDto(jsonPayload)

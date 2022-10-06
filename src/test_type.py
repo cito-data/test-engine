@@ -1,19 +1,16 @@
 from enum import Enum
 
+class NominalMatTest(Enum):
+    MaterializationSchemaChange = 'MaterializationSchemaChange'
 
-class TestType(Enum):
-    Anomaly = 'Anomaly'
-    Nominal = 'Nominal'
+class AnomalyMatTest (Enum):
+    MaterializationRowCount = 'MaterializationRowCount'
+    MaterializationColumnCount = 'MaterializationColumnCount'
+    MaterializationFreshness = 'MaterializationFreshness'
 
-class AnomalyTest(Enum):
+class AnomalyColumnTest(Enum):
     ColumnFreshness = 'ColumnFreshness'
     ColumnCardinality = 'ColumnCardinality'
     ColumnUniqueness = 'ColumnUniqueness'
     ColumnNullness = 'ColumnNullness'
     ColumnDistribution = 'ColumnDistribution'
-    MaterializationRowCount = 'MaterializationRowCount'
-    MaterializationColumnCount = 'MaterializationColumnCount'
-    MaterializationFreshness = 'MaterializationFreshness'
-
-class NominalTest(Enum):
-    MaterializationSchemaChange = 'MaterializationSchemaChange'

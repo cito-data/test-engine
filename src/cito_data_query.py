@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import Any
+from typing import Any, Union
 
-from .test_type import TestType
+from .test_type import AnomalyColumnTest, AnomalyMatTest, NominalMatTest
 
 class CitoTableType(Enum):
   TestSuites = 'test_suites'
@@ -14,6 +14,10 @@ class CitoTableType(Enum):
   TestResultsNominal = 'test_results_nominal'
   TestExecutionsNominal = 'test_executions_nominal'
   TestAlertsNominal = 'test_alerts_nominal'
+
+anomalyColumnTest = set(item.value for item in AnomalyColumnTest)
+anomalyMatTest = set(item.value for item in AnomalyMatTest)
+nominalMatTest = set(item.value for item in NominalMatTest)
 
 def getInsertQuery(valueSets: list[dict[str, Any]], type: CitoTableType):
   valueString = ', '.join(f"'{str(set['value'])}'" if set['value'] or set['value'] == 0 else 'NULL' for set in valueSets)
@@ -36,7 +40,7 @@ def getLastMatSchemaQuery(testSuiteId: str):
   on execution_id_cte.id = test_history_nominal.execution_id
   """
 
-def getTestQuery(testSuiteId: str, testType: TestType):
-  return f""" select * from cito.observability.{CitoTableType.TestSuites.value if testType == TestType.Anomaly else CitoTableType.TestSuitesNominal.value}
+def getTestQuery(testSuiteId: str, testType: Union[AnomalyColumnTest, AnomalyMatTest, NominalMatTest]):
+  return f""" select * from cito.observability.{CitoTableType.TestSuites.value if testType in anomalyColumnTest or testType in anomalyMatTest else CitoTableType.TestSuitesNominal.value}
   where id = '{testSuiteId}';
   """
