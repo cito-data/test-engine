@@ -35,7 +35,8 @@ def executeTest(testSuiteId):
 
         controllerRequest = Request(None, {'testId': testSuiteId}, None, mappedBody, processedAuthObject)
 
-        controller = ExecuteTestController(register['executeTest'], register['getAccounts'])
+        controller = ExecuteTestController(
+            register['getAccounts'], register['integrationApiRepo'], register['querySnowflake'])
         result = controller.execute(controllerRequest)
 
         return result.body, result.statusCode

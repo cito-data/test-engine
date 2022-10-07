@@ -66,7 +66,7 @@ def lambda_handler(event, context):
         controllerRequest = Request(None, {'testId': request['pathParameters']['testSuiteId']}, None, mappedBody, processedAuthObject)
 
         controller = ExecuteTestController(
-            register['executeTest'], register['getAccounts'])
+            register['getAccounts'], register['integrationApiRepo'], register['querySnowflake'])
         result = controller.execute(controllerRequest)
 
         return {

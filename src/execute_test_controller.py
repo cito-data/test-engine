@@ -1,9 +1,11 @@
 from dataclasses import asdict
 import json
 from typing import Any
+
+from src.integration_api_repo import IntegrationApiRepo
+from src.query_snowflake import QuerySnowflake
 from .get_accounts import GetAccounts
 from .base_controller import Request, Response
-from .token_required import ProcessedAuth
 from .execute_test import ExecuteTest, ExecuteTestAuthDto, ExecuteTestRequestDto
 from .base_controller import BaseController, CodeHttp, UserAccountInfo
 
@@ -18,10 +20,11 @@ logger = logging.getLogger(__name__)
 
 class ExecuteTestController(BaseController):
 
-  def __init__(self, executeTest: ExecuteTest, getAccounts: GetAccounts ) -> None:
+  def __init__(self, getAccounts: GetAccounts, integrationApiRepo: IntegrationApiRepo, querySnowflake: QuerySnowflake) -> None:
     super().__init__()
-    self._executeTest = executeTest
     self._getAccounts = getAccounts
+    self._integrationApiRepo = integrationApiRepo
+    self._querySnowflake = querySnowflake
 
 
   def _buildRequestDto(self, body: dict[str, Any], pathParams: dict[str, str]) -> ExecuteTestRequestDto:
@@ -46,7 +49,7 @@ class ExecuteTestController(BaseController):
       requestDto = self._buildRequestDto(req.body, req.pathParams)
       authDto = self._buildAuthDto(req.auth.token, getUserAccountInfoResult.value)
 
-      result = self._executeTest.execute(requestDto, authDto)
+      result =  ExecuteTest(self._integrationApiRepo, self._querySnowflake).execute(requestDto, authDto)
 
       if not result.success:
         return ExecuteTestController.badRequest(result.error)

@@ -18,7 +18,7 @@ from .result import Result
 
 logger = logging.getLogger(__name__)
 
-def getAnomalyMessage(targetResourceId: str, databaseName: str, schemaName: str, materializationName: str, columnName: Union[str, None], testType: Union[AnomalyTest, NominalTest]):
+def getAnomalyMessage(targetResourceId: str, databaseName: str, schemaName: str, materializationName: str, columnName: Union[str, None], testType: Union[AnomalyColumnTest, AnomalyMatTest, NominalMatTest]):
     targetResourceUrlTemplate = f'__base_url__?targetResourceId={targetResourceId}&ampisColumn={not not columnName}'
 
     if(testType == AnomalyColumnTest.ColumnFreshness):
@@ -119,6 +119,8 @@ class ExecuteTest(IUseCase):
     _testDefinition: dict[str, Any]
 
     _targetOrganizationId: str
+    _organizationId: str
+
     _executionId: str
     _jwt: str
 
@@ -134,7 +136,7 @@ class ExecuteTest(IUseCase):
         ]
 
         executionQuery = getInsertQuery(
-            valueSets, CitoTableType.Executions)
+            valueSets, CitoTableType.TestExecutions)
         executionEntryInsertResult = self._querySnowflake.execute(
             QuerySnowflakeRequestDto(executionQuery, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
 
@@ -251,7 +253,7 @@ class ExecuteTest(IUseCase):
         ]
 
         testAlertQuery = getInsertQuery(
-            valueSets, CitoTableType.Alerts)
+            valueSets, CitoTableType.TestAlerts)
         alertEntryInsertResult = self._querySnowflake.execute(
             QuerySnowflakeRequestDto(testAlertQuery, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
 
@@ -275,7 +277,7 @@ class ExecuteTest(IUseCase):
                 'Sf query error - operation: history data')
 
         return [element['VALUE']
-                for element in getHistoricalDataResult.value.content[self._targetOrganizationId]]
+                for element in getHistoricalDataResult.value.content[self._organizationId]]
 
     def _getLastMatSchema(self) -> QuerySnowflakeResponseDto:
         query = getLastMatSchemaQuery(self._testSuiteId)
@@ -287,7 +289,7 @@ class ExecuteTest(IUseCase):
             raise Exception(
                 'Sf query error - operation: last mat schema')
 
-        return queryResult.value.content[self._targetOrganizationId][0]['Value']
+        return queryResult.value.content[self._organizationId][0]['Value']
 
     def _getNewData(self, query):
         getNewDataResult = self._querySnowflake.execute(
@@ -298,7 +300,7 @@ class ExecuteTest(IUseCase):
         if not getNewDataResult.value:
             raise Exception('Sf query error - operation: new data')
 
-        newData = getNewDataResult.value.content[self._targetOrganizationId]
+        newData = getNewDataResult.value.content[self._organizationId]
         if(len(newData) != 1):
             raise Exception(
                 'More than one or no matching new data entries found')
@@ -323,7 +325,7 @@ class ExecuteTest(IUseCase):
             self._insertHistoryEntry(
                 newDataPoint, False, None)
 
-            return AnomalyTestExecutionResult(testSuiteId, self._testDefinition['TEST_TYPE'], self._executionId, targetResourceId, self._targetOrganizationId, threshold, executionFrequency, True, None, None)
+            return AnomalyTestExecutionResult(testSuiteId, self._testDefinition['TEST_TYPE'], self._executionId, targetResourceId, self._organizationId, threshold, executionFrequency, True, None, None)
 
         testResult = self._runModel(
             threshold, newDataPoint, historicalData)
@@ -350,7 +352,7 @@ class ExecuteTest(IUseCase):
         self._insertHistoryEntry(
             newDataPoint, testResult.isAnomaly, alertId)
 
-        return AnomalyTestExecutionResult(testSuiteId, self._testDefinition['TEST_TYPE'], self._executionId, targetResourceId, self._targetOrganizationId, threshold, executionFrequency, False, testData, alertData)
+        return AnomalyTestExecutionResult(testSuiteId, self._testDefinition['TEST_TYPE'], self._executionId, targetResourceId, self._organizationId, threshold, executionFrequency, False, testData, alertData)
 
     def _runSchemaChangeModel(self, oldSchema: MaterializationSchema, newSchema: MaterializationSchema) -> NominalResultDto:
         return SchemaChangeModel(oldSchema, newSchema).run()
@@ -390,7 +392,7 @@ class ExecuteTest(IUseCase):
         self._insertNominalHistoryEntry(
             newSchema, testResult.schemaDiffs, testResult.isAnomaly, alertId)
 
-        return NominalTestExecutionResult(testSuiteId, testType, self._executionId, targetResourceId, self._targetOrganizationId, testData, alertData)
+        return NominalTestExecutionResult(testSuiteId, testType, self._executionId, targetResourceId, self._organizationId, testData, alertData)
         
     def _runMaterializationRowCountTest(self) -> AnomalyTestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
@@ -580,7 +582,7 @@ class ExecuteTest(IUseCase):
         if not getTestEntryResult.value:
             raise Exception(f'Sf query error - operation: test entry')
 
-        organizationResult = getTestEntryResult.value.content[self._targetOrganizationId]
+        organizationResult = getTestEntryResult.value.content[self._organizationId]
         if not len(organizationResult) == 1:
             raise Exception('More than one or no test found')
 
@@ -600,6 +602,7 @@ class ExecuteTest(IUseCase):
             self._testSuiteId = request.testSuiteId
             self._testType = request.testType
             self._targetOrganizationId = request.targetOrganizationId
+            self._organizationId = request.targetOrganizationId if request.targetOrganizationId else auth.callerOrganizationId
             self._executionId = str(uuid.uuid4())
             self._jwt = auth.jwt
             self._testDefinition = self._getTestDefinition()
