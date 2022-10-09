@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 import json
 from typing import Any, Union
 from numpy import integer
@@ -18,27 +18,29 @@ from .result import Result
 
 logger = logging.getLogger(__name__)
 
-def getAnomalyMessage(targetResourceId: str, databaseName: str, schemaName: str, materializationName: str, columnName: Union[str, None], testType: Union[AnomalyColumnTest, AnomalyMatTest, NominalMatTest]):
+def getAnomalyMessage(targetResourceId: str, databaseName: str, schemaName: str, materializationName: str, columnName: Union[str, None], testType: str):
     targetResourceUrlTemplate = f'__base_url__?targetResourceId={targetResourceId}&ampisColumn={not not columnName}'
 
-    if(testType == AnomalyColumnTest.ColumnFreshness):
+    if(testType == AnomalyColumnTest.ColumnFreshness.value ):
         return f"Freshness deviation for column <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
-    elif(testType == AnomalyColumnTest.ColumnDistribution):
+    elif(testType == AnomalyColumnTest.ColumnDistribution.value ):
         return f"Distribution deviation for column <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
-    elif(testType == AnomalyColumnTest.ColumnCardinality):
+    elif(testType == AnomalyColumnTest.ColumnCardinality.value ):
         return f"Cardinality deviation for column <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
-    elif(testType == AnomalyColumnTest.ColumnNullness):
+    elif(testType == AnomalyColumnTest.ColumnNullness.value ):
         return f"Nullness deviation for column <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
-    elif(testType == AnomalyColumnTest.ColumnUniqueness):
+    elif(testType == AnomalyColumnTest.ColumnUniqueness.value ):
         return f"Uniqueness deviation for column <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
-    elif(testType == AnomalyMatTest.MaterializationColumnCount):
+    elif(testType == AnomalyMatTest.MaterializationColumnCount.value ):
         return f"Column count deviation for materialization <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
-    elif(testType == AnomalyMatTest.MaterializationRowCount):
+    elif(testType == AnomalyMatTest.MaterializationRowCount.value ):
         return f"Row count deviation for materialization <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
-    elif(testType == AnomalyMatTest.MaterializationFreshness):
+    elif(testType == AnomalyMatTest.MaterializationFreshness.value ):
         return f"Freshness deviation for materialization <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
-    elif(testType == NominalMatTest.MaterializationSchemaChange):
+    elif(testType == NominalMatTest.MaterializationSchemaChange.value ):
         return f"Schema change for materialization <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
+    else:
+        raise Exception('Unhandled anomaly message test type')
 
 @dataclass
 class _TestData:
@@ -52,7 +54,7 @@ class AnomalyTestData(_TestData):
 
 @dataclass
 class NominalTestData(_TestData):
-    deviations: list[Any]
+    deviations: str
     isIdentical: bool
 
 @dataclass
@@ -73,7 +75,7 @@ class AnomalyTestAlertData(_AlertData):
 
 @dataclass
 class NominalTestAlertData(_AlertData):
-    pass
+    deviatons: str
 
 @dataclass
 class _TestExecutionResult:
@@ -148,7 +150,7 @@ class ExecuteTest(IUseCase):
         valueSets = [
         { 'name': 'id', 'type': 'string', 'value': str(uuid.uuid4())},
         { 'name': 'test_type', 'type': 'string', 'value': self._testDefinition['TEST_TYPE']},
-        { 'name': 'value', 'type': 'object', 'value':  value},
+        { 'name': 'value', 'type': 'string', 'value':  json.dumps(value)},
         { 'name': 'is_identical', 'type': 'boolean', 'value': 'true' if isIdentical else 'false'},
         { 'name': 'test_suite_id', 'type': 'string', 'value': self._testSuiteId},
         { 'name': 'execution_id', 'type': 'string', 'value':  self._executionId},
@@ -190,9 +192,9 @@ class ExecuteTest(IUseCase):
             {'name': 'id', 'type': 'string', 'value': str(uuid.uuid4())},
             {'name': 'test_type', 'type': 'string',
                 'value': self._testDefinition['TEST_TYPE']},
-            {'name': 'expected_value', 'type': 'object',
+            {'name': 'expected_value', 'type': 'string',
              'value': json.dumps(testResult.expectedValue) if testResult.expectedValue else None},
-            {'name': 'deviation', 'type': 'object', 'value': json.dumps(testResult.deviations) if len(testResult.deviations) else None},
+            {'name': 'deviation', 'type': 'string', 'value': testResult.deviations},
             {'name': 'is_identical', 'type': 'boolean',
                 'value': testResult.isIdentical},
             {'name': 'test_suite_id', 'type': 'string', 'value': self._testSuiteId},
@@ -241,7 +243,7 @@ class ExecuteTest(IUseCase):
         if not resultEntryInsertResult.success:
             raise Exception(resultEntryInsertResult.error)
 
-    def _insertAlertEntry(self, id, message: str):
+    def _insertAlertEntry(self, id, message: str, tableType: CitoTableType):
         valueSets = [
             {'name': 'id', 'type': 'string', 'value': id},
             {'name': 'test_type', 'type': 'string',
@@ -252,7 +254,7 @@ class ExecuteTest(IUseCase):
         ]
 
         testAlertQuery = getInsertQuery(
-            valueSets, CitoTableType.TestAlerts)
+            valueSets, tableType)
         alertEntryInsertResult = self._querySnowflake.execute(
             QuerySnowflakeRequestDto(testAlertQuery, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
 
@@ -288,7 +290,7 @@ class ExecuteTest(IUseCase):
             raise Exception(
                 'Sf query error - operation: last mat schema')
 
-        return (queryResult.value.content[self._organizationId][0]['value'] if len(queryResult.value.content[self._organizationId]) else None)
+        return (json.loads(queryResult.value.content[self._organizationId][0]['VALUE']) if len(queryResult.value.content[self._organizationId]) else None)
 
     def _getNewData(self, query):
         getNewDataResult = self._querySnowflake.execute(
@@ -338,7 +340,7 @@ class ExecuteTest(IUseCase):
         if testResult.isAnomaly:
             alertId = str(uuid.uuid4())
             self._insertAlertEntry(
-                alertId, anomalyMessage)
+                alertId, anomalyMessage, CitoTableType.TestAlerts)
 
             alertData = AnomalyTestAlertData(alertId, anomalyMessage, databaseName, schemaName, materializationName, materializationType, testResult.expectedValueUpperBound,
                                                   testResult.expectedValueLowerBound, columnName, newDataPoint)
@@ -378,9 +380,9 @@ class ExecuteTest(IUseCase):
         if not testResult.isIdentical:
             alertId = str(uuid.uuid4())
             self._insertAlertEntry(
-                alertId, anomalyMessage)
+                alertId, anomalyMessage, CitoTableType.TestAlertsNominal)
 
-            alertData = NominalTestAlertData(alertId, anomalyMessage, databaseName, schemaName, materializationName, materializationType, testResult.schemaDiffs)
+            alertData = NominalTestAlertData(alertId, anomalyMessage, databaseName, schemaName, materializationName, materializationType, testResult.deviations)
 
         self._insertNominalHistoryEntry(
             newSchema, testResult.isIdentical, alertId)
@@ -473,7 +475,7 @@ class ExecuteTest(IUseCase):
         for el in newData:
             columnDefinition = el['COLUMN_DEFINITION']
             ordinalPosition = columnDefinition['ORDINAL_POSITION']
-            newSchema[ordinalPosition] = columnDefinition
+            newSchema[str(ordinalPosition)] = columnDefinition
 
         oldSchema = self._getLastMatSchema()
 

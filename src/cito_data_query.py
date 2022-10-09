@@ -35,7 +35,7 @@ def getHistoryQuery(testSuiteId: str):
 def getLastMatSchemaQuery(testSuiteId: str):
   return f"""
   with
-  execution_id_cte as (select id from cito.observability.{CitoTableType.TestExecutionsNominal.value} where test_suite_id = '{testSuiteId}' order by executed_on limit 1)
+  execution_id_cte as (select id from cito.observability.{CitoTableType.TestExecutionsNominal.value} where test_suite_id = '{testSuiteId}' order by executed_on desc limit 1)
   select execution_id_cte.id, test_history_nominal.value from execution_id_cte join (select value, execution_id from cito.observability.{CitoTableType.TestHistoryNominal.value}) as test_history_nominal
   on execution_id_cte.id = test_history_nominal.execution_id
   """

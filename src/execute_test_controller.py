@@ -2,8 +2,8 @@ from dataclasses import asdict
 import json
 from typing import Any
 
-from src.integration_api_repo import IntegrationApiRepo
-from src.query_snowflake import QuerySnowflake
+from .integration_api_repo import IntegrationApiRepo
+from .query_snowflake import QuerySnowflake
 from .get_accounts import GetAccounts
 from .base_controller import Request, Response
 from .execute_test import ExecuteTest, ExecuteTestAuthDto, ExecuteTestRequestDto

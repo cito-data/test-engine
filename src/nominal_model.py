@@ -1,6 +1,7 @@
 
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 import datetime
+import json
 from typing import Union
 
 @dataclass
@@ -97,19 +98,20 @@ class SchemaChangeModel():
 
             anyDiff = not (columnNameIdentical and ordinalPositionIdentical and dataTypeIdentical and isIdentityIdentical and isNullableIdentical)
 
-            if not anyDiff:
-                return schemaDiffs
+            if anyDiff:
+               
+                schemaDiff = SchemaDiff((oldColumnName, newColumnName) if anyDiff else None,
+                    (oldOrdinalPosition, newOrdinalPosition) if anyDiff else None,
+                    (oldDataType, newDataType) if not dataTypeIdentical else None,
+                    (oldIsIdentity, newIsIdentity) if not isIdentityIdentical else None,
+                    (oldIsNullable, newIsNullable) if not isNullableIdentical else None
+                    )
+                    
+                schemaDiffs.append(schemaDiff)
 
-            schemaDiff = SchemaDiff((oldColumnName, newColumnName) if anyDiff else None,
-                (oldOrdinalPosition, newOrdinalPosition) if anyDiff else None,
-                (oldDataType, newDataType) if not dataTypeIdentical else None,
-                (oldIsIdentity, newIsIdentity) if not isIdentityIdentical else None,
-                (oldIsNullable, newIsNullable) if not isNullableIdentical else None
-                  )
-                
-            schemaDiffs.append(schemaDiff)
+    deviations = json.dumps( [asdict(el) for el in schemaDiffs])
 
-    return ResultDto(not not len(schemaDiffs), self._oldSchema, self._newSchema, schemaDiffs, datetime.datetime.utcnow().isoformat())
+    return ResultDto(not len(schemaDiffs), self._oldSchema, self._newSchema, deviations, datetime.datetime.utcnow().isoformat())
 
   
 
