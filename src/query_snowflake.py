@@ -31,5 +31,5 @@ class QuerySnowflake(IUseCase):
 
       return Result.ok(querySnowflakeResponse)
     except Exception as e:
-      logger.error(e)
-      return Result.fail(e)
+      logger.error(e) if e.args[0] else None
+      return Result.fail('')

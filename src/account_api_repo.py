@@ -1,4 +1,5 @@
 import requests
+
 from .i_account_api_repo import IAccountApiRepo
 from .account_dto import AccountDto
 from .api_root_builder import getRoot
@@ -16,7 +17,6 @@ class AccountApiRepo(IAccountApiRepo):
     self._mode = getMode()
 
   def getBy(self, params: dict[str, str], jwt: str) -> list[AccountDto]:
-    try:  
       gateway = self._port
       if(self._mode == 'production'):
         gateway = self._prodGateway
@@ -29,6 +29,4 @@ class AccountApiRepo(IAccountApiRepo):
       if response.status_code == 200:
         return list(map((lambda x: AccountDto(x['id'], x['userId'], x['organizationId'], x['modifiedOn'])), jsonPayload))
       raise Exception(jsonPayload['message'] if jsonPayload['message'] else 'Unknown Error')
-    except Exception as e:
-      logger.error(e)
 

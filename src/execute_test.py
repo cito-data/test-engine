@@ -43,16 +43,17 @@ def getAnomalyMessage(targetResourceId: str, databaseName: str, schemaName: str,
 @dataclass
 class _TestData:
     executedOn: str
-    isAnomolous: bool
 
 @dataclass
 class AnomalyTestData(_TestData):
+    isAnomolous: bool
     modifiedZScore: float
     deviation: float
 
 @dataclass
 class NominalTestData(_TestData):
     deviations: list[Any]
+    isIdentical: bool
 
 @dataclass
 class _AlertData:
@@ -128,7 +129,7 @@ class ExecuteTest(IUseCase):
         self._integrationApiRepo = integrationApiRepo
         self._querySnowflake = querySnowflake
 
-    def _insertExecutionEntry(self, executedOn: str):
+    def _insertExecutionEntry(self, executedOn: str, tableType: CitoTableType):
         valueSets = [
             {'name': 'id', 'value': self._executionId, 'type': 'string'},
             {'name': 'executedOn', 'value': executedOn, 'type': 'timestamp_ntz'},
@@ -136,14 +137,14 @@ class ExecuteTest(IUseCase):
         ]
 
         executionQuery = getInsertQuery(
-            valueSets, CitoTableType.TestExecutions)
+            valueSets, tableType)
         executionEntryInsertResult = self._querySnowflake.execute(
             QuerySnowflakeRequestDto(executionQuery, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
 
         if not executionEntryInsertResult.success:
             raise Exception(executionEntryInsertResult.error)
 
-    def _insertNominalHistoryEntry(self, value: MaterializationSchema, schemaDiffs: list[SchemaDiff], isIdentical: bool, alertId: Union[str, None]):
+    def _insertNominalHistoryEntry(self, value: MaterializationSchema, isIdentical: bool, alertId: Union[str, None]):
         valueSets = [
         { 'name': 'id', 'type': 'string', 'value': str(uuid.uuid4())},
         { 'name': 'test_type', 'type': 'string', 'value': self._testDefinition['TEST_TYPE']},
@@ -189,14 +190,12 @@ class ExecuteTest(IUseCase):
             {'name': 'id', 'type': 'string', 'value': str(uuid.uuid4())},
             {'name': 'test_type', 'type': 'string',
                 'value': self._testDefinition['TEST_TYPE']},
-            {'name': 'expected_value', 'type': 'string',
-             'value': json.dumps(testResult.expectedValue)},
-            {'name': 'value', 'type': 'string',
-             'value': json.dumps(testResult.value)},
-            {'name': 'deviation', 'type': 'string', 'value': json.dumps(testResult.schemaDiffs)},
-            {'name': 'is_anomalous', 'type': 'boolean',
-                'value': testResult.isAnomaly},
-            {'name': 'test_id', 'type': 'string', 'value': self._testSuiteId},
+            {'name': 'expected_value', 'type': 'object',
+             'value': json.dumps(testResult.expectedValue) if testResult.expectedValue else None},
+            {'name': 'deviation', 'type': 'object', 'value': json.dumps(testResult.deviations) if len(testResult.deviations) else None},
+            {'name': 'is_identical', 'type': 'boolean',
+                'value': testResult.isIdentical},
+            {'name': 'test_suite_id', 'type': 'string', 'value': self._testSuiteId},
             {'name': 'execution_id', 'type': 'string', 'value': self._executionId},
         ]
 
@@ -279,7 +278,7 @@ class ExecuteTest(IUseCase):
         return [element['VALUE']
                 for element in getHistoricalDataResult.value.content[self._organizationId]]
 
-    def _getLastMatSchema(self) -> QuerySnowflakeResponseDto:
+    def _getLastMatSchema(self) -> Union[MaterializationSchema, None]:
         query = getLastMatSchemaQuery(self._testSuiteId)
         queryResult = self._querySnowflake.execute(QuerySnowflakeRequestDto(query, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
 
@@ -289,7 +288,7 @@ class ExecuteTest(IUseCase):
             raise Exception(
                 'Sf query error - operation: last mat schema')
 
-        return queryResult.value.content[self._organizationId][0]['Value']
+        return (queryResult.value.content[self._organizationId][0]['value'] if len(queryResult.value.content[self._organizationId]) else None)
 
     def _getNewData(self, query):
         getNewDataResult = self._querySnowflake.execute(
@@ -301,10 +300,7 @@ class ExecuteTest(IUseCase):
             raise Exception('Sf query error - operation: new data')
 
         newData = getNewDataResult.value.content[self._organizationId]
-        if(len(newData) != 1):
-            raise Exception(
-                'More than one or no matching new data entries found')
-
+        
         return newData
 
     def _runModel(self, threshold: integer, newData: float, historicalData: list[float]) -> AnomalyTestResultDto:
@@ -331,7 +327,7 @@ class ExecuteTest(IUseCase):
             threshold, newDataPoint, historicalData)
 
         self._insertExecutionEntry(
-            testResult.executedOn)
+            testResult.executedOn, CitoTableType.TestExecutions)
 
         self._insertResultEntry(testResult)
 
@@ -355,7 +351,7 @@ class ExecuteTest(IUseCase):
         return AnomalyTestExecutionResult(testSuiteId, self._testDefinition['TEST_TYPE'], self._executionId, targetResourceId, self._organizationId, threshold, executionFrequency, False, testData, alertData)
 
     def _runSchemaChangeModel(self, oldSchema: MaterializationSchema, newSchema: MaterializationSchema) -> NominalResultDto:
-        return SchemaChangeModel(oldSchema, newSchema).run()
+        return SchemaChangeModel(newSchema, oldSchema).run()
 
     def _runSchemaChangeTest(self, oldSchema: MaterializationSchema, newSchema: MaterializationSchema) -> NominalTestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
@@ -371,7 +367,7 @@ class ExecuteTest(IUseCase):
             oldSchema, newSchema)
 
         self._insertExecutionEntry(
-            testResult.executedOn)
+            testResult.executedOn, CitoTableType.TestExecutionsNominal)
 
         self._insertNominalTestResultEntry(testResult)
 
@@ -379,19 +375,17 @@ class ExecuteTest(IUseCase):
 
         alertData = None
         alertId = None
-        if testResult.isAnomaly:
+        if not testResult.isIdentical:
             alertId = str(uuid.uuid4())
             self._insertAlertEntry(
                 alertId, anomalyMessage)
 
             alertData = NominalTestAlertData(alertId, anomalyMessage, databaseName, schemaName, materializationName, materializationType, testResult.schemaDiffs)
 
-
-        testData = NominalTestData(testResult.executedOn, testResult.isAnomaly)
-
         self._insertNominalHistoryEntry(
-            newSchema, testResult.schemaDiffs, testResult.isAnomaly, alertId)
+            newSchema, testResult.isIdentical, alertId)
 
+        testData = NominalTestData(testResult.executedOn, testResult.deviations, testResult.isIdentical)
         return NominalTestExecutionResult(testSuiteId, testType, self._executionId, targetResourceId, self._organizationId, testData, alertData)
         
     def _runMaterializationRowCountTest(self) -> AnomalyTestExecutionResult:
@@ -404,6 +398,10 @@ class ExecuteTest(IUseCase):
             databaseName, schemaName, materializationName, MaterializationType[materializationType])
 
         newData = self._getNewData(newDataQuery)
+
+        if(len(newData) != 1):
+            raise Exception(
+                'More than one or no matching new data entries found')
 
         newDataPoint = newData[0]['ROW_COUNT']
 
@@ -423,6 +421,10 @@ class ExecuteTest(IUseCase):
             databaseName, schemaName, materializationName)
 
         newData = self._getNewData(newDataQuery)
+
+        if(len(newData) != 1):
+            raise Exception(
+                'More than one or no matching new data entries found')
 
         newDataPoint = newData[0]['COLUMN_COUNT']
 
@@ -444,6 +446,10 @@ class ExecuteTest(IUseCase):
 
         newData = self._getNewData(newDataQuery)
 
+        if(len(newData) != 1):
+            raise Exception(
+                'More than one or no matching new data entries found')
+
         newDataPoint = newData[0]['TIME_DIFF']
 
         historicalData = self._getHistoricalData()
@@ -464,7 +470,8 @@ class ExecuteTest(IUseCase):
         newData = self._getNewData(newDataQuery)
 
         newSchema = {}
-        for columnDefinition in newData[0]['COLUMN_DEFINITION']:
+        for el in newData:
+            columnDefinition = el['COLUMN_DEFINITION']
             ordinalPosition = columnDefinition['ORDINAL_POSITION']
             newSchema[ordinalPosition] = columnDefinition
 
@@ -484,6 +491,10 @@ class ExecuteTest(IUseCase):
             databaseName, schemaName, materializationName, columnName)
 
         newData = self._getNewData(newDataQuery)
+
+        if(len(newData) != 1):
+            raise Exception(
+                'More than one or no matching new data entries found')
 
         newDataPoint = newData[0]['DISTINCT_VALUE_COUNT']
 
@@ -505,6 +516,10 @@ class ExecuteTest(IUseCase):
 
         newData = self._getNewData(newDataQuery)
 
+        if(len(newData) != 1):
+            raise Exception(
+                'More than one or no matching new data entries found')
+
         newDataPoint = newData[0]['MEDIAN']
 
         historicalData = self._getHistoricalData()
@@ -524,6 +539,10 @@ class ExecuteTest(IUseCase):
             databaseName, schemaName, materializationName, columnName)
 
         newData = self._getNewData(newDataQuery)
+
+        if(len(newData) != 1):
+            raise Exception(
+                'More than one or no matching new data entries found')
 
         newDataPoint = newData[0]['TIME_DIFF']
 
@@ -545,6 +564,10 @@ class ExecuteTest(IUseCase):
 
         newData = self._getNewData(newDataQuery)
 
+        if(len(newData) != 1):
+            raise Exception(
+                'More than one or no matching new data entries found')
+
         newDataPoint = newData[0]['NULLNESS_RATE']
 
         historicalData = self._getHistoricalData()
@@ -564,6 +587,10 @@ class ExecuteTest(IUseCase):
             databaseName, schemaName, materializationName, columnName)
 
         newData = self._getNewData(newDataQuery)
+
+        if(len(newData) != 1):
+            raise Exception(
+                'More than one or no matching new data entries found')
 
         newDataPoint = newData[0]['UNIQUENESS_RATE']
 
@@ -615,8 +642,6 @@ class ExecuteTest(IUseCase):
                 testResult = self._runMaterializationColumnCountTest()
             elif self._testDefinition[testTypeKey] == AnomalyMatTest.MaterializationFreshness.value:
                 testResult = self._runMaterializationFreshnessTest()
-            elif self._testDefinition[testTypeKey] == NominalMatTest.MaterializationSchemaChange.value:
-                testResult = self._runMaterializationSchemaChangeTest()
             elif self._testDefinition[testTypeKey] == AnomalyColumnTest.ColumnCardinality.value:
                 testResult = self._runColumnCardinalityTest()
             elif self._testDefinition[testTypeKey] == AnomalyColumnTest.ColumnDistribution.value:
@@ -627,11 +652,13 @@ class ExecuteTest(IUseCase):
                 testResult = self._runColumnNullnessTest()
             elif self._testDefinition[testTypeKey] == AnomalyColumnTest.ColumnUniqueness.value:
                 testResult = self._runColumnUniquenessTest()
+            elif self._testDefinition[testTypeKey] == NominalMatTest.MaterializationSchemaChange.value:
+                testResult = self._runMaterializationSchemaChangeTest()
             else:
                 raise Exception('Test type mismatch')
 
             return Result.ok(testResult)
 
         except Exception as e:
-            logger.error(e)
-            return Result.fail(e)
+            logger.error(e) if e.args[0] else None
+            return Result.fail('')

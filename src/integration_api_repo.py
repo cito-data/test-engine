@@ -1,5 +1,6 @@
 from typing import Union
 import requests
+
 from .i_integration_api_repo import IIntegrationApiRepo
 from .snowflake_query_result_dto import SnowflakeQueryResultDto
 from .api_root_builder import getRoot
@@ -18,21 +19,18 @@ class IntegrationApiRepo(IIntegrationApiRepo):
 
 
   def querySnowflake(self, query: str, jwt: str, targetOrganizationId: Union[str, None]) -> SnowflakeQueryResultDto:
-    try:
-      gateway = self._port
-      if(self._mode == 'production'):
-        gateway = self._prodGateway
+    gateway = self._port
+    if(self._mode == 'production'):
+      gateway = self._prodGateway
 
-      apiRoot = getRoot(gateway, self._path)
+    apiRoot = getRoot(gateway, self._path)
 
-      data = {'query': query}
+    data = {'query': query}
 
-      data['targetOrganizationId'] = targetOrganizationId if targetOrganizationId else None
+    data['targetOrganizationId'] = targetOrganizationId if targetOrganizationId else None
 
-      response = requests.post(f'{apiRoot}/snowflake/query', data=data, headers={'Authorization': f'Bearer {jwt}'})
-      jsonPayload = response.json()
-      if response.status_code == 201:
-        return SnowflakeQueryResultDto(jsonPayload)
-      raise Exception(jsonPayload['message'] if jsonPayload['message'] else 'Unknown Error')
-    except Exception as e:
-      logger.error(e)
+    response = requests.post(f'{apiRoot}/snowflake/query', data=data, headers={'Authorization': f'Bearer {jwt}'})
+    jsonPayload = response.json()
+    if response.status_code == 201:
+      return SnowflakeQueryResultDto(jsonPayload)
+    raise Exception(jsonPayload['message'] if jsonPayload['message'] else 'Unknown Error')

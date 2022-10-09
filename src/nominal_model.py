@@ -21,10 +21,10 @@ class SchemaDiff:
 
 @dataclass
 class ResultDto:  
-  isAnomaly: bool
-  expectedValue: MaterializationSchema
+  isIdentical: bool
+  expectedValue: Union[MaterializationSchema, None]
   value: MaterializationSchema
-  deviation: list[SchemaDiff]
+  deviations: list[SchemaDiff]
   executedOn: str
 
 class SchemaChangeModel():
@@ -34,19 +34,22 @@ class SchemaChangeModel():
 
   _schemaDiffs: list[SchemaDiff]
   
-  def __init__(self, oldSchema: MaterializationSchema, newSChema: MaterializationSchema) -> None:
+  def __init__(self, newSChema: MaterializationSchema, oldSchema: Union[MaterializationSchema, None]) -> None:
     self._oldSchema = oldSchema
     self._newSchema = newSChema
       
   def run(self) -> ResultDto:
+    if not self._oldSchema:
+        return ResultDto(True, self._oldSchema, self._newSchema, [], datetime.datetime.utcnow().isoformat())
+
     columnCountOldSchema = len(self._oldSchema)
     columnCountNewSchema = len(self._newSchema)
 
-    columnNameSchemaKey = 'column_name'
-    dataTypeSchemaKey = 'data_type'
-    ordinalPositionSchemaKey = 'ordinal_position'
-    isIdentitySchemaKey = 'is_identity'
-    isNullableSchemaKey = 'is_nullable'
+    columnNameSchemaKey = 'COLUMN_NAME'
+    dataTypeSchemaKey = 'DATA_TYPE'
+    ordinalPositionSchemaKey = 'ORDINAL_POSITION'
+    isIdentitySchemaKey = 'IS_IDENTITY'
+    isNullableSchemaKey = 'IS_NULLABLE'
 
     schemaDiffs: list[SchemaDiff] = []
     for i in range(1, (columnCountNewSchema if columnCountNewSchema > columnCountOldSchema else columnCountOldSchema) + 1):
@@ -54,42 +57,42 @@ class SchemaChangeModel():
         newColumnSchemaDefinition = self._newSchema[str(i)] if i <= columnCountNewSchema else None
 
         if(oldColumnSchemaDefinition and not newColumnSchemaDefinition):
-            schemaDiff = SchemaDiff((oldColumnSchemaDefinition[columnNameSchemaKey.capitalize()], None),
-                (oldColumnSchemaDefinition[ordinalPositionSchemaKey.capitalize()], None),
-                (oldColumnSchemaDefinition[dataTypeSchemaKey.capitalize()], None),
-                (oldColumnSchemaDefinition[isIdentitySchemaKey.capitalize()], None),
-                (oldColumnSchemaDefinition[isNullableSchemaKey.capitalize()], None))
+            schemaDiff = SchemaDiff((oldColumnSchemaDefinition[columnNameSchemaKey], None),
+                (oldColumnSchemaDefinition[ordinalPositionSchemaKey], None),
+                (oldColumnSchemaDefinition[dataTypeSchemaKey], None),
+                (oldColumnSchemaDefinition[isIdentitySchemaKey], None),
+                (oldColumnSchemaDefinition[isNullableSchemaKey], None))
 
             schemaDiffs.append(schemaDiff)
         elif(newColumnSchemaDefinition and not oldColumnSchemaDefinition):
 
-            schemaDiff = SchemaDiff((None, newColumnSchemaDefinition[columnNameSchemaKey.capitalize()]),
-                (None, newColumnSchemaDefinition[ordinalPositionSchemaKey.capitalize()]),
-                (None, newColumnSchemaDefinition[dataTypeSchemaKey.capitalize()]),
-                (None, newColumnSchemaDefinition[isIdentitySchemaKey.capitalize()]),
-                (None, newColumnSchemaDefinition[isNullableSchemaKey.capitalize()]))
+            schemaDiff = SchemaDiff((None, newColumnSchemaDefinition[columnNameSchemaKey]),
+                (None, newColumnSchemaDefinition[ordinalPositionSchemaKey]),
+                (None, newColumnSchemaDefinition[dataTypeSchemaKey]),
+                (None, newColumnSchemaDefinition[isIdentitySchemaKey]),
+                (None, newColumnSchemaDefinition[isNullableSchemaKey]))
             
             
             schemaDiffs.append(schemaDiff)
         else:
-            oldColumnName = oldColumnSchemaDefinition[columnNameSchemaKey.capitalize()]
-            newColumnName = newColumnSchemaDefinition[columnNameSchemaKey.capitalize()]
+            oldColumnName = oldColumnSchemaDefinition[columnNameSchemaKey]
+            newColumnName = newColumnSchemaDefinition[columnNameSchemaKey]
             columnNameIdentical = oldColumnName == newColumnName
 
-            oldDataType = oldColumnSchemaDefinition[dataTypeSchemaKey.capitalize()]
-            newDataType = newColumnSchemaDefinition[dataTypeSchemaKey.capitalize()]
+            oldDataType = oldColumnSchemaDefinition[dataTypeSchemaKey]
+            newDataType = newColumnSchemaDefinition[dataTypeSchemaKey]
             dataTypeIdentical = oldDataType == newDataType
 
-            oldOrdinalPosition = oldColumnSchemaDefinition[ordinalPositionSchemaKey.capitalize()]
-            newOrdinalPosition = newColumnSchemaDefinition[ordinalPositionSchemaKey.capitalize()]
+            oldOrdinalPosition = oldColumnSchemaDefinition[ordinalPositionSchemaKey]
+            newOrdinalPosition = newColumnSchemaDefinition[ordinalPositionSchemaKey]
             ordinalPositionIdentical =  oldOrdinalPosition == newOrdinalPosition
 
-            oldIsIdentity = oldColumnSchemaDefinition[isIdentitySchemaKey.capitalize()]
-            newIsIdentity = newColumnSchemaDefinition[isIdentitySchemaKey.capitalize()]
+            oldIsIdentity = oldColumnSchemaDefinition[isIdentitySchemaKey]
+            newIsIdentity = newColumnSchemaDefinition[isIdentitySchemaKey]
             isIdentityIdentical =  oldIsIdentity == newIsIdentity
 
-            oldIsNullable = oldColumnSchemaDefinition[isNullableSchemaKey.capitalize()]
-            newIsNullable = newColumnSchemaDefinition[isNullableSchemaKey.capitalize()]
+            oldIsNullable = oldColumnSchemaDefinition[isNullableSchemaKey]
+            newIsNullable = newColumnSchemaDefinition[isNullableSchemaKey]
             isNullableIdentical = oldIsNullable == newIsNullable
 
             anyDiff = not (columnNameIdentical and ordinalPositionIdentical and dataTypeIdentical and isIdentityIdentical and isNullableIdentical)
@@ -106,7 +109,7 @@ class SchemaChangeModel():
                 
             schemaDiffs.append(schemaDiff)
 
-    return ResultDto(len(schemaDiffs) == True, schemaDiffs, datetime.datetime.utcnow().isoformat())
+    return ResultDto(not not len(schemaDiffs), self._oldSchema, self._newSchema, schemaDiffs, datetime.datetime.utcnow().isoformat())
 
   
 

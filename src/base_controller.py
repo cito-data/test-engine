@@ -103,5 +103,5 @@ class BaseController(ABC):
 
         return Result.ok(UserAccountInfo(processedAuth.payload['username'], getAccountResult.value[0].id, getAccountResult.value[0].organizationId, isSystemInternal))
     except Exception as e:
-      logger.error(e)
-      return Result.fail(e)
+      logger.error(e) if e.args[0] else None
+      return Result.fail('')
