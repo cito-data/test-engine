@@ -1,49 +1,50 @@
-import json
-import logging
-import traceback
-from flask import Flask, request
+# import json
+# import logging
+# import traceback
+# from flask import Flask, request
 
-from .base_controller import Request
-from .token_required import processAuth
 
-from .execute_test_controller import ExecuteTestController
+# from base_controller import Request
+# from token_required import processAuth
 
-from .register import register
-register = register()
+# from execute_test_controller import ExecuteTestController
 
-# import requests
+# from register import register
+# register = register()
 
-app = Flask(__name__)
+# # import requests
 
-# todo - add security
+# app = Flask(__name__)
 
-@app.route("/tests/<testSuiteId>/execute", methods=['POST'])
-def executeTest(testSuiteId):
-    print(request)
-    try:
-        processedAuthObject = processAuth(request.headers.get('Authorization'))
+# # todo - add security
 
-        if(not processedAuthObject.success):
-            return json.dumps({'message': 'Unauthorized'}), 401
+# @app.route("/tests/<testSuiteId>/execute", methods=['POST'])
+# def executeTest(testSuiteId):
+#     print(request)
+#     try:
+#         processedAuthObject = processAuth(request.headers.get('Authorization'))
 
-        body = request.json
-        mappedBody = {'testType': body['testType']}
+#         if(not processedAuthObject.success):
+#             return json.dumps({'message': 'Unauthorized'}), 401
 
-        targetOrganizationIdKey = 'targetOrganizationId'
+#         body = request.json
+#         mappedBody = {'testType': body['testType']}
 
-        mappedBody[targetOrganizationIdKey] = body[targetOrganizationIdKey] if targetOrganizationIdKey in body else None
+#         targetOrganizationIdKey = 'targetOrganizationId'
 
-        controllerRequest = Request(None, {'testId': testSuiteId}, None, mappedBody, processedAuthObject)
+#         mappedBody[targetOrganizationIdKey] = body[targetOrganizationIdKey] if targetOrganizationIdKey in body else None
 
-        controller = ExecuteTestController(
-            register['getAccounts'], register['integrationApiRepo'], register['querySnowflake'])
-        result = controller.execute(controllerRequest)
+#         controllerRequest = Request(None, {'testId': testSuiteId}, None, mappedBody, processedAuthObject)
 
-        return result.body, result.statusCode
-    except Exception as e:
-        logging.error(traceback.format_exc())
-        return json.dumps({'error':{'message': str(e)}}), 500
+#         controller = ExecuteTestController(
+#             register['getAccounts'], register['integrationApiRepo'], register['querySnowflake'])
+#         result = controller.execute(controllerRequest)
 
+#         return result.body, result.statusCode
+#     except Exception as e:
+#         logging.error(e)
+#         logging.error(traceback.format_exc())
+#         return json.dumps({'error':{'message': str(e)}}), 500
 
     
 

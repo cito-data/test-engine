@@ -1,8 +1,8 @@
 from dataclasses import dataclass
-from .account_dto import AccountDto
-from .i_account_api_repo import IAccountApiRepo
-from .use_case import IUseCase
-from .result import Result
+from account_dto import AccountDto
+from i_account_api_repo import IAccountApiRepo
+from use_case import IUseCase
+from result import Result
 import logging
 
 

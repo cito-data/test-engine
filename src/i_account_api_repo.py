@@ -1,7 +1,7 @@
 
 
 from abc import ABC, abstractmethod
-from .account_dto import AccountDto
+from account_dto import AccountDto
 
 class IAccountApiRepo(ABC):
   @abstractmethod

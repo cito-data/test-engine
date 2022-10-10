@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Any, Union
 
-from .test_type import AnomalyColumnTest, AnomalyMatTest, NominalMatTest
+from test_type import AnomalyColumnTest, AnomalyMatTest, NominalMatTest
 
 class CitoTableType(Enum):
   TestSuites = 'test_suites'

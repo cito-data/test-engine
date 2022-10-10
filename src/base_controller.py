@@ -3,11 +3,11 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import Any, TypeVar, Union
 
-from .get_accounts import GetAccounts, GetAccountsAuthDto, GetAccountsRequestDto
+from get_accounts import GetAccounts, GetAccountsAuthDto, GetAccountsRequestDto
 
-from .token_required import ProcessedAuth
+from token_required import ProcessedAuth
 
-from .result import Result
+from result import Result
 import logging
 
 logger = logging.getLogger(__name__)
