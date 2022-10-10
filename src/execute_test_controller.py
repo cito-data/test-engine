@@ -1,11 +1,11 @@
-import base64
-from cmath import log
 from dataclasses import asdict
 import json
 from typing import Any
+
+from integration_api_repo import IntegrationApiRepo
+from query_snowflake import QuerySnowflake
 from get_accounts import GetAccounts
-from base_controller import Response
-from token_required import ProcessedAuth
+from base_controller import Request, Response
 from execute_test import ExecuteTest, ExecuteTestAuthDto, ExecuteTestRequestDto
 from base_controller import BaseController, CodeHttp, UserAccountInfo
 
@@ -20,37 +20,36 @@ logger = logging.getLogger(__name__)
 
 class ExecuteTestController(BaseController):
 
-  def __init__(self, executeTest: ExecuteTest, getAccounts: GetAccounts ) -> None:
+  def __init__(self, getAccounts: GetAccounts, integrationApiRepo: IntegrationApiRepo, querySnowflake: QuerySnowflake) -> None:
     super().__init__()
-    self._executeTest = executeTest
     self._getAccounts = getAccounts
+    self._integrationApiRepo = integrationApiRepo
+    self._querySnowflake = querySnowflake
 
 
-  def _buildRequestDto(self, req: Any, urlParams: dict[str, str]) -> ExecuteTestRequestDto:
-    body = json.loads(req['body']) if isinstance(req['body'], str) else req['body']
-
-    testId = urlParams['testId']
+  def _buildRequestDto(self, body: dict[str, Any], pathParams: dict[str, str]) -> ExecuteTestRequestDto:
+    testId = pathParams['testId']
     targetOrganizationId = body['targetOrganizationId']
     testType = body['testType']
     
     return ExecuteTestRequestDto(testId, testType, targetOrganizationId)
 
   def _buildAuthDto(self, jwt: str, userAccountInfo: UserAccountInfo) -> ExecuteTestAuthDto:
-    return ExecuteTestAuthDto(jwt)
+    return ExecuteTestAuthDto(jwt, userAccountInfo.callerOrganizationId, userAccountInfo.isSystemInternal)
 
-  def executeImpl(self, req: Any, processedAuth: ProcessedAuth, urlParams: dict[str, str]) -> Response:
+  def executeImpl(self, req: Request) -> Response:
     try:
-      getUserAccountInfoResult = ExecuteTestController.getUserAccountInfo(processedAuth, self._getAccounts)
+      getUserAccountInfoResult = ExecuteTestController.getUserAccountInfo(req.auth, self._getAccounts)
       
       if not getUserAccountInfoResult.success:
         return ExecuteTestController.unauthorized(getUserAccountInfoResult.error)
       if not getUserAccountInfoResult.value:
         raise Exception('Authorization failed')
 
-      requestDto = self._buildRequestDto(req, urlParams)
-      authDto = self._buildAuthDto(processedAuth.token, getUserAccountInfoResult.value)
+      requestDto = self._buildRequestDto(req.body, req.pathParams)
+      authDto = self._buildAuthDto(req.auth.token, getUserAccountInfoResult.value)
 
-      result = self._executeTest.execute(requestDto, authDto)
+      result =  ExecuteTest(self._integrationApiRepo, self._querySnowflake).execute(requestDto, authDto)
 
       if not result.success:
         return ExecuteTestController.badRequest(result.error)

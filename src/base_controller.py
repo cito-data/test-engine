@@ -37,6 +37,14 @@ class Response:
   body: Union[str, None]
   statusCode: int
 
+@dataclass
+class Request:
+  headers: Union[dict[str, str], None]
+  pathParams: Union[dict[str, str], None]
+  queryParams: Union[dict[str, str], None]
+  body: Union[dict[str, Any], None]
+  auth: ProcessedAuth
+
 class BaseController(ABC):
   
   @staticmethod
@@ -65,12 +73,12 @@ class BaseController(ABC):
     return Response(str(error), CodeHttp.SERVER_ERROR.value)
 
   @abstractmethod
-  def executeImpl(self, req: Any, processedAuth: ProcessedAuth) -> Response:
+  def executeImpl(self, req: Request) -> Response:
     raise NotImplementedError
 
-  def execute(self, req: Any, processedAuth: ProcessedAuth, urlParams: dict[str, str] = None) -> Response:
+  def execute(self, req: Request) -> Response:
     try:
-      return self.executeImpl(req, processedAuth, urlParams)
+      return self.executeImpl(req)
     except Exception as e:
       logger.error(e)
       return BaseController.fail('An unexpected error occurred')
@@ -95,5 +103,5 @@ class BaseController(ABC):
 
         return Result.ok(UserAccountInfo(processedAuth.payload['username'], getAccountResult.value[0].id, getAccountResult.value[0].organizationId, isSystemInternal))
     except Exception as e:
-      logger.error(e)
-      return Result.fail(e)
+      logger.error(e) if e.args[0] else None
+      return Result.fail('')

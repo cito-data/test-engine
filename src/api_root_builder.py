@@ -5,7 +5,6 @@ from config import getMode
 logger = logging.getLogger(__name__)
 
 def getRoot(gateway: str, path: str) -> str:
-  try:
     mode = getMode()
     if mode == 'development': 
       return f'http://host.docker.internal:{gateway}/{path}'
@@ -19,5 +18,3 @@ def getRoot(gateway: str, path: str) -> str:
 #     //   serviceDiscoveryNamespace,
 #     //   `${serviceName}-service`
 #     // );
-  except Exception as e:
-    logger.error(e)

@@ -29,6 +29,24 @@
         },
         "environmentVariables": {}
       }
-    }
+    },
+    {
+      "name": "Python: Flask",
+      "type": "python",
+      "request": "launch",
+      "module": "flask",
+      "env": {
+          "FLASK_APP": "src/app_dev.py",
+          "ENVIRONMENT": "development",
+          "FLASK_DEBUG": "0"
+      },
+      "args": [
+          "run",
+          "--no-debugger",
+          "--no-reload",
+          "--port=3047"
+      ],
+      "jinja": true
+  },
   ]
 }

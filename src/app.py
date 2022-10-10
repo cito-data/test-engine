@@ -1,4 +1,8 @@
 import json
+import logging
+import traceback
+
+from base_controller import Request
 from token_required import processAuth
 
 from execute_test_controller import ExecuteTestController
@@ -7,6 +11,7 @@ from execute_test_controller import ExecuteTestController
 
 from register import register
 register = register()
+
 
 def lambda_handler(event, context):
     """Sample pure Lambda function
@@ -37,25 +42,44 @@ def lambda_handler(event, context):
     #     print(e)
 
     #     raise e
-    request = event
 
-    processedAuthObject = processAuth(request['headers']['Authorization'])
+    try:
+        request = event
 
-    if(not processedAuthObject.success):
+        processedAuthObject = processAuth(request['headers']['Authorization'])
+
+        if (not processedAuthObject.success):
+            return {
+                "statusCode": 401,
+                "body": json.dumps({'message': 'Unauthorized'}),
+            }
+
+        body = json.loads(request['body']) if isinstance(
+            request['body'], str) else request['body']
+
+        mappedBody = {'testType': body['testType']}
+
+        targetOrganizationIdKey = 'targetOrganizationId'
+
+        mappedBody[targetOrganizationIdKey] = body[targetOrganizationIdKey] if targetOrganizationIdKey in body else None
+
+        controllerRequest = Request(None, {'testId': request['pathParameters']['testSuiteId']}, None, mappedBody, processedAuthObject)
+
+        controller = ExecuteTestController(
+            register['getAccounts'], register['integrationApiRepo'], register['querySnowflake'])
+        result = controller.execute(controllerRequest)
+
         return {
-        "statusCode": 401,
-        "body": 'Unauthorized',
-    }
-
-
-    controller = ExecuteTestController(register['executeTest'], register['getAccounts'])
-    result = controller.execute(request, processedAuthObject, {'testId': request['pathParameters']['testSuiteId']})
-
-    return {
-        "statusCode": result.statusCode,
-        "body": result.body,
-    }
-
+            "statusCode": result.statusCode,
+            "body": result.body,
+        }
+    except Exception as e:
+        logging.error(e)
+        logging.error(traceback.format_exc())
+        return {
+            "statusCode": 500,
+            "body": json.dumps({'message': 'Internal Error occurred'}),
+        }
 
     # return {
     #     "statusCode": 200,
@@ -64,8 +88,3 @@ def lambda_handler(event, context):
     #         # "location": ip.text.replace("\n", "")
     #     }),
     # }
-
-    
-
-
-

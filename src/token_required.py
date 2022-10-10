@@ -18,23 +18,26 @@ class ProcessedAuth:
 
 
 def processAuth(authHeader: str):
-       token = authHeader.split('Bearer')[1]
- 
-       if not token:
-           return ProcessedAuth(token, {}, False)
-       try:
-            #for JWKS that contain multiple JWK
-            jwks = requests.get(f'https://cognito-idp.{getCognitoRegion()}.amazonaws.com/{getCognitoUserPoolId()}/.well-known/jwks.json').json()
-            for jwk in jwks['keys']:
-                kid = jwk['kid']
-                jwks[kid] = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(jwk))
+    if not authHeader:
+        raise Exception('Unauthorized - request is missing auth header')
 
-            kid = jwt.get_unverified_header(token)['kid']
-            key = jwks[kid]
+    token = authHeader.split('Bearer')[1].strip()
 
-            payload = jwt.decode(token, key=key, algorithms=['RS256'])
-       except Exception as e:
-            logger.error(e)
-            return ProcessedAuth(token, {}, False)
- 
-       return ProcessedAuth(token, payload, True)
+    if not token:
+        return ProcessedAuth(token, {}, False)
+    try:
+        #for JWKS that contain multiple JWK
+        jwks = requests.get(f'https://cognito-idp.{getCognitoRegion()}.amazonaws.com/{getCognitoUserPoolId()}/.well-known/jwks.json').json()
+        for jwk in jwks['keys']:
+            kid = jwk['kid']
+            jwks[kid] = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(jwk))
+
+        kid = jwt.get_unverified_header(token)['kid']
+        key = jwks[kid]
+
+        payload = jwt.decode(token, key=key, algorithms=['RS256'])
+    except Exception as e:
+        logger.error(e)
+        return ProcessedAuth(token, {}, False)
+
+    return ProcessedAuth(token, payload, True)
