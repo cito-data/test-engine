@@ -5,17 +5,23 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Python: Attach using Process Id",
+      "type": "python",
+      "request": "attach",
+      "processId": "${command:pickProcess}",
+      "justMyCode": true
+    },
+    {
       "name": "Python: Current File",
       "type": "python",
       "request": "launch",
       "program": "${file}",
-      "console": "integratedTerminal",
-      "justMyCode": true
+      "console": "integratedTerminal"
     },
     {
       "type": "aws-sam",
       "request": "direct-invoke",
-      "name": "test-engine:TestSuiteExecution",
+      "name": "aws-sam-invoke",
       "invokeTarget": {
         "target": "template",
         "templatePath": "${workspaceFolder}/template.yaml",
@@ -28,19 +34,19 @@
               "testType": "MaterializationSchemaChange"
             },
             "headers": {
-              "Authorization": "BearereyJraWQiOiJrVkFzOUJSbGE5M3IrUStZdm5tS1I1UTlcL21WcEVyQlphRUNXZitFdnpVWT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJmODkwNDBjNS02MTQxLTRlZjEtODU0MS1hZDdhNzllNjdlNjYiLCJjb2duaXRvOmdyb3VwcyI6WyJhZG1pbiJdLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAuZXUtY2VudHJhbC0xLmFtYXpvbmF3cy5jb21cL2V1LWNlbnRyYWwtMV8wWjhKaEZqOHoiLCJ2ZXJzaW9uIjoyLCJjbGllbnRfaWQiOiIyNXU4ZTFvMm4xbGJpczJwOHVpbDc5Y2dqZSIsImV2ZW50X2lkIjoiZGVlYTBjYTMtYjQ0Mi00OTk0LWI3ZjMtMjAwMzgyNDY5YzAzIiwidG9rZW5fdXNlIjoiYWNjZXNzIiwic2NvcGUiOiJwaG9uZSBvcGVuaWQgZW1haWwiLCJhdXRoX3RpbWUiOjE2NjU1NzQ4OTgsImV4cCI6MTY2NTU3ODQ5OCwiaWF0IjoxNjY1NTc0ODk4LCJqdGkiOiJkY2EyMTdjOS04ZGEwLTRmZTEtOTVjYy05ZWQ0YjA0ZGZlYzQiLCJ1c2VybmFtZSI6ImY4OTA0MGM1LTYxNDEtNGVmMS04NTQxLWFkN2E3OWU2N2U2NiJ9.wRWr9_QFs7QdAT6Y29kTPLv4S-KTQaF-LLT1FetXNbWCu_YmLYqid1Sc_8ZMItsPmDKV9e5Pnc2EmPQ-ieHNZk5K8J1kTy0TlnMqlogOxlWkAFoENq1w3hlQ0wFKHqa2jt9vZK5R5tUHziAm6jeEdl4E1Qma7Fwy9C4Dg6CKQQH06W6iOdVolourXc0Sg-H3FzsPDo8BkK8DhE2AUvhjl2jgadMstHdcD3urNPdhCY0MevDO7s4CWpV6fzSIj1zAs0jh_Zull4ZCWqfBcuSUAicJYPHxWDPZWP9fxjc-AGDnQGXxi_twtmrqaw0j4JhIK_-6Ro6-zQV7SybG37P3kg"
+              "Authorization": "BearereyJraWQiOiJrVkFzOUJSbGE5M3IrUStZdm5tS1I1UTlcL21WcEVyQlphRUNXZitFdnpVWT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJmODkwNDBjNS02MTQxLTRlZjEtODU0MS1hZDdhNzllNjdlNjYiLCJjb2duaXRvOmdyb3VwcyI6WyJhZG1pbiJdLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAuZXUtY2VudHJhbC0xLmFtYXpvbmF3cy5jb21cL2V1LWNlbnRyYWwtMV8wWjhKaEZqOHoiLCJ2ZXJzaW9uIjoyLCJjbGllbnRfaWQiOiIyNXU4ZTFvMm4xbGJpczJwOHVpbDc5Y2dqZSIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoicGhvbmUgb3BlbmlkIGVtYWlsIiwiYXV0aF90aW1lIjoxNjY1NTg5OTkzLCJleHAiOjE2NjU1OTM1OTMsImlhdCI6MTY2NTU4OTk5MywianRpIjoiNDUzOGNhMDMtNWExMS00Yzg2LTkwMDItZTY1YjYzMmMzMGEwIiwidXNlcm5hbWUiOiJmODkwNDBjNS02MTQxLTRlZjEtODU0MS1hZDdhNzllNjdlNjYifQ.uapGwooh_JHgoJOYGA9dvY75oo64yIoHBX_3_9bfgrJLaSfx5qUHYqxuO3BD-0FDi02Pt4cVTEvlQgR4D79NRwGjEKq19bxWxQ3eeLdM4Lzor3VluLHH2DtvWLzeEqiUckPZ-YgY-IvsDGgVEvQC8AFzGX6srELv3wjDYkCe6gRBkStqkQt1g83Nz8nSlopJvGgEhqFHiCjqH0g-wzriWCeh2zBT6rP44m4Dc8J73GAhkrJHxR8Y0NUlKH31rvUng1jfIz40eyIINq6ITRFbYtk1baHdVONE37XF1Oi4urIB65WcBq8_0JR-eqNwd0rxbZP7-EsGsD4r-T4A1dmYrA"
             },
             "pathParameters": {
               "testSuiteId": "63430ce2aefc407590dec2f0"
             }
           }
         },
-        "runtime": "python3.8"
-      },
-      "sam": {
-        "buildArguments": ["--use-container", "-ef env.json"],
-        "localArguments": ["-n ../env-dev.json"],
-        "containerBuild": true
+        "runtime": "python3.8",
+        "environmentVariables": {
+          "ENVIRONMENT": "development",
+          "API_ROOT_ACCOUNT_SERVICE": "http://172.17.0.1:8081",
+          "API_ROOT_INTEGRATION_SERVICE": "http://172.17.0.1:3002"
+        }
       }
     }
   ]

@@ -2,28 +2,18 @@ import requests
 
 from i_account_api_repo import IAccountApiRepo
 from account_dto import AccountDto
-from api_root_builder import getRoot
 import logging
-from config import getMode
+from config import getAccountApiRoot, getMode
 
 logger = logging.getLogger(__name__)
 
 class AccountApiRepo(IAccountApiRepo):
   def __init__(self) -> None:
-    self._path = 'api/v1'
-    self._port = '8081'
-    self._prodGateway = 'p2krek4fsj'
-
-    self._mode = getMode()
+    self._version = 'v1'
+    self._apiRoot = getAccountApiRoot()
 
   def getBy(self, params: "dict[str, str]", jwt: str) -> "list[AccountDto]":
-      gateway = self._port
-      if(self._mode == 'production'):
-        gateway = self._prodGateway
-
-      apiRoot = getRoot(gateway, self._path)
-
-      response = requests.get(f'{apiRoot}/accounts', params=params, headers={'Authorization': f'Bearer {jwt}'})
+      response = requests.get(f'{self._apiRoot}/api/{self._version}/accounts', params=params, headers={'Authorization': f'Bearer {jwt}'})
       jsonPayload = response.json()
 
       if response.status_code == 200:
