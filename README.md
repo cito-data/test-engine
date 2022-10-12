@@ -3,8 +3,9 @@
 <!-- pip freeze | Out-File -Encoding UTF8 requirements.txt -->
 
 
-<!-- sam local start-api -p 3047; -->
-sam build --use-container; sam deploy
+sam build --use-container;
+sam local start-api -p 3047;
+sam deploy;
 
 <!-- python3 -m venv venv
 source venv/bin/activate
