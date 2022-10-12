@@ -119,7 +119,7 @@ class ExecuteTest(IUseCase):
 
     _testSuiteId: str
     _testType: Union[AnomalyColumnTest, AnomalyMatTest, NominalMatTest]
-    _testDefinition: dict[str, Any]
+    _testDefinition: "dict[str, Any]"
 
     _targetOrganizationId: str
     _organizationId: str
@@ -305,10 +305,10 @@ class ExecuteTest(IUseCase):
         
         return newData
 
-    def _runModel(self, threshold: integer, newData: float, historicalData: list[float]) -> AnomalyTestResultDto:
+    def _runModel(self, threshold: integer, newData: float, historicalData: "list[float]") -> AnomalyTestResultDto:
         return CommonModel(newData, historicalData, threshold).run()
 
-    def _runTest(self, newDataPoint, historicalData: list[float]) -> AnomalyTestExecutionResult:
+    def _runTest(self, newDataPoint, historicalData: "list[float]") -> AnomalyTestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
         schemaName = self._testDefinition['SCHEMA_NAME']
         materializationName = self._testDefinition['MATERIALIZATION_NAME']

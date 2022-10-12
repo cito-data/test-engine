@@ -16,7 +16,7 @@ class GetAccountsRequestDto:
 class GetAccountsAuthDto:
   jwt: str
 
-GetAccountsResponseDto = Result[list[AccountDto]]
+GetAccountsResponseDto = Result["list[AccountDto]"]
 
 class GetAccounts(IUseCase):
   

@@ -16,7 +16,7 @@ class AccountApiRepo(IAccountApiRepo):
 
     self._mode = getMode()
 
-  def getBy(self, params: dict[str, str], jwt: str) -> list[AccountDto]:
+  def getBy(self, params: "dict[str, str]", jwt: str) -> "list[AccountDto]":
       gateway = self._port
       if(self._mode == 'production'):
         gateway = self._prodGateway

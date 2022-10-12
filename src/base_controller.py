@@ -39,10 +39,10 @@ class Response:
 
 @dataclass
 class Request:
-  headers: Union[dict[str, str], None]
-  pathParams: Union[dict[str, str], None]
-  queryParams: Union[dict[str, str], None]
-  body: Union[dict[str, Any], None]
+  headers: Union["dict[str, str]", None]
+  pathParams: Union["dict[str, str]", None]
+  queryParams: Union["dict[str, str]", None]
+  body: Union["dict[str, Any]", None]
   auth: ProcessedAuth
 
 class BaseController(ABC):

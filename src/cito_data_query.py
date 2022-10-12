@@ -19,7 +19,7 @@ anomalyColumnTest = set(item.value for item in AnomalyColumnTest)
 anomalyMatTest = set(item.value for item in AnomalyMatTest)
 nominalMatTest = set(item.value for item in NominalMatTest)
 
-def getInsertQuery(valueSets: list[dict[str, Any]], type: CitoTableType):
+def getInsertQuery(valueSets: "list[dict[str, Any]]", type: CitoTableType):
   valueString = ', '.join(f"'{str(set['value'])}'" if set['value'] or set['value'] == 0 else 'NULL' for set in valueSets)
 
   return f"""

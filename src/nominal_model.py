@@ -14,18 +14,18 @@ class MaterializationSchema:
 
 @dataclass
 class SchemaDiff:
-    column_name: tuple[Union[str, None], Union[str, None]]
-    ordinal_position: tuple[Union[int, None], Union[int, None]]
-    data_type: Union[tuple[Union[str, None], Union[str, None]], None]
-    is_identity: Union[tuple[Union[bool, None], Union[bool, None]], None]
-    is_nullable: Union[tuple[Union[bool, None], Union[bool, None]], None]
+    column_name: "tuple[Union[str, None], Union[str, None]]"
+    ordinal_position: "tuple[Union[int, None], Union[int, None]]"
+    data_type: Union["tuple[Union[str, None], Union[str, None]]", None]
+    is_identity: Union["tuple[Union[bool, None], Union[bool, None]]", None]
+    is_nullable: Union["tuple[Union[bool, None], Union[bool, None]]", None]
 
 @dataclass
 class ResultDto:  
   isIdentical: bool
   expectedValue: Union[MaterializationSchema, None]
   value: MaterializationSchema
-  deviations: list[SchemaDiff]
+  deviations: "list[SchemaDiff]"
   executedOn: str
 
 class SchemaChangeModel():
@@ -33,7 +33,7 @@ class SchemaChangeModel():
   _oldSchema: MaterializationSchema
   _newSchema: MaterializationSchema
 
-  _schemaDiffs: list[SchemaDiff]
+  _schemaDiffs: "list[SchemaDiff]"
   
   def __init__(self, newSChema: MaterializationSchema, oldSchema: Union[MaterializationSchema, None]) -> None:
     self._oldSchema = oldSchema

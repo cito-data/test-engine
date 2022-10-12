@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ProcessedAuth:
     token: str
-    payload: dict[str, Any]
+    payload: "dict[str, Any]"
     success: bool 
 
 
