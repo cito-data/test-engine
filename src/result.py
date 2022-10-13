@@ -26,7 +26,7 @@ class Result(Generic[T]):
   def value(self) -> Union[T, None]:
     if not self._success:
       errorMessage = f'An error occured. Cannot get the value of an error result: {self._error}'
-      logger.error(errorMessage)
+      logger.exception(errorMessage)
       raise Exception(errorMessage)      
     return self._value
 

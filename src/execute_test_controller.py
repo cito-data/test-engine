@@ -58,5 +58,5 @@ class ExecuteTestController(BaseController):
 
       return ExecuteTestController.ok(json.dumps(asdict(result.value)), CodeHttp.CREATED.value)
     except Exception as e:
-      logger.error(e)
+      logger.exception(f'error: {e}' if e.args[0] else f'error: unknown')
       return ExecuteTestController.fail(e)

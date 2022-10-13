@@ -29,5 +29,5 @@ class GetAccounts(IUseCase):
 
       return Result.ok(getAccountsResponse)
     except Exception as e:
-      logger.error(e) if e.args[0] else None
+      logger.exception(f'error: {e}' if e.args[0] else f'error: unknown')
       return Result.fail('')
