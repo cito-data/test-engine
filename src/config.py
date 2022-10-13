@@ -14,3 +14,9 @@ def getCognitoUserPoolId():
 def getCognitoRegion():
   return 'eu-central-1'
 
+def getIntegrationApiRoot():
+  return os.environ.get('API_ROOT_INTEGRATION_SERVICE')
+
+def getAccountApiRoot():
+  return os.environ.get('API_ROOT_ACCOUNT_SERVICE')
+

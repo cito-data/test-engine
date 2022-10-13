@@ -5,9 +5,23 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Python: Attach using Process Id",
+      "type": "python",
+      "request": "attach",
+      "processId": "${command:pickProcess}",
+      "justMyCode": true
+    },
+    {
+      "name": "Python: Current File",
+      "type": "python",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal"
+    },
+    {
       "type": "aws-sam",
       "request": "direct-invoke",
-      "name": "test-engine:TestSuiteExecution",
+      "name": "aws-sam-invoke",
       "invokeTarget": {
         "target": "template",
         "templatePath": "${workspaceFolder}/template.yaml",
@@ -17,36 +31,23 @@
         "payload": {
           "json": {
             "body": {
-              "targetOrganizationId": "someCustId"
+              "testType": "MaterializationSchemaChange"
             },
             "headers": {
-              "Authorization": "BearereyJraWQiOiJrVkFzOUJSbGE5M3IrUStZdm5tS1I1UTlcL21WcEVyQlphRUNXZitFdnpVWT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJmODkwNDBjNS02MTQxLTRlZjEtODU0MS1hZDdhNzllNjdlNjYiLCJjb2duaXRvOmdyb3VwcyI6WyJhZG1pbiJdLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAuZXUtY2VudHJhbC0xLmFtYXpvbmF3cy5jb21cL2V1LWNlbnRyYWwtMV8wWjhKaEZqOHoiLCJ2ZXJzaW9uIjoyLCJjbGllbnRfaWQiOiIyNXU4ZTFvMm4xbGJpczJwOHVpbDc5Y2dqZSIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoicGhvbmUgb3BlbmlkIGVtYWlsIiwiYXV0aF90aW1lIjoxNjYxMTYxNDc5LCJleHAiOjE2NjExNjUwNzksImlhdCI6MTY2MTE2MTQ3OSwianRpIjoiNWE2YjY2YzQtMzc5YS00NmZlLTgxYzEtZDk3NmM3MDA2MmJlIiwidXNlcm5hbWUiOiJmODkwNDBjNS02MTQxLTRlZjEtODU0MS1hZDdhNzllNjdlNjYifQ.SbWHeZYoSMzmZOPqoSQV2Trwu16NB0lPClxiIZnKsGqXRcsR0eN17tvS4bWegghBjwGCtiDHLpnWsQDD7DZCsHfVhaVeDg806AgrJAu-UQY_q1kdRZ8Uy3RWAi8epfVif58kT_PGEoxUrj86bW4QoGzC-RQ1ys50aV-glOz0UjM4HsYh1VA1mU3QcUmUZaj5w55tfEhHg9cok_IMukXN35W9LyceRDggIiSMZoyiJ9qjgB0Y7fEgSzGqgtWFqxYwxiit3G5fwrMxh5E7UXZclrV7ouPz1x_vm4NlX0OJu6zVFDWkfncpsSRb4vZwiKrKTMq5hbiOgX27xf3WcHT-iA"
+              "Authorization": "BearereyJraWQiOiJrVkFzOUJSbGE5M3IrUStZdm5tS1I1UTlcL21WcEVyQlphRUNXZitFdnpVWT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJmODkwNDBjNS02MTQxLTRlZjEtODU0MS1hZDdhNzllNjdlNjYiLCJjb2duaXRvOmdyb3VwcyI6WyJhZG1pbiJdLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAuZXUtY2VudHJhbC0xLmFtYXpvbmF3cy5jb21cL2V1LWNlbnRyYWwtMV8wWjhKaEZqOHoiLCJ2ZXJzaW9uIjoyLCJjbGllbnRfaWQiOiIyNXU4ZTFvMm4xbGJpczJwOHVpbDc5Y2dqZSIsImV2ZW50X2lkIjoiMmU3MmNkZGItYWJjZC00NmZmLTk2MzEtNzdlZmEzMzVjZDZkIiwidG9rZW5fdXNlIjoiYWNjZXNzIiwic2NvcGUiOiJwaG9uZSBvcGVuaWQgZW1haWwiLCJhdXRoX3RpbWUiOjE2NjU2NDc0ODEsImV4cCI6MTY2NTY1MTA4MSwiaWF0IjoxNjY1NjQ3NDgxLCJqdGkiOiIwNDBlYWYyYi1kODRiLTRhMzctYjNlZi1kZTczYmY1NjIyNDQiLCJ1c2VybmFtZSI6ImY4OTA0MGM1LTYxNDEtNGVmMS04NTQxLWFkN2E3OWU2N2U2NiJ9.lPUJvCwbNzc4pYOHb2kGtDOEyAUAytLHoXQHSXtVa2jbJFbD-v-uZiwOxHyvdJbZeH2tF-EIraGCnobg3TqQXbKURt_tE4BbJhiWINzQmVCxkhCDOfbRshR2BSXvcB3d77SOWQqRVLz_V8NrRL47CvY_aqNsdjk_LX3OXsmMS6fZsrufvD5K8G-DX4Hjmfzv0h7I_u_JoCcF2RaP9qIAfO4VPck0IDIybUSgxl6qWtx-h2smzAP2x6KXOxjYmmwT5ye-jjP2PUEEPjfP2dUmKvNkkIj815hKdWR7ZVC5c2QEvgSVcvNx-lEz_NBWFY1SAzFHszxBw8Xj0mqrOPrNhQ"
             },
             "pathParameters": {
-              "testSuiteId": "62fd0bcb2295b02e2adc5a13"
+              "testSuiteId": "63430ce2aefc407590dec2f0"
             }
           }
         },
-        "environmentVariables": {}
-      }
-    },
-    {
-      "name": "Python: Flask",
-      "type": "python",
-      "request": "launch",
-      "module": "flask",
-      "env": {
-          "FLASK_APP": "src/app_dev.py",
+        "runtime": "python3.8",
+        "environmentVariables": {
           "ENVIRONMENT": "development",
-          "FLASK_DEBUG": "0"
-      },
-      "args": [
-          "run",
-          "--no-debugger",
-          "--no-reload",
-          "--port=3047"
-      ],
-      "jinja": true
-  },
+          "API_ROOT_ACCOUNT_SERVICE": "http://172.17.0.1:8081",
+          "API_ROOT_INTEGRATION_SERVICE": "http://172.17.0.1:3002"
+        }
+      }
+    }
   ]
 }

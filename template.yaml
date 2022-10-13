@@ -1,9 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  flask-test
-
-  Sample SAM Template for flask-test
+  Test engine service
 
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
@@ -11,21 +9,26 @@ Globals:
     Timeout: 60
 
 Parameters:
-
   Environment:
     Type: String
     Description: Environment Var
     Default: production
+  ApiRootAccountService:
+    Type: String
+    Description: prod account api root
+    Default: https://p2krek4fsj.execute-api.eu-central-1.amazonaws.com/production
+  ApiRootIntegrationService:
+    Type: String
+    Description: prod integration api root
+    Default: https://wej7xjkvug.execute-api.eu-central-1.amazonaws.com/production
 
 Resources:
   TestSuiteExecution:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
-      CodeUri: src/
-      Handler: app.lambda_handler
-      Runtime: python3.9
+      PackageType: Image
       Architectures:
-        - arm64
+        - x86_64
       Events:
         TestEngineApi:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
@@ -35,6 +38,12 @@ Resources:
       Environment:
         Variables:
           ENVIRONMENT: !Ref Environment
+          API_ROOT_ACCOUNT_SERVICE: !Ref ApiRootAccountService
+          API_ROOT_INTEGRATION_SERVICE: !Ref ApiRootIntegrationService
+    Metadata:
+      Dockerfile: Dockerfile
+      DockerContext: ./src
+      DockerTag: test-engine-v1
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function

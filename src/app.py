@@ -12,6 +12,8 @@ from execute_test_controller import ExecuteTestController
 from register import register
 register = register()
 
+import os
+print(f'Running in {os.environ.get("ENVIRONMENT")}')
 
 def lambda_handler(event, context):
     """Sample pure Lambda function

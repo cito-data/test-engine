@@ -27,7 +27,7 @@ class ExecuteTestController(BaseController):
     self._querySnowflake = querySnowflake
 
 
-  def _buildRequestDto(self, body: dict[str, Any], pathParams: dict[str, str]) -> ExecuteTestRequestDto:
+  def _buildRequestDto(self, body: "dict[str, Any]", pathParams: "dict[str, str]") -> ExecuteTestRequestDto:
     testId = pathParams['testId']
     targetOrganizationId = body['targetOrganizationId']
     testType = body['testType']
@@ -58,5 +58,5 @@ class ExecuteTestController(BaseController):
 
       return ExecuteTestController.ok(json.dumps(asdict(result.value)), CodeHttp.CREATED.value)
     except Exception as e:
-      logger.error(e)
+      logger.exception(f'error: {e}' if e.args[0] else f'error: unknown')
       return ExecuteTestController.fail(e)

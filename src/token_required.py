@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ProcessedAuth:
     token: str
-    payload: dict[str, Any]
+    payload: "dict[str, Any]"
     success: bool 
 
 
@@ -37,7 +37,7 @@ def processAuth(authHeader: str):
 
         payload = jwt.decode(token, key=key, algorithms=['RS256'])
     except Exception as e:
-        logger.error(e)
+        logger.exception(f'error: {e}' if e.args[0] else f'error: unknown')
         return ProcessedAuth(token, {}, False)
 
     return ProcessedAuth(token, payload, True)

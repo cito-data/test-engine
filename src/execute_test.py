@@ -119,13 +119,15 @@ class ExecuteTest(IUseCase):
 
     _testSuiteId: str
     _testType: Union[AnomalyColumnTest, AnomalyMatTest, NominalMatTest]
-    _testDefinition: dict[str, Any]
+    _testDefinition: "dict[str, Any]"
 
     _targetOrganizationId: str
     _organizationId: str
 
     _executionId: str
     _jwt: str
+
+    _requestLoggingInfo: str
 
     def __init__(self, integrationApiRepo: IIntegrationApiRepo, querySnowflake: QuerySnowflake) -> None:
         self._integrationApiRepo = integrationApiRepo
@@ -305,10 +307,10 @@ class ExecuteTest(IUseCase):
         
         return newData
 
-    def _runModel(self, threshold: integer, newData: float, historicalData: list[float]) -> AnomalyTestResultDto:
+    def _runModel(self, threshold: integer, newData: float, historicalData: "list[float]") -> AnomalyTestResultDto:
         return CommonModel(newData, historicalData, threshold).run()
 
-    def _runTest(self, newDataPoint, historicalData: list[float]) -> AnomalyTestExecutionResult:
+    def _runTest(self, newDataPoint, historicalData: "list[float]") -> AnomalyTestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
         schemaName = self._testDefinition['SCHEMA_NAME']
         materializationName = self._testDefinition['MATERIALIZATION_NAME']
@@ -403,7 +405,7 @@ class ExecuteTest(IUseCase):
 
         if(len(newData) != 1):
             raise Exception(
-                'More than one or no matching new data entries found')
+                f'More than one or no matching new data entries found')
 
         newDataPoint = newData[0]['ROW_COUNT']
 
@@ -632,6 +634,7 @@ class ExecuteTest(IUseCase):
             self._testType = request.testType
             self._targetOrganizationId = request.targetOrganizationId
             self._organizationId = request.targetOrganizationId if request.targetOrganizationId else auth.callerOrganizationId
+            self._requestLoggingInfo = f'(organizationId: {self._organizationId}, testSuiteId: {self._testSuiteId}, testType: {self._testType})'
             self._executionId = str(uuid.uuid4())
             self._jwt = auth.jwt
             self._testDefinition = self._getTestDefinition()
@@ -662,5 +665,5 @@ class ExecuteTest(IUseCase):
             return Result.ok(testResult)
 
         except Exception as e:
-            logger.error(e) if e.args[0] else None
+            logger.exception(f'error: {e} - {self._requestLoggingInfo}' if e.args[0] else f'error: unknown - {self._requestLoggingInfo}')
             return Result.fail('')

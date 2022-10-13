@@ -39,10 +39,10 @@ class Response:
 
 @dataclass
 class Request:
-  headers: Union[dict[str, str], None]
-  pathParams: Union[dict[str, str], None]
-  queryParams: Union[dict[str, str], None]
-  body: Union[dict[str, Any], None]
+  headers: Union["dict[str, str]", None]
+  pathParams: Union["dict[str, str]", None]
+  queryParams: Union["dict[str, str]", None]
+  body: Union["dict[str, Any]", None]
   auth: ProcessedAuth
 
 class BaseController(ABC):
@@ -80,7 +80,7 @@ class BaseController(ABC):
     try:
       return self.executeImpl(req)
     except Exception as e:
-      logger.error(e)
+      logger.exception(f'error: {e}' if e.args[0] else f'error: unknown')
       return BaseController.fail('An unexpected error occurred')
     
   def getUserAccountInfo(processedAuth: ProcessedAuth, getAccounts: GetAccounts) -> Result[UserAccountInfo]:
@@ -103,5 +103,5 @@ class BaseController(ABC):
 
         return Result.ok(UserAccountInfo(processedAuth.payload['username'], getAccountResult.value[0].id, getAccountResult.value[0].organizationId, isSystemInternal))
     except Exception as e:
-      logger.error(e) if e.args[0] else None
+      logger.exception(f'error: {e}' if e.args[0] else f'error: unknown')
       return Result.fail('')

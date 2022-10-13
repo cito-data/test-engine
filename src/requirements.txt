@@ -3,3 +3,4 @@ pyjwt
 cryptography
 numpy
 pandas
+debugpy>=1.0,<2
