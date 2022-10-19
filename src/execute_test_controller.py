@@ -49,12 +49,16 @@ class ExecuteTestController(BaseController):
       requestDto = self._buildRequestDto(req.body, req.pathParams)
       authDto = self._buildAuthDto(req.auth.token, getUserAccountInfoResult.value)
 
+      logger.info(f'Executing test suite {requestDto.testSuiteId} for organization {requestDto.targetOrganizationId if requestDto.targetOrganizationId else authDto.callerOrganizationId}...')
+
       result =  ExecuteTest(self._integrationApiRepo, self._querySnowflake).execute(requestDto, authDto)
 
       if not result.success:
         return ExecuteTestController.badRequest(result.error)
       if not result.value:
         raise Exception('Test result not provided')
+
+      logger.info(f'...Test suite {requestDto.testSuiteId} successfully executed for organization {requestDto.targetOrganizationId if requestDto.targetOrganizationId else authDto.callerOrganizationId}')
 
       return ExecuteTestController.ok(json.dumps(asdict(result.value)), CodeHttp.CREATED.value)
     except Exception as e:
