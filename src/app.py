@@ -1,11 +1,15 @@
 import json
-import logging
 import traceback
 
 from base_controller import Request
 from token_required import processAuth
 
 from execute_test_controller import ExecuteTestController
+
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 # import requests
 
@@ -76,8 +80,7 @@ def lambda_handler(event, context):
             "body": result.body,
         }
     except Exception as e:
-        logging.error(e)
-        logging.error(traceback.format_exc())
+        logger.exception(f'error: {e}' if e.args[0] else f'error: unknown')
         return {
             "statusCode": 500,
             "body": json.dumps({'message': 'Internal Error occurred'}),
