@@ -54,12 +54,15 @@ class AnomalyModel(ABC):
     absoluteDeviation = self._dataSeries.apply(self._absoluteDeviation)
     return float(absoluteDeviation.median())
 
+  def _mad(dataSeries):
+    return(dataSeries - dataSeries.mean()).abs().mean()
+
   def _calculateModifiedZScore(self, x) -> float:
     # https://www.ibm.com/docs/en/cognos-analytics/11.1.0?topic=terms-modified-z-score
     if self._medianAbsoluteDeviation == 0 and self._meanAbsoluteDeviation == 0:
       return 0.0
     if self._medianAbsoluteDeviation == 0:
-      self._meanAbsoluteDeviation = self._dataSeries.mad()
+      self._meanAbsoluteDeviation = self._mad(self._dataSeries)
       return (x - self._median)/(1.253314*self._meanAbsoluteDeviation)
     return (x - self._median)/(1.486*self._medianAbsoluteDeviation)
 
@@ -74,7 +77,7 @@ class AnomalyModel(ABC):
   def run(self) -> ResultDto:
     self._dataSeries = pd.Series([self._newDataPoint] + self._historicalData)
     self._medianAbsoluteDeviation = self._calculateMedianAbsoluteDeviation()
-    self._meanAbsoluteDeviation = self._dataSeries.mad()
+    self._meanAbsoluteDeviation = self._mad(self._dataSeries)
 
     self._modifiedZScore = self._calculateModifiedZScore(self._newDataPoint)
 

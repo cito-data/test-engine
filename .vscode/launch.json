@@ -5,20 +5,6 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python: Attach using Process Id",
-      "type": "python",
-      "request": "attach",
-      "processId": "${command:pickProcess}",
-      "justMyCode": true
-    },
-    {
-      "name": "Python: Current File",
-      "type": "python",
-      "request": "launch",
-      "program": "${file}",
-      "console": "integratedTerminal"
-    },
-    {
       "type": "aws-sam",
       "request": "direct-invoke",
       "name": "aws-sam-invoke",
@@ -31,21 +17,24 @@
         "payload": {
           "json": {
             "body": {
-              "testType": "MaterializationSchemaChange"
+              "testType": "ColumnUniqueness"
             },
             "headers": {
-              "Authorization": "BearereyJraWQiOiJrVkFzOUJSbGE5M3IrUStZdm5tS1I1UTlcL21WcEVyQlphRUNXZitFdnpVWT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJmODkwNDBjNS02MTQxLTRlZjEtODU0MS1hZDdhNzllNjdlNjYiLCJjb2duaXRvOmdyb3VwcyI6WyJhZG1pbiJdLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAuZXUtY2VudHJhbC0xLmFtYXpvbmF3cy5jb21cL2V1LWNlbnRyYWwtMV8wWjhKaEZqOHoiLCJ2ZXJzaW9uIjoyLCJjbGllbnRfaWQiOiIyNXU4ZTFvMm4xbGJpczJwOHVpbDc5Y2dqZSIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoicGhvbmUgb3BlbmlkIGVtYWlsIiwiYXV0aF90aW1lIjoxNjY2MjA0MDk4LCJleHAiOjE2NjYyMDc2OTgsImlhdCI6MTY2NjIwNDA5OCwianRpIjoiNzJmOTI0NTgtOTA5Yy00NDc3LTlmNzItZTUzOTM4ZjkzNDM3IiwidXNlcm5hbWUiOiJmODkwNDBjNS02MTQxLTRlZjEtODU0MS1hZDdhNzllNjdlNjYifQ.Iw3gcU_BlEcuQ0j3sd5hFm57uVz2SX8e3JzbXjqPLKB36U-HVbceujTSYDiagHjDJRN4V3CWbKvBWdtYAQEMr15G9MaHMP1i8yhAI9QmGfzCcVW_Stz_TAf97-7hv61myAkJoiqG6hhyuRw9qvTRXD6pJIrOPyEvKqu8PT7RDLpyPbCIPL2w9V_zheMiNf3pbN2xjF7EfNBJQgK5r4EwknuiHHxsLUZMJBoG4IICPYdE-YxcnZ_Qf-4-k0ZjsUBx9Xy1NaeqCWsKuWT2tL7kKh2OT1e5lEStgy6KsC5iyhP9bfh__gT3FTdOCl3Qbuq0wsglSb0PPxHVuEXaRG5e7g"
+              "Authorization": "BearereyJraWQiOiI3Wld4S1wvUEYrWU1rUWhcLzlpR1JzZEtjVDE1ZFpUdFNnMXRxMTFPcEdCdW89IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiIxY2VkZTlmOS04MGIxLTQxODgtYjg2Mi1iMmMxYjcxZjAxYzEiLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAuZXUtY2VudHJhbC0xLmFtYXpvbmF3cy5jb21cL2V1LWNlbnRyYWwtMV8wbXVHdEtNazMiLCJ2ZXJzaW9uIjoyLCJjbGllbnRfaWQiOiIyYWtwcnVqZ3Q1ZXNza29lcnJkbzVycWptYyIsImV2ZW50X2lkIjoiNTkyMWYwMWEtZjIyNS00MWJhLThkZTYtNTRkYmZkZmExZGEyIiwidG9rZW5fdXNlIjoiYWNjZXNzIiwic2NvcGUiOiJwaG9uZSBvcGVuaWQgZW1haWwiLCJhdXRoX3RpbWUiOjE2NjYyOTU1NTEsImV4cCI6MTY2NjI5OTE1MSwiaWF0IjoxNjY2Mjk1NTUxLCJqdGkiOiIwODJiMmUyMy04NjhmLTQ4YjEtOGZkNS1hOTI2NzJiY2RkNmIiLCJ1c2VybmFtZSI6IjFjZWRlOWY5LTgwYjEtNDE4OC1iODYyLWIyYzFiNzFmMDFjMSJ9.VNRWEEYEF53e-tLzY2O3K52xIKW1CWgl1Ttfdqm2YMdGeksYy4fSjG_UU-kpS7BcTvzNi_4NOEJU007ZBG8VI1cUxzLIQVoLiqJfyPhXu6LX5SksWSOutLL_xWrTq90b0kk3hHGJ5x58FD_RvzGQmjTTJldbq4G0aVACePxGt55tqubqPApfJSxOruVqJ8o4o5-QBreudiAdRBKvCeLpMqFtA2VhyXtXzQvBiOfgOv1ZMR2j0L7S0g6xXnW_WEo-QoBzhE34KTCkUqI7acYdZQYmcitKJkwcruRN-MGuU_4_6Gt1VCLVjV8N8LQxFVKHuGfzz8mUDKqp3HWQtoAMNg"
             },
             "pathParameters": {
-              "testSuiteId": "63430ce2aefc407590dec2f0"
+              "testSuiteId": "6351a3499978e034aa7d2892"
             }
           }
         },
         "runtime": "python3.8",
         "environmentVariables": {
-          "ENVIRONMENT": "development",
-          "API_ROOT_ACCOUNT_SERVICE": "http://172.17.0.1:8081",
-          "API_ROOT_INTEGRATION_SERVICE": "http://172.17.0.1:3002"
+          // "ENVIRONMENT": "development",
+          "ENVIRONMENT": "production",
+          // "API_ROOT_ACCOUNT_SERVICE": "http://172.17.0.1:8081",
+          // "API_ROOT_INTEGRATION_SERVICE": "http://172.17.0.1:3002"
+          "API_ROOT_ACCOUNT_SERVICE": "https://p2krek4fsj.execute-api.eu-central-1.amazonaws.com/production",
+          "API_ROOT_INTEGRATION_SERVICE": "https://wej7xjkvug.execute-api.eu-central-1.amazonaws.com/production"
         }
       }
     }

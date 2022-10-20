@@ -115,7 +115,7 @@ ExecuteTestResponseDto = Result[Union[AnomalyTestExecutionResult, NominalTestExe
 
 class ExecuteTest(IUseCase):
 
-    _MIN_HISTORICAL_DATA_NUMBER_TEST_CONDITION = 5
+    _MIN_HISTORICAL_DATA_NUMBER_TEST_CONDITION = 10
 
     _testSuiteId: str
     _testType: Union[AnomalyColumnTest, AnomalyMatTest, NominalMatTest]
@@ -320,6 +320,9 @@ class ExecuteTest(IUseCase):
         threshold = self._testDefinition['THRESHOLD']
         executionFrequency = self._testDefinition['EXECUTION_FREQUENCY']
         targetResourceId = self._testDefinition['TARGET_RESOURCE_ID']
+        
+        self._insertExecutionEntry(
+            testResult.executedOn, CitoTableType.TestExecutions)
 
         if(len(historicalData) <= self._MIN_HISTORICAL_DATA_NUMBER_TEST_CONDITION):
             self._insertHistoryEntry(
@@ -329,9 +332,6 @@ class ExecuteTest(IUseCase):
 
         testResult = self._runModel(
             threshold, newDataPoint, historicalData)
-
-        self._insertExecutionEntry(
-            testResult.executedOn, CitoTableType.TestExecutions)
 
         self._insertResultEntry(testResult)
 
