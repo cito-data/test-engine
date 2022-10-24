@@ -1,4 +1,5 @@
 from dataclasses import dataclass, asdict
+import datetime
 import json
 from typing import Any, Union
 from numpy import integer
@@ -321,8 +322,11 @@ class ExecuteTest(IUseCase):
         executionFrequency = self._testDefinition['EXECUTION_FREQUENCY']
         targetResourceId = self._testDefinition['TARGET_RESOURCE_ID']
         
+
+        executedOn = datetime.datetime.utcnow().isoformat()
+
         self._insertExecutionEntry(
-            testResult.executedOn, CitoTableType.TestExecutions)
+            executedOn, CitoTableType.TestExecutions)
 
         if(len(historicalData) <= self._MIN_HISTORICAL_DATA_NUMBER_TEST_CONDITION):
             self._insertHistoryEntry(
@@ -347,7 +351,7 @@ class ExecuteTest(IUseCase):
             alertData = AnomalyTestAlertData(alertId, anomalyMessage, databaseName, schemaName, materializationName, materializationType, testResult.expectedValueUpperBound,
                                                   testResult.expectedValueLowerBound, columnName, newDataPoint)
 
-        testData = AnomalyTestData(testResult.executedOn, testResult.isAnomaly, testResult.modifiedZScore, testResult.deviation)
+        testData = AnomalyTestData(executedOn, testResult.isAnomaly, testResult.modifiedZScore, testResult.deviation)
         
         self._insertHistoryEntry(
             newDataPoint, testResult.isAnomaly, alertId)
@@ -367,11 +371,13 @@ class ExecuteTest(IUseCase):
         testType = self._testDefinition['TEST_TYPE']
         targetResourceId = self._testDefinition['TARGET_RESOURCE_ID']
         
+        executedOn = datetime.datetime.utcnow().isoformat()
+
         testResult = self._runSchemaChangeModel(
             oldSchema, newSchema)
 
         self._insertExecutionEntry(
-            testResult.executedOn, CitoTableType.TestExecutionsNominal)
+            executedOn, CitoTableType.TestExecutionsNominal)
 
         self._insertNominalTestResultEntry(testResult)
 
@@ -389,7 +395,7 @@ class ExecuteTest(IUseCase):
         self._insertNominalHistoryEntry(
             newSchema, testResult.isIdentical, alertId)
 
-        testData = NominalTestData(testResult.executedOn, testResult.deviations, testResult.isIdentical)
+        testData = NominalTestData(executedOn, testResult.deviations, testResult.isIdentical)
         return NominalTestExecutionResult(testSuiteId, testType, self._executionId, targetResourceId, self._organizationId, testData, alertData)
         
     def _runMaterializationRowCountTest(self) -> AnomalyTestExecutionResult:

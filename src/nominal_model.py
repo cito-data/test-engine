@@ -26,7 +26,6 @@ class ResultDto:
   expectedValue: Union[MaterializationSchema, None]
   value: MaterializationSchema
   deviations: "list[SchemaDiff]"
-  executedOn: str
 
 class SchemaChangeModel():
 
@@ -111,7 +110,7 @@ class SchemaChangeModel():
 
     deviations = json.dumps( [asdict(el) for el in schemaDiffs])
 
-    return ResultDto(not len(schemaDiffs), self._oldSchema, self._newSchema, deviations, datetime.datetime.utcnow().isoformat())
+    return ResultDto(not len(schemaDiffs), self._oldSchema, self._newSchema, deviations)
 
   
 

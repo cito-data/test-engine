@@ -19,8 +19,6 @@ class ResultDto:
 
   deviation: float
 
-  executedOn: str
-
 class AnomalyModel(ABC):
 
   _newDataPoint: float
@@ -87,7 +85,7 @@ class AnomalyModel(ABC):
 
     self._deviation = self._newDataPoint/self._expectedValue
 
-    return ResultDto(self._meanAbsoluteDeviation, self._medianAbsoluteDeviation, self._modifiedZScore, self._isAnomaly(), self._expectedValue, self._expectedValueUpperBound, self._expectedValueLowerBound, self._deviation, datetime.datetime.utcnow().isoformat())
+    return ResultDto(self._meanAbsoluteDeviation, self._medianAbsoluteDeviation, self._modifiedZScore, self._isAnomaly(), self._expectedValue, self._expectedValueUpperBound, self._expectedValueLowerBound, self._deviation)
 
 class CommonModel(AnomalyModel):
   def __init__(self, newData: float, historicalData: "list[float]", threshold: int, ) -> None:
