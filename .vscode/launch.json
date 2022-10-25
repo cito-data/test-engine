@@ -17,24 +17,25 @@
         "payload": {
           "json": {
             "body": {
-              "testType": "ColumnUniqueness"
+              "testType": "ColumnUniqueness",
+              "targetOrganizationId": "someCustId"
             },
             "headers": {
-              "Authorization": "BearereyJraWQiOiI3Wld4S1wvUEYrWU1rUWhcLzlpR1JzZEtjVDE1ZFpUdFNnMXRxMTFPcEdCdW89IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiIxY2VkZTlmOS04MGIxLTQxODgtYjg2Mi1iMmMxYjcxZjAxYzEiLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAuZXUtY2VudHJhbC0xLmFtYXpvbmF3cy5jb21cL2V1LWNlbnRyYWwtMV8wbXVHdEtNazMiLCJ2ZXJzaW9uIjoyLCJjbGllbnRfaWQiOiIyYWtwcnVqZ3Q1ZXNza29lcnJkbzVycWptYyIsImV2ZW50X2lkIjoiNTkyMWYwMWEtZjIyNS00MWJhLThkZTYtNTRkYmZkZmExZGEyIiwidG9rZW5fdXNlIjoiYWNjZXNzIiwic2NvcGUiOiJwaG9uZSBvcGVuaWQgZW1haWwiLCJhdXRoX3RpbWUiOjE2NjYyOTU1NTEsImV4cCI6MTY2NjI5OTE1MSwiaWF0IjoxNjY2Mjk1NTUxLCJqdGkiOiIwODJiMmUyMy04NjhmLTQ4YjEtOGZkNS1hOTI2NzJiY2RkNmIiLCJ1c2VybmFtZSI6IjFjZWRlOWY5LTgwYjEtNDE4OC1iODYyLWIyYzFiNzFmMDFjMSJ9.VNRWEEYEF53e-tLzY2O3K52xIKW1CWgl1Ttfdqm2YMdGeksYy4fSjG_UU-kpS7BcTvzNi_4NOEJU007ZBG8VI1cUxzLIQVoLiqJfyPhXu6LX5SksWSOutLL_xWrTq90b0kk3hHGJ5x58FD_RvzGQmjTTJldbq4G0aVACePxGt55tqubqPApfJSxOruVqJ8o4o5-QBreudiAdRBKvCeLpMqFtA2VhyXtXzQvBiOfgOv1ZMR2j0L7S0g6xXnW_WEo-QoBzhE34KTCkUqI7acYdZQYmcitKJkwcruRN-MGuU_4_6Gt1VCLVjV8N8LQxFVKHuGfzz8mUDKqp3HWQtoAMNg"
+              "Authorization": "BearereyJraWQiOiJrVkFzOUJSbGE5M3IrUStZdm5tS1I1UTlcL21WcEVyQlphRUNXZitFdnpVWT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIzbzAyOW5qaTE1NHYwYm0xMDloa3Zrb2k1aCIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoic3lzdGVtLWludGVybmFsXC9zeXN0ZW0taW50ZXJuYWwiLCJhdXRoX3RpbWUiOjE2NjY2OTMwMjcsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS1jZW50cmFsLTEuYW1hem9uYXdzLmNvbVwvZXUtY2VudHJhbC0xXzBaOEpoRmo4eiIsImV4cCI6MTY2NjY5NjYyNywiaWF0IjoxNjY2NjkzMDI3LCJ2ZXJzaW9uIjoyLCJqdGkiOiI3YmViN2ExMC0yNzgzLTQ4YTgtOWI3YS1mNWM3MDc5MTlkN2QiLCJjbGllbnRfaWQiOiIzbzAyOW5qaTE1NHYwYm0xMDloa3Zrb2k1aCJ9.mkZEO52glqVobIF3ZSD_fb_lPg4F7a8eS8oS2aPpfVKNOGkowqnCOJEHRn4NNAjjgjuHTsTxy69uCHqjSYuwn9mWx97yU0Dg7MlMIABoEPBAgfzRWGP79_oxCiSmw8Qk1UDqdAqmSaIS9BHiHfPcbbMPNOV5r7mKK06Y3g669-4APJ8W8MxSK9p7dfMxTg_5-QZTDQyaKEagWx9RHqYCBA9Z7qgoA7Qo4AuF2EITCgVOFpTTBlUxq6-N3fkNbv6YTXwYLMnFbPV2N8DbjSAZhKjIt4LelESl73twAjx1oXAYCVeFtwUxd7BZwCMddxbohXSw8LEr51CWKTV9nejTbA"
             },
             "pathParameters": {
-              "testSuiteId": "6351a3499978e034aa7d2892"
+              "testSuiteId": "6352a3e99cf56e35c1b054cf",
             }
           }
         },
         "runtime": "python3.8",
         "environmentVariables": {
-          // "ENVIRONMENT": "development",
-          "ENVIRONMENT": "production",
-          // "API_ROOT_ACCOUNT_SERVICE": "http://172.17.0.1:8081",
-          // "API_ROOT_INTEGRATION_SERVICE": "http://172.17.0.1:3002"
-          "API_ROOT_ACCOUNT_SERVICE": "https://p2krek4fsj.execute-api.eu-central-1.amazonaws.com/production",
-          "API_ROOT_INTEGRATION_SERVICE": "https://wej7xjkvug.execute-api.eu-central-1.amazonaws.com/production"
+          "ENVIRONMENT": "development",
+          "API_ROOT_ACCOUNT_SERVICE": "http://172.17.0.1:8081",
+          "API_ROOT_INTEGRATION_SERVICE": "http://172.17.0.1:3002",
+          // "ENVIRONMENT": "production",
+          // "API_ROOT_ACCOUNT_SERVICE": "https://p2krek4fsj.execute-api.eu-central-1.amazonaws.com/production",
+          // "API_ROOT_INTEGRATION_SERVICE": "https://wej7xjkvug.execute-api.eu-central-1.amazonaws.com/production"
         }
       }
     }
