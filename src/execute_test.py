@@ -88,8 +88,6 @@ class _TestExecutionResult:
 
 @dataclass
 class AnomalyTestExecutionResult(_TestExecutionResult):
-    threshold: int
-    executionFrequency: int
     isWarmup: bool
     testData: Union[AnomalyTestData, None]
     alertData: Union[AnomalyTestAlertData, None]
@@ -332,7 +330,7 @@ class ExecuteTest(IUseCase):
             self._insertHistoryEntry(
                 newDataPoint, False, None)
 
-            return AnomalyTestExecutionResult(testSuiteId, self._testDefinition['TEST_TYPE'], self._executionId, targetResourceId, self._organizationId, threshold, executionFrequency, True, None, None)
+            return AnomalyTestExecutionResult(testSuiteId, self._testDefinition['TEST_TYPE'], self._executionId, targetResourceId, self._organizationId, True, None, None)
 
         testResult = self._runModel(
             threshold, newDataPoint, historicalData)
@@ -356,7 +354,7 @@ class ExecuteTest(IUseCase):
         self._insertHistoryEntry(
             newDataPoint, testResult.isAnomaly, alertId)
 
-        return AnomalyTestExecutionResult(testSuiteId, self._testDefinition['TEST_TYPE'], self._executionId, targetResourceId, self._organizationId, threshold, executionFrequency, False, testData, alertData)
+        return AnomalyTestExecutionResult(testSuiteId, self._testDefinition['TEST_TYPE'], self._executionId, targetResourceId, self._organizationId, False, testData, alertData)
 
     def _runSchemaChangeModel(self, oldSchema: MaterializationSchema, newSchema: MaterializationSchema) -> NominalResultDto:
         return SchemaChangeModel(newSchema, oldSchema).run()
@@ -671,5 +669,5 @@ class ExecuteTest(IUseCase):
             return Result.ok(testResult)
 
         except Exception as e:
-            logger.exception(f'error: {e} - {self._requestLoggingInfo}' if e.args[0] else f'error: unknown - {self._requestLoggingInfo}')
+            logger.exception(f'error: {e}' if e.args[0] else f'error: unknown - {self._requestLoggingInfo}')
             return Result.fail('')

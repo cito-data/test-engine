@@ -40,7 +40,7 @@ class SchemaChangeModel():
       
   def run(self) -> ResultDto:
     if not self._oldSchema:
-        return ResultDto(True, self._oldSchema, self._newSchema, [], datetime.datetime.utcnow().isoformat())
+        return ResultDto(True, self._oldSchema, self._newSchema, [])
 
     columnCountOldSchema = len(self._oldSchema)
     columnCountNewSchema = len(self._newSchema)
