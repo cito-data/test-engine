@@ -18,7 +18,7 @@
           "json": {
             "body": {
               "testType": "MaterializationSchemaChange",
-              "targetOrganizationId": "someCustId"
+              "targetOrgId": "someCustId"
             },
             "headers": {
               "Authorization": "BearereyJraWQiOiJrVkFzOUJSbGE5M3IrUStZdm5tS1I1UTlcL21WcEVyQlphRUNXZitFdnpVWT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIzbzAyOW5qaTE1NHYwYm0xMDloa3Zrb2k1aCIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoic3lzdGVtLWludGVybmFsXC9zeXN0ZW0taW50ZXJuYWwiLCJhdXRoX3RpbWUiOjE2NjcyMTMwMTIsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS1jZW50cmFsLTEuYW1hem9uYXdzLmNvbVwvZXUtY2VudHJhbC0xXzBaOEpoRmo4eiIsImV4cCI6MTY2NzIxNjYxMiwiaWF0IjoxNjY3MjEzMDEyLCJ2ZXJzaW9uIjoyLCJqdGkiOiJiMTM0ZTgzYi02MjgyLTQxZDMtODYyZi05YTgyZjA5YTBjNjciLCJjbGllbnRfaWQiOiIzbzAyOW5qaTE1NHYwYm0xMDloa3Zrb2k1aCJ9.ZP5D0-eEkCP_jLJezStiZRCqkI6Ze80oEw966HMCaT4QMtwPZMWCiruwy-XJ9NqwYGCcCn-XKc7-lrfjMpRcUtMSRhTW33_HfKITAt7KZpi9B_tl6TZTEZj8biCAi2BJbexjfi2DKa-4izB0AonyMF7pdtyRh7gR7K8vBy0mcfvtQsKv4ovTV3MAVd2J9ZTSjT17MsnJsGR1ryRh8Q8kcaXnIoMrfCnqyrxQgVKu6uOh34jmzw9xSPyZ9QIfSI7HhlTPWqhDd9A3s5DgeVJwspzbWS0JvTR84fWtTilvLedbTpf_relA1gM7eojcteN86Y9ts9Z2nD6O7ewKnB8IaQ"

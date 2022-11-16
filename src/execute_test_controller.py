@@ -29,13 +29,13 @@ class ExecuteTestController(BaseController):
 
   def _buildRequestDto(self, body: "dict[str, Any]", pathParams: "dict[str, str]") -> ExecuteTestRequestDto:
     testId = pathParams['testId']
-    targetOrganizationId = body['targetOrganizationId']
+    targetOrgId = body['targetOrgId']
     testType = body['testType']
     
-    return ExecuteTestRequestDto(testId, testType, targetOrganizationId)
+    return ExecuteTestRequestDto(testId, testType, targetOrgId)
 
   def _buildAuthDto(self, jwt: str, userAccountInfo: UserAccountInfo) -> ExecuteTestAuthDto:
-    return ExecuteTestAuthDto(jwt, userAccountInfo.callerOrganizationId, userAccountInfo.isSystemInternal)
+    return ExecuteTestAuthDto(jwt, userAccountInfo.callerOrgId, userAccountInfo.isSystemInternal)
 
   def executeImpl(self, req: Request) -> Response:
     try:
@@ -49,7 +49,7 @@ class ExecuteTestController(BaseController):
       requestDto = self._buildRequestDto(req.body, req.pathParams)
       authDto = self._buildAuthDto(req.auth.token, getUserAccountInfoResult.value)
 
-      logger.info(f'Executing test suite {requestDto.testSuiteId} for organization {requestDto.targetOrganizationId if requestDto.targetOrganizationId else authDto.callerOrganizationId}...')
+      logger.info(f'Executing test suite {requestDto.testSuiteId} for organization {requestDto.targetOrgId if requestDto.targetOrgId else authDto.callerOrgId}...')
 
       result =  ExecuteTest(self._integrationApiRepo, self._querySnowflake).execute(requestDto, authDto)
 
@@ -58,7 +58,7 @@ class ExecuteTestController(BaseController):
       if not result.value:
         raise Exception('Test result not provided')
 
-      logger.info(f'...Test suite {requestDto.testSuiteId} successfully executed for organization {requestDto.targetOrganizationId if requestDto.targetOrganizationId else authDto.callerOrganizationId}')
+      logger.info(f'...Test suite {requestDto.testSuiteId} successfully executed for organization {requestDto.targetOrgId if requestDto.targetOrgId else authDto.callerOrgId}')
 
       return ExecuteTestController.ok(json.dumps(asdict(result.value)), CodeHttp.CREATED.value)
     except Exception as e:

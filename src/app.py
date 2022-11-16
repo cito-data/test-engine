@@ -65,9 +65,9 @@ def lambda_handler(event, context):
 
         mappedBody = {'testType': body['testType']}
 
-        targetOrganizationIdKey = 'targetOrganizationId'
+        targetOrgIdKey = 'targetOrgId'
 
-        mappedBody[targetOrganizationIdKey] = body[targetOrganizationIdKey] if targetOrganizationIdKey in body else None
+        mappedBody[targetOrgIdKey] = body[targetOrgIdKey] if targetOrgIdKey in body else None
 
         controllerRequest = Request(None, {'testId': request['pathParameters']['testSuiteId']}, None, mappedBody, processedAuthObject)
 

@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class QuerySnowflakeRequestDto:
   query: str
-  targetOrganizationId: Union[str, None]
+  targetOrgId: Union[str, None]
 
 @dataclass
 class QuerySnowflakeAuthDto:
@@ -27,7 +27,7 @@ class QuerySnowflake(IUseCase):
 
   def execute(self, request: QuerySnowflakeRequestDto, auth: QuerySnowflakeAuthDto) -> QuerySnowflakeResponseDto:
     try:
-      querySnowflakeResponse = self._integrationApiRepo.querySnowflake(request.query, auth.jwt, request.targetOrganizationId)
+      querySnowflakeResponse = self._integrationApiRepo.querySnowflake(request.query, auth.jwt, request.targetOrgId)
 
       return Result.ok(querySnowflakeResponse)
     except Exception as e:

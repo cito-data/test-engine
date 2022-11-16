@@ -101,12 +101,12 @@ class NominalTestExecutionResult(_TestExecutionResult):
 class ExecuteTestRequestDto:
     testSuiteId: str
     testType: Union[AnomalyColumnTest, AnomalyMatTest, NominalMatTest] 
-    targetOrganizationId: Union[str, None]
+    targetOrgId: Union[str, None]
 
 @dataclass
 class ExecuteTestAuthDto:
     jwt: str
-    callerOrganizationId: Union[str, None]
+    callerOrgId: Union[str, None]
     isSystemInternal: bool
     
 ExecuteTestResponseDto = Result[Union[AnomalyTestExecutionResult, NominalTestExecutionResult]]
@@ -120,7 +120,7 @@ class ExecuteTest(IUseCase):
     _testType: Union[AnomalyColumnTest, AnomalyMatTest, NominalMatTest]
     _testDefinition: "dict[str, Any]"
 
-    _targetOrganizationId: str
+    _targetOrgId: str
     _organizationId: str
 
     _executionId: str
@@ -142,7 +142,7 @@ class ExecuteTest(IUseCase):
         executionQuery = getInsertQuery(
             valueSets, tableType)
         executionEntryInsertResult = self._querySnowflake.execute(
-            QuerySnowflakeRequestDto(executionQuery, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
+            QuerySnowflakeRequestDto(executionQuery, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
 
         if not executionEntryInsertResult.success:
             raise Exception(executionEntryInsertResult.error)
@@ -161,7 +161,7 @@ class ExecuteTest(IUseCase):
         testHistoryQuery = getInsertQuery(
             valueSets, CitoTableType.TestHistoryNominal)
         historyEntryInsertResult = self._querySnowflake.execute(
-            QuerySnowflakeRequestDto(testHistoryQuery, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
+            QuerySnowflakeRequestDto(testHistoryQuery, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
 
         if not historyEntryInsertResult.success:
             raise Exception(historyEntryInsertResult.error)
@@ -183,7 +183,7 @@ class ExecuteTest(IUseCase):
         testHistoryQuery = getInsertQuery(
             valueSets, CitoTableType.TestHistory)
         historyEntryInsertResult = self._querySnowflake.execute(
-            QuerySnowflakeRequestDto(testHistoryQuery, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
+            QuerySnowflakeRequestDto(testHistoryQuery, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
 
         if not historyEntryInsertResult.success:
             raise Exception(historyEntryInsertResult.error)
@@ -205,7 +205,7 @@ class ExecuteTest(IUseCase):
         testResultQuery = getInsertQuery(
             valueSets, CitoTableType.TestResultsNominal)
         resultEntryInsertResult = self._querySnowflake.execute(
-            QuerySnowflakeRequestDto(testResultQuery, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
+            QuerySnowflakeRequestDto(testResultQuery, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
 
         if not resultEntryInsertResult.success:
             raise Exception(resultEntryInsertResult.error)
@@ -239,7 +239,7 @@ class ExecuteTest(IUseCase):
         testResultQuery = getInsertQuery(
             valueSets, CitoTableType.TestResults)
         resultEntryInsertResult = self._querySnowflake.execute(
-            QuerySnowflakeRequestDto(testResultQuery, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
+            QuerySnowflakeRequestDto(testResultQuery, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
 
         if not resultEntryInsertResult.success:
             raise Exception(resultEntryInsertResult.error)
@@ -257,7 +257,7 @@ class ExecuteTest(IUseCase):
         testAlertQuery = getInsertQuery(
             valueSets, tableType)
         alertEntryInsertResult = self._querySnowflake.execute(
-            QuerySnowflakeRequestDto(testAlertQuery, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
+            QuerySnowflakeRequestDto(testAlertQuery, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
 
         if not alertEntryInsertResult.success:
             raise Exception(alertEntryInsertResult.error)
@@ -265,12 +265,12 @@ class ExecuteTest(IUseCase):
     def _getTestEntry(self) -> QuerySnowflakeResponseDto:
         query = getTestQuery(self._testSuiteId, self._testType)
 
-        return self._querySnowflake.execute(QuerySnowflakeRequestDto(query, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
+        return self._querySnowflake.execute(QuerySnowflakeRequestDto(query, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
 
     def _getHistoricalData(self) -> QuerySnowflakeResponseDto:
         query = getHistoryQuery(self._testSuiteId)
         getHistoricalDataResult = self._querySnowflake.execute(
-            QuerySnowflakeRequestDto(query, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
+            QuerySnowflakeRequestDto(query, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
 
         if not getHistoricalDataResult.success:
             raise Exception(getHistoricalDataResult.error)
@@ -283,7 +283,7 @@ class ExecuteTest(IUseCase):
 
     def _getLastMatSchema(self) -> Union[MaterializationSchema, None]:
         query = getLastMatSchemaQuery(self._testSuiteId)
-        queryResult = self._querySnowflake.execute(QuerySnowflakeRequestDto(query, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
+        queryResult = self._querySnowflake.execute(QuerySnowflakeRequestDto(query, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
 
         if not queryResult.success:
             raise Exception(queryResult.error)
@@ -295,7 +295,7 @@ class ExecuteTest(IUseCase):
 
     def _getNewData(self, query):
         getNewDataResult = self._querySnowflake.execute(
-            QuerySnowflakeRequestDto(query, self._targetOrganizationId), QuerySnowflakeAuthDto(self._jwt))
+            QuerySnowflakeRequestDto(query, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
 
         if not getNewDataResult.success:
             raise Exception(getNewDataResult.error)
@@ -625,19 +625,19 @@ class ExecuteTest(IUseCase):
 
     def execute(self, request: ExecuteTestRequestDto, auth: ExecuteTestAuthDto) -> ExecuteTestResponseDto:
         try:
-            if auth.isSystemInternal and not request.targetOrganizationId:
+            if auth.isSystemInternal and not request.targetOrgId:
                 raise Exception('Target organization id missing');
-            if not auth.isSystemInternal and not auth.callerOrganizationId:
+            if not auth.isSystemInternal and not auth.callerOrgId:
                 raise Exception('Caller organization id missing');
-            if not request.targetOrganizationId and not auth.callerOrganizationId:
+            if not request.targetOrgId and not auth.callerOrgId:
                 raise Exception('No organization Id instance provided');
-            if request.targetOrganizationId and auth.callerOrganizationId:
+            if request.targetOrgId and auth.callerOrgId:
                 raise Exception('callerOrgId and targetOrgId provided. Not allowed');
 
             self._testSuiteId = request.testSuiteId
             self._testType = request.testType
-            self._targetOrganizationId = request.targetOrganizationId
-            self._organizationId = request.targetOrganizationId if request.targetOrganizationId else auth.callerOrganizationId
+            self._targetOrgId = request.targetOrgId
+            self._organizationId = request.targetOrgId if request.targetOrgId else auth.callerOrgId
             self._requestLoggingInfo = f'(organizationId: {self._organizationId}, testSuiteId: {self._testSuiteId}, testType: {self._testType})'
             self._executionId = str(uuid.uuid4())
             self._jwt = auth.jwt

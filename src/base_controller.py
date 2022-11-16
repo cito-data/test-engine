@@ -29,7 +29,7 @@ class CodeHttp(IntEnum):
 class UserAccountInfo:
   userId: Union[str, None]
   accountId: Union[str, None]
-  callerOrganizationId: Union[str, None]
+  callerOrgId: Union[str, None]
   isSystemInternal: bool
 
 @dataclass

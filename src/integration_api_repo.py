@@ -13,10 +13,10 @@ class IntegrationApiRepo(IIntegrationApiRepo):
     self._version = 'v1'
     self._apiRoot = getIntegrationApiRoot()
 
-  def querySnowflake(self, query: str, jwt: str, targetOrganizationId: Union[str, None]) -> SnowflakeQueryResultDto:
+  def querySnowflake(self, query: str, jwt: str, targetOrgId: Union[str, None]) -> SnowflakeQueryResultDto:
     data = {'query': query}
 
-    data['targetOrganizationId'] = targetOrganizationId if targetOrganizationId else None
+    data['targetOrgId'] = targetOrgId if targetOrgId else None
 
     response = requests.post(f'{self._apiRoot}/api/{self._version}/snowflake/query', data=data, headers={'Authorization': f'Bearer {jwt}'})
     jsonPayload = response.json()
