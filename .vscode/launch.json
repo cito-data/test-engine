@@ -17,14 +17,14 @@
         "payload": {
           "json": {
             "body": {
-              "testType": "MaterializationSchemaChange",
+              "testType": "MaterializationColumnCount",
               "targetOrgId": "someCustId"
             },
             "headers": {
-              "Authorization": "BearereyJraWQiOiJrVkFzOUJSbGE5M3IrUStZdm5tS1I1UTlcL21WcEVyQlphRUNXZitFdnpVWT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIzbzAyOW5qaTE1NHYwYm0xMDloa3Zrb2k1aCIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoic3lzdGVtLWludGVybmFsXC9zeXN0ZW0taW50ZXJuYWwiLCJhdXRoX3RpbWUiOjE2NjcyMTMwMTIsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS1jZW50cmFsLTEuYW1hem9uYXdzLmNvbVwvZXUtY2VudHJhbC0xXzBaOEpoRmo4eiIsImV4cCI6MTY2NzIxNjYxMiwiaWF0IjoxNjY3MjEzMDEyLCJ2ZXJzaW9uIjoyLCJqdGkiOiJiMTM0ZTgzYi02MjgyLTQxZDMtODYyZi05YTgyZjA5YTBjNjciLCJjbGllbnRfaWQiOiIzbzAyOW5qaTE1NHYwYm0xMDloa3Zrb2k1aCJ9.ZP5D0-eEkCP_jLJezStiZRCqkI6Ze80oEw966HMCaT4QMtwPZMWCiruwy-XJ9NqwYGCcCn-XKc7-lrfjMpRcUtMSRhTW33_HfKITAt7KZpi9B_tl6TZTEZj8biCAi2BJbexjfi2DKa-4izB0AonyMF7pdtyRh7gR7K8vBy0mcfvtQsKv4ovTV3MAVd2J9ZTSjT17MsnJsGR1ryRh8Q8kcaXnIoMrfCnqyrxQgVKu6uOh34jmzw9xSPyZ9QIfSI7HhlTPWqhDd9A3s5DgeVJwspzbWS0JvTR84fWtTilvLedbTpf_relA1gM7eojcteN86Y9ts9Z2nD6O7ewKnB8IaQ"
+              "Authorization": "BearereyJraWQiOiJrVkFzOUJSbGE5M3IrUStZdm5tS1I1UTlcL21WcEVyQlphRUNXZitFdnpVWT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIzbzAyOW5qaTE1NHYwYm0xMDloa3Zrb2k1aCIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoic3lzdGVtLWludGVybmFsXC9zeXN0ZW0taW50ZXJuYWwiLCJhdXRoX3RpbWUiOjE2NjkzNzQ3MTQsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS1jZW50cmFsLTEuYW1hem9uYXdzLmNvbVwvZXUtY2VudHJhbC0xXzBaOEpoRmo4eiIsImV4cCI6MTY2OTM3ODMxNCwiaWF0IjoxNjY5Mzc0NzE0LCJ2ZXJzaW9uIjoyLCJqdGkiOiI3Yzk3MTM3ZC00MGE1LTQ0YmEtYTgyZS1kOGFmMzhhYzhiMzIiLCJjbGllbnRfaWQiOiIzbzAyOW5qaTE1NHYwYm0xMDloa3Zrb2k1aCJ9.fDdbCmmfcobWh2JJBKSCMRG1S4WnyIjWM6rsA1GiITlZehofqNZUqF9gN1Ds-aBgb4r9Cx4EeUJoS0OYL7a2IJD0jM3lS5MIywtJDMtoSH3ZhmG2mVOaeS8M-DIOhDdijYfE1Qvlihovplmv4JSbbwVcAghjCyHjUD9ofB0V3fmZXLtYs5uEvRFjp2jFzREIYgP_FgSyz7tzleWdFJ2-cGunpb3krDBXG9Q2veTLo-kZJREVCaUpxwgPZQP1K9c1L7W7JYCPvx5JguE7-rLfsidkl3_6Wmvx3BaPZfYHdz1GhpYtXkrZa2trmu0Tj5fWvp2LjJIY4hGmYExOyi-dCg"
             },
             "pathParameters": {
-              "testSuiteId": "635f9f024bb5f2c747de161e",
+              "testSuiteId": "ae5c70eb-789b-4584-b8a5-42b9c2220bd9",
             }
           }
         },

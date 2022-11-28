@@ -69,7 +69,11 @@ def lambda_handler(event, context):
 
         mappedBody[targetOrgIdKey] = body[targetOrgIdKey] if targetOrgIdKey in body else None
 
-        controllerRequest = Request(None, {'testId': request['pathParameters']['testSuiteId']}, None, mappedBody, processedAuthObject)
+        testId = request['pathParameters']['testSuiteId']
+
+        logger.debug(f'Executing test with id {testId}')
+
+        controllerRequest = Request(None, {'testId': testId}, None, mappedBody, processedAuthObject)
 
         controller = ExecuteTestController(
             register['getAccounts'], register['integrationApiRepo'], register['querySnowflake'])

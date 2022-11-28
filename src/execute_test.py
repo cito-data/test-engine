@@ -409,7 +409,7 @@ class ExecuteTest(IUseCase):
 
         if(len(newData) != 1):
             raise Exception(
-                f'More than one or no matching new data entries found')
+                f'Mat row count - More than one or no matching new data entries found')
 
         newDataPoint = newData[0]['ROW_COUNT']
 
@@ -432,7 +432,7 @@ class ExecuteTest(IUseCase):
 
         if(len(newData) != 1):
             raise Exception(
-                'More than one or no matching new data entries found')
+                'Mat column count - More than one or no matching new data entries found')
 
         newDataPoint = newData[0]['COLUMN_COUNT']
 
@@ -456,7 +456,7 @@ class ExecuteTest(IUseCase):
 
         if(len(newData) != 1):
             raise Exception(
-                'More than one or no matching new data entries found')
+                'Mat freshness - More than one or no matching new data entries found')
 
         newDataPoint = newData[0]['TIME_DIFF']
 
@@ -502,7 +502,7 @@ class ExecuteTest(IUseCase):
 
         if(len(newData) != 1):
             raise Exception(
-                'More than one or no matching new data entries found')
+                'Col cardinality - More than one or no matching new data entries found')
 
         newDataPoint = newData[0]['DISTINCT_VALUE_COUNT']
 
@@ -526,7 +526,7 @@ class ExecuteTest(IUseCase):
 
         if(len(newData) != 1):
             raise Exception(
-                'More than one or no matching new data entries found')
+                'Col Distribution - More than one or no matching new data entries found')
 
         newDataPoint = newData[0]['MEDIAN']
 
@@ -550,7 +550,7 @@ class ExecuteTest(IUseCase):
 
         if(len(newData) != 1):
             raise Exception(
-                'More than one or no matching new data entries found')
+                'Col Freshness - More than one or no matching new data entries found')
 
         newDataPoint = newData[0]['TIME_DIFF']
 
@@ -574,7 +574,7 @@ class ExecuteTest(IUseCase):
 
         if(len(newData) != 1):
             raise Exception(
-                'More than one or no matching new data entries found')
+                'Col Nullness - More than one or no matching new data entries found')
 
         newDataPoint = newData[0]['NULLNESS_RATE']
 
@@ -598,7 +598,7 @@ class ExecuteTest(IUseCase):
 
         if(len(newData) != 1):
             raise Exception(
-                'More than one or no matching new data entries found')
+                'Col Uniqueness - More than one or no matching new data entries found')
 
         newDataPoint = newData[0]['UNIQUENESS_RATE']
 
@@ -619,7 +619,7 @@ class ExecuteTest(IUseCase):
 
         organizationResult = getTestEntryResult.value.content[self._organizationId]
         if not len(organizationResult) == 1:
-            raise Exception('More than one or no test found')
+            raise Exception('Test Definition - More than one or no test found')
 
         return organizationResult[0]
 
