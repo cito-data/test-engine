@@ -18,24 +18,24 @@
           "json": {
             "body": {
               "testType": "MaterializationColumnCount",
-              "targetOrgId": "someCustId"
+              "targetOrgId": "631789bf27518f97cf1c82b7"
             },
             "headers": {
-              "Authorization": "BearereyJraWQiOiJrVkFzOUJSbGE5M3IrUStZdm5tS1I1UTlcL21WcEVyQlphRUNXZitFdnpVWT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIzbzAyOW5qaTE1NHYwYm0xMDloa3Zrb2k1aCIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoic3lzdGVtLWludGVybmFsXC9zeXN0ZW0taW50ZXJuYWwiLCJhdXRoX3RpbWUiOjE2NjkzNzQ3MTQsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS1jZW50cmFsLTEuYW1hem9uYXdzLmNvbVwvZXUtY2VudHJhbC0xXzBaOEpoRmo4eiIsImV4cCI6MTY2OTM3ODMxNCwiaWF0IjoxNjY5Mzc0NzE0LCJ2ZXJzaW9uIjoyLCJqdGkiOiI3Yzk3MTM3ZC00MGE1LTQ0YmEtYTgyZS1kOGFmMzhhYzhiMzIiLCJjbGllbnRfaWQiOiIzbzAyOW5qaTE1NHYwYm0xMDloa3Zrb2k1aCJ9.fDdbCmmfcobWh2JJBKSCMRG1S4WnyIjWM6rsA1GiITlZehofqNZUqF9gN1Ds-aBgb4r9Cx4EeUJoS0OYL7a2IJD0jM3lS5MIywtJDMtoSH3ZhmG2mVOaeS8M-DIOhDdijYfE1Qvlihovplmv4JSbbwVcAghjCyHjUD9ofB0V3fmZXLtYs5uEvRFjp2jFzREIYgP_FgSyz7tzleWdFJ2-cGunpb3krDBXG9Q2veTLo-kZJREVCaUpxwgPZQP1K9c1L7W7JYCPvx5JguE7-rLfsidkl3_6Wmvx3BaPZfYHdz1GhpYtXkrZa2trmu0Tj5fWvp2LjJIY4hGmYExOyi-dCg"
+              "Authorization": "BearereyJraWQiOiI3Wld4S1wvUEYrWU1rUWhcLzlpR1JzZEtjVDE1ZFpUdFNnMXRxMTFPcEdCdW89IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoic3lzdGVtLWludGVybmFsXC9zeXN0ZW0taW50ZXJuYWwiLCJhdXRoX3RpbWUiOjE2Njk5OTQ5OTgsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS1jZW50cmFsLTEuYW1hem9uYXdzLmNvbVwvZXUtY2VudHJhbC0xXzBtdUd0S01rMyIsImV4cCI6MTY2OTk5ODU5OCwiaWF0IjoxNjY5OTk0OTk4LCJ2ZXJzaW9uIjoyLCJqdGkiOiJiMDIyYjU5Ni01Y2RiLTQxYzEtYTRiMC02YTQ1MWExNTAxNzUiLCJjbGllbnRfaWQiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSJ9.Ig_ToBh81Pifrg-dwVZYKGV_CIojEIL9OIN-HU39SzcQqpWWs9QywPL45CfJPJH7C5MsyPVmX_t7VApgElxVtnyKgDnqF_Em3UFweuMW7GPZLd5S-RR-OqeOFWc2LpCdRFlUI1_3wtpPylQbcKgqJS_sizf8QuRwsUOnVqdz6zkKtGDlvz69CtktvdUoBdH3XcAuLj-ANtnE0STssvhr8XXJaJonVBb3lf1P5Iu4y97h3q6y8TJlC2Te5Pf9nxETne_S96FvwknwASwPoNFdn3eZ1cUxwdHakZsoZzDaoU049j6FMymvNl_Jd7_H23urIgnKBKk8EoGpBqRm0LX4XQ"
             },
             "pathParameters": {
-              "testSuiteId": "ae5c70eb-789b-4584-b8a5-42b9c2220bd9",
+              "testSuiteId": "75ebb5ad-c2d4-4939-b375-a9c3fac31412",
             }
           }
         },
         "runtime": "python3.8",
         "environmentVariables": {
-          "ENVIRONMENT": "development",
-          "API_ROOT_ACCOUNT_SERVICE": "http://172.17.0.1:8081",
-          "API_ROOT_INTEGRATION_SERVICE": "http://172.17.0.1:3002",
-          // "ENVIRONMENT": "production",
-          // "API_ROOT_ACCOUNT_SERVICE": "https://p2krek4fsj.execute-api.eu-central-1.amazonaws.com/production",
-          // "API_ROOT_INTEGRATION_SERVICE": "https://wej7xjkvug.execute-api.eu-central-1.amazonaws.com/production"
+          // "ENVIRONMENT": "development",
+          // "API_ROOT_ACCOUNT_SERVICE": "http://172.17.0.1:8081",
+          // "API_ROOT_INTEGRATION_SERVICE": "http://172.17.0.1:3002",
+          "ENVIRONMENT": "production",
+          "API_ROOT_ACCOUNT_SERVICE": "https://b5oerjsr53kgpitik7yu3i6eca0pklio.lambda-url.eu-central-1.on.aws",
+          "API_ROOT_INTEGRATION_SERVICE": "https://hnyjrlph7pkg2ty2trf3bo7o6m0emujf.lambda-url.eu-central-1.on.aws"
         }
       }
     }
