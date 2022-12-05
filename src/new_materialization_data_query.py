@@ -19,10 +19,10 @@ def getColumnCountQuery(dbName: str, schemaName: str, materializationName: str):
   """
 
 def getFreshnessQuery(dbName: str, schemaName: str, materializationName: str, materializationType: MaterializationType):
-  return f"""convert_timezone('UTC', last_altered)::timestamp as last_altered_converted, 
+  return f"""select convert_timezone('UTC', last_altered)::timestamp as last_altered_converted, 
   sysdate() as now, 
   datediff(minute, last_altered_converted, now) as time_diff
-  from {dbName}.information_schema.{materializationType.value}s
+  from {dbName}.information_schema.{materializationType}s
   where table_schema = '{schemaName.upper()}' and table_name = '{materializationName.upper()}' limit 1;"""
 
 def getSchemaChangeQuery(dbName: str, schemaName: str, tableName: str):
