@@ -16,11 +16,11 @@ Parameters:
   ApiRootAccountService:
     Type: String
     Description: prod account api root
-    Default: https://p2krek4fsj.execute-api.eu-central-1.amazonaws.com/production
+    Default: https://b5oerjsr53kgpitik7yu3i6eca0pklio.lambda-url.eu-central-1.on.aws
   ApiRootIntegrationService:
     Type: String
     Description: prod integration api root
-    Default: https://wej7xjkvug.execute-api.eu-central-1.amazonaws.com/production
+    Default: https://hnyjrlph7pkg2ty2trf3bo7o6m0emujf.lambda-url.eu-central-1.on.aws
 
 Resources:
   TestSuiteExecution:

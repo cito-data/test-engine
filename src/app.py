@@ -9,6 +9,7 @@ from execute_test_controller import ExecuteTestController
 import logging
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 # import requests

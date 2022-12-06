@@ -7,6 +7,7 @@ import logging
 from config import getIntegrationApiRoot, getMode
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class IntegrationApiRepo(IIntegrationApiRepo):
   def __init__(self) -> None:

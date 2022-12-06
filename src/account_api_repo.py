@@ -6,6 +6,7 @@ import logging
 from config import getAccountApiRoot, getMode
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class AccountApiRepo(IAccountApiRepo):
   def __init__(self) -> None:

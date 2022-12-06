@@ -18,6 +18,7 @@ import uuid
 from result import Result
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 def getAnomalyMessage(targetResourceId: str, databaseName: str, schemaName: str, materializationName: str, columnName: Union[str, None], testType: str):
     targetResourceUrlTemplate = f'__base_url__?targetResourceId={targetResourceId}&ampisColumn={not not columnName}'

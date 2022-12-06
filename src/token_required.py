@@ -9,6 +9,7 @@ import logging
 from config import getCognitoRegion, getCognitoUserPoolId
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 @dataclass
 class ProcessedAuth:

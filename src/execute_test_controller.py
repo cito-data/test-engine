@@ -12,6 +12,7 @@ from base_controller import BaseController, CodeHttp, UserAccountInfo
 import logging
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 # def base64toUTF8(base64String):
 #     base64Encoded = base64String.encode("UTF-8")

@@ -2,6 +2,7 @@ from typing import Generic, TypeVar, Union
 import logging
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 T = TypeVar("T")

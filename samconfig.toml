@@ -7,5 +7,5 @@ s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-56398tv3r79x"
 s3_prefix = "test-engine"
 region = "eu-central-1"
 capabilities = "CAPABILITY_IAM"
-parameter_overrides = "Environment=\"production\" ApiRootAccountService=\"https://p2krek4fsj.execute-api.eu-central-1.amazonaws.com/production\" ApiRootIntegrationService=\"https://wej7xjkvug.execute-api.eu-central-1.amazonaws.com/production\""
+parameter_overrides = "Environment=\"production\" ApiRootAccountService=\"https://b5oerjsr53kgpitik7yu3i6eca0pklio.lambda-url.eu-central-1.on.aws\" ApiRootIntegrationService=\"https://hnyjrlph7pkg2ty2trf3bo7o6m0emujf.lambda-url.eu-central-1.on.aws\""
 image_repositories = ["TestSuiteExecution=966593446935.dkr.ecr.eu-central-1.amazonaws.com/testengine06864fc3/testsuiteexecution2236aaabrepo"]

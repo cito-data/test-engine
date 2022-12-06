@@ -11,6 +11,7 @@ from result import Result
 import logging
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 T = TypeVar("T")
