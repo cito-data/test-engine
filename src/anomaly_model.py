@@ -52,7 +52,7 @@ class AnomalyModel(ABC):
     absoluteDeviation = self._dataSeries.apply(self._absoluteDeviation)
     return float(absoluteDeviation.median())
 
-  def _mad(dataSeries):
+  def _mad(self, dataSeries: pd.Series):
     return(dataSeries - dataSeries.mean()).abs().mean()
 
   def _calculateModifiedZScore(self, x) -> float:
@@ -83,7 +83,7 @@ class AnomalyModel(ABC):
     self._expectedValueUpperBound = self._calculateBound(self._threshold*1)
     self._expectedValueLowerBound = self._calculateBound(self._threshold*-1)
 
-    self._deviation = self._newDataPoint/self._expectedValue
+    self._deviation = self._newDataPoint/self._expectedValue if self._expectedValue > 0 else 0 
 
     return ResultDto(self._meanAbsoluteDeviation, self._medianAbsoluteDeviation, self._modifiedZScore, self._isAnomaly(), self._expectedValue, self._expectedValueUpperBound, self._expectedValueLowerBound, self._deviation)
 
