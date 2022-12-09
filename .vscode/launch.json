@@ -17,14 +17,14 @@
         "payload": {
           "json": {
             "body": {
-              "testType": "ColumnNullness",
+              "testType": "MaterializationRowCount",
               "targetOrgId": "631789bf27518f97cf1c82b7"
             },
             "headers": {
-              "Authorization": "BearereyJraWQiOiI3Wld4S1wvUEYrWU1rUWhcLzlpR1JzZEtjVDE1ZFpUdFNnMXRxMTFPcEdCdW89IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoic3lzdGVtLWludGVybmFsXC9zeXN0ZW0taW50ZXJuYWwiLCJhdXRoX3RpbWUiOjE2NzA0MDE2ODksImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS1jZW50cmFsLTEuYW1hem9uYXdzLmNvbVwvZXUtY2VudHJhbC0xXzBtdUd0S01rMyIsImV4cCI6MTY3MDQwNTI4OSwiaWF0IjoxNjcwNDAxNjg5LCJ2ZXJzaW9uIjoyLCJqdGkiOiIyYzQ1MTA1Zi0wMmY2LTQ1M2QtYmE4Zi03MzZkZTBiMDllM2EiLCJjbGllbnRfaWQiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSJ9.cKN5YWQpjzcR8j3oYCuBoQuOaL9n5oBpjijE-BRPc_vQvGf1eNiD6JMdmQySCg9V1B8WeUSUK7FRy4f9Ii_ZlL6kQrg60fjXrR6q-eiPocZPLtvdgm69apk91Uho5234wz0hw6CAxzhE_UBLXS47q4MYVxum4zaU2MhB5mVU44KtQzFlfS10N_kxbSbzlBEMvpjpX0Y3H-bUSpdE55iQfrITwWj5KvouGvmsf6FRG6EbLNIfO9WIUpifZMrEHu7U9J2Fa1S5cmSeqRhJ5xDIhwVd_f9XRw3EDNOlaWlxP1r2iY4Md-PS8aSwxK5cbnXYReixWsxc24tGngOMvqODEA"
+              "Authorization": "BearereyJraWQiOiI3Wld4S1wvUEYrWU1rUWhcLzlpR1JzZEtjVDE1ZFpUdFNnMXRxMTFPcEdCdW89IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoic3lzdGVtLWludGVybmFsXC9zeXN0ZW0taW50ZXJuYWwiLCJhdXRoX3RpbWUiOjE2NzA2MDIyODksImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS1jZW50cmFsLTEuYW1hem9uYXdzLmNvbVwvZXUtY2VudHJhbC0xXzBtdUd0S01rMyIsImV4cCI6MTY3MDYwNTg4OSwiaWF0IjoxNjcwNjAyMjg5LCJ2ZXJzaW9uIjoyLCJqdGkiOiIwYmY2OGRmNi04OTlkLTRlY2QtOTU5YS04NGQ2YTMwZjU3NzciLCJjbGllbnRfaWQiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSJ9.bt59lti2Q5iZJyhjRoLMbNISe1tDCnTZiy4CfK4uqXRauTFYTYz9RQdTQh1z0y211w1sVYN35iZNdZuNQ4XPVQL4OpsUBmqGVWVy9Ovc2-meBxJwAA2Hk4NTBG0lVM63FKrKEPouYqmXKHcdzJIJtocbfrdt4twNlrXB3KIyrIJlCsLtA1YP7F86n5U6_7OwfDtUcPbgNLt6OBCzRc3kFmJu1HflYwbI3b7fOBhXab7wLOe8aTQxh7NiAVFJrNRD019jo-f6nWkgRMKHbw0X3jz1rbnvv-fzboBFZUqoz3Mf8KCdouqHWQ6m-h0wcH-M_axR9Amo0ANgPasSKNljsw"
             },
             "pathParameters": {
-              "testSuiteId": "be220312-075c-4a7a-9faa-ea04be8d74f7",
+              "testSuiteId": "b531c4f1-6df6-44de-b121-1e50a24c5dc1",
             }
           }
         },
