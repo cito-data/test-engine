@@ -1,5 +1,5 @@
 from dataclasses import dataclass, asdict
-import datetime
+from datetime import date, datetime, timezone
 import json
 from typing import Any, Union
 from numpy import integer
@@ -279,8 +279,8 @@ class ExecuteTest(IUseCase):
             raise Exception(
                 'Sf query error - operation: history data')
 
-        return [element['VALUE']
-                for element in getHistoricalDataResult.value.content[self._organizationId]]
+        return sorted([(element['EXECUTED_ON'], element['VALUE'])
+                for element in getHistoricalDataResult.value.content[self._organizationId]])
 
     def _getLastMatSchema(self) -> Union[MaterializationSchema, None]:
         query = getLastMatSchemaQuery(self._testSuiteId)
@@ -310,7 +310,7 @@ class ExecuteTest(IUseCase):
     def _runModel(self, threshold: integer, newData: float, historicalData: "list[float]") -> AnomalyTestResultDto:
         return CommonModel(newData, historicalData, threshold).run()
 
-    def _runTest(self, newDataPoint, historicalData: "list[float]") -> AnomalyTestExecutionResult:
+    def _runTest(self, newDataPoint, historicalData: "list[(str,float)]") -> AnomalyTestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
         schemaName = self._testDefinition['SCHEMA_NAME']
         materializationName = self._testDefinition['MATERIALIZATION_NAME']
@@ -322,12 +322,13 @@ class ExecuteTest(IUseCase):
         targetResourceId = self._testDefinition['TARGET_RESOURCE_ID']
         
 
-        executedOn = datetime.datetime.utcnow().isoformat()
+        executedOn = datetime.utcnow()
 
         self._insertExecutionEntry(
-            executedOn, CitoTableType.TestExecutions)
+            executedOn.isoformat(), CitoTableType.TestExecutions)
 
-        if(len(historicalData) <= self._MIN_HISTORICAL_DATA_NUMBER_TEST_CONDITION):
+        historicalDataLength = len(historicalData)
+        if(historicalDataLength <= self._MIN_HISTORICAL_DATA_NUMBER_TEST_CONDITION or (historicalDataLength > 0 and (executedOn - datetime.fromisoformat(historicalData[0][0].replace('Z', ''))).days < 7)):
             self._insertHistoryEntry(
                 newDataPoint, False, None)
 
@@ -370,7 +371,7 @@ class ExecuteTest(IUseCase):
         testType = self._testDefinition['TEST_TYPE']
         targetResourceId = self._testDefinition['TARGET_RESOURCE_ID']
         
-        executedOn = datetime.datetime.utcnow().isoformat()
+        executedOn = datetime.utcnow().isoformat()
 
         testResult = self._runSchemaChangeModel(
             oldSchema, newSchema)

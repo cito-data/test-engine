@@ -28,8 +28,11 @@ def getInsertQuery(valueSets: "list[dict[str, Any]]", type: CitoTableType):
   ({valueString});"""
 
 def getHistoryQuery(testSuiteId: str):
-  return f""" select value from cito.observability.test_history
-    where test_suite_id = '{testSuiteId}' and (not is_anomaly or user_feedback_is_anomaly = 0);
+  return f""" select test_executions.executed_on as executed_on, test_history.value as value 
+  from cito.observability.test_history as test_history
+  inner join cito.observability.test_executions as test_executions
+    on test_history.execution_id = test_executions.id
+    where test_history.test_suite_id = '{testSuiteId}' and (not test_history.is_anomaly or test_history.user_feedback_is_anomaly = 0);
   """
 
 def getLastMatSchemaQuery(testSuiteId: str):
