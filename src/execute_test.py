@@ -115,7 +115,8 @@ ExecuteTestResponseDto = Result[Union[AnomalyTestExecutionResult, NominalTestExe
 
 class ExecuteTest(IUseCase):
 
-    _MIN_HISTORICAL_DATA_NUMBER_TEST_CONDITION = 10
+    _MIN_HISTORICAL_DATA_TEST_NUMBER_CONDITION = 10
+    _MIN_HISTORICAL_DATA_DAY_NUMBER_CONDITION = 7
 
     _testSuiteId: str
     _testType: Union[AnomalyColumnTest, AnomalyMatTest, NominalMatTest]
@@ -307,7 +308,7 @@ class ExecuteTest(IUseCase):
         
         return newData
 
-    def _runModel(self, threshold: integer, newData: float, historicalData: "list[float]") -> AnomalyTestResultDto:
+    def _runModel(self, threshold: integer, newData: float, historicalData: "list[tuple[str, float]]") -> AnomalyTestResultDto:
         return CommonModel(newData, historicalData, threshold).run()
 
     def _runTest(self, newDataPoint, historicalData: "list[(str,float)]") -> AnomalyTestExecutionResult:
@@ -323,19 +324,21 @@ class ExecuteTest(IUseCase):
         
 
         executedOn = datetime.utcnow()
+        executedOnISOFormat = executedOn.isoformat()
 
         self._insertExecutionEntry(
-            executedOn.isoformat(), CitoTableType.TestExecutions)
+            executedOnISOFormat, CitoTableType.TestExecutions)
 
         historicalDataLength = len(historicalData)
-        if(historicalDataLength <= self._MIN_HISTORICAL_DATA_NUMBER_TEST_CONDITION or (historicalDataLength > 0 and (executedOn - datetime.fromisoformat(historicalData[0][0].replace('Z', ''))).days < 7)):
+        belowDayBoundary = True if historicalDataLength == 0 else (executedOn - datetime.fromisoformat(historicalData[0][0].replace('Z', ''))).days < self._MIN_HISTORICAL_DATA_DAY_NUMBER_CONDITION
+        if(historicalDataLength <= self._MIN_HISTORICAL_DATA_TEST_NUMBER_CONDITION or belowDayBoundary):
             self._insertHistoryEntry(
                 newDataPoint, False, None)
 
             return AnomalyTestExecutionResult(testSuiteId, self._testDefinition['TEST_TYPE'], self._executionId, targetResourceId, self._organizationId, True, None, None)
 
         testResult = self._runModel(
-            threshold, newDataPoint, historicalData)
+            threshold, (executedOnISOFormat, newDataPoint), historicalData)
 
         self._insertResultEntry(testResult)
 
@@ -351,7 +354,7 @@ class ExecuteTest(IUseCase):
             alertData = AnomalyTestAlertData(alertId, anomalyMessage, databaseName, schemaName, materializationName, materializationType, testResult.expectedValueUpperBound,
                                                   testResult.expectedValueLowerBound, columnName, newDataPoint)
 
-        testData = AnomalyTestData(executedOn, testResult.isAnomaly, testResult.modifiedZScore, testResult.deviation)
+        testData = AnomalyTestData(executedOnISOFormat, testResult.isAnomaly, testResult.modifiedZScore, testResult.deviation)
         
         self._insertHistoryEntry(
             newDataPoint, testResult.isAnomaly, alertId)

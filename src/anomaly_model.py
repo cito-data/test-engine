@@ -19,13 +19,18 @@ class ResultDto:
 
   deviation: float
 
+@dataclass
+class Frame:
+  executedAt: pd.Series
+  values: pd.Series
+
 class AnomalyModel(ABC):
 
-  _newDataPoint: float
-  _historicalData: "list[float]"
+  _newDataPoint: "tuple[str, float]"
+  _historicalData: "list[tuple[str, float]]"
   _threshold: int
 
-  _dataSeries: pd.Series
+  _data: pd.DataFrame
 
   _median: float
   _medianAbsoluteDeviation: float
@@ -39,7 +44,7 @@ class AnomalyModel(ABC):
   _deviation: float
   
   @abstractmethod
-  def __init__(self, newDataPoint: float, historicalData: "list[float]", threshold: int) -> None:
+  def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int) -> None:
     self._newDataPoint = newDataPoint
     self._historicalData = historicalData
     self._threshold = threshold
@@ -48,19 +53,23 @@ class AnomalyModel(ABC):
     return abs(x - self._median)
 
   def _calculateMedianAbsoluteDeviation(self) -> float:
-    self._median = float(self._dataSeries.median())
-    absoluteDeviation = self._dataSeries.apply(self._absoluteDeviation)
+    values = self._data['value']
+    self._median = float(values.median())
+    absoluteDeviation = values.apply(self._absoluteDeviation)
     return float(absoluteDeviation.median())
 
-  def _mad(self, dataSeries: pd.Series):
-    return(dataSeries - dataSeries.mean()).abs().mean()
+  def _mad(self):
+    values = self._data['value']
+    return(values - values.mean()).abs().mean()
 
-  def _calculateModifiedZScore(self, x) -> float:
+  def _calculateModifiedZScore(self) -> float:
     # https://www.ibm.com/docs/en/cognos-analytics/11.1.0?topic=terms-modified-z-score
+    x = self._newDataPoint[1]
+
     if self._medianAbsoluteDeviation == 0 and self._meanAbsoluteDeviation == 0:
       return 0.0
     if self._medianAbsoluteDeviation == 0:
-      self._meanAbsoluteDeviation = self._mad(self._dataSeries)
+      self._meanAbsoluteDeviation = self._mad()
       return (x - self._median)/(1.253314*self._meanAbsoluteDeviation)
     return (x - self._median)/(1.486*self._medianAbsoluteDeviation)
 
@@ -72,23 +81,35 @@ class AnomalyModel(ABC):
   def _isAnomaly(self) -> bool:
     return bool(abs(self._modifiedZScore) > self._threshold)
     
-  def run(self) -> ResultDto:
-    self._dataSeries = pd.Series([self._newDataPoint] + self._historicalData)
-    self._medianAbsoluteDeviation = self._calculateMedianAbsoluteDeviation()
-    self._meanAbsoluteDeviation = self._mad(self._dataSeries)
+  def _buildFrame(self) -> Frame:
+    executedAt = []
+    values = []
+    
+    for el in self._historicalData:
+      executedAt.append(el[0])
+      values.append(el[1])
+    
+    frame = {'executedAt': pd.Series(executedAt + [self._newDataPoint[0]]), 'value': pd.Series(values + [self._newDataPoint[1]])}
 
-    self._modifiedZScore = self._calculateModifiedZScore(self._newDataPoint)
+    return frame
+
+  def run(self) -> ResultDto:
+    self._data = pd.DataFrame(self._buildFrame())
+    self._medianAbsoluteDeviation = self._calculateMedianAbsoluteDeviation()
+    self._meanAbsoluteDeviation = self._mad()
+
+    self._modifiedZScore = self._calculateModifiedZScore()
 
     self._expectedValue = self._median
     self._expectedValueUpperBound = self._calculateBound(self._threshold*1)
     self._expectedValueLowerBound = self._calculateBound(self._threshold*-1)
 
-    self._deviation = self._newDataPoint/self._expectedValue if self._expectedValue > 0 else 0 
+    self._deviation = self._newDataPoint[1]/self._expectedValue if self._expectedValue > 0 else 0 
 
     return ResultDto(self._meanAbsoluteDeviation, self._medianAbsoluteDeviation, self._modifiedZScore, self._isAnomaly(), self._expectedValue, self._expectedValueUpperBound, self._expectedValueLowerBound, self._deviation)
 
 class CommonModel(AnomalyModel):
-  def __init__(self, newData: float, historicalData: "list[float]", threshold: int, ) -> None:
+  def __init__(self, newData: float, historicalData: "list[tuple[str, float]]", threshold: int, ) -> None:
     super().__init__(newData, historicalData, threshold)
 
   
