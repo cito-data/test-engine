@@ -319,7 +319,6 @@ class ExecuteTest(IUseCase):
         columnName = self._testDefinition['COLUMN_NAME']
         testSuiteId = self._testDefinition['ID']
         threshold = self._testDefinition['THRESHOLD']
-        executionFrequency = self._testDefinition['EXECUTION_FREQUENCY']
         targetResourceId = self._testDefinition['TARGET_RESOURCE_ID']
         
 

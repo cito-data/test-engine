@@ -8,6 +8,9 @@ sam build --use-container;
 sam local start-api -p 3047;
 sam deploy;
 
+sam build --use-container; sam deploy;
+
+
 <!-- python3 -m venv venv
 source venv/bin/activate
 
