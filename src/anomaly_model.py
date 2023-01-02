@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import datetime
 from typing import Union
 import pandas as pd 
+from prophet import Prophet
 
 @dataclass
 class ResultDto:
@@ -53,13 +54,13 @@ class AnomalyModel(ABC):
     return abs(x - self._median)
 
   def _calculateMedianAbsoluteDeviation(self) -> float:
-    values = self._data['value']
+    values = self._data['y']
     self._median = float(values.median())
     absoluteDeviation = values.apply(self._absoluteDeviation)
     return float(absoluteDeviation.median())
 
   def _mad(self):
-    values = self._data['value']
+    values = self._data['y']
     return(values - values.mean()).abs().mean()
 
   def _calculateModifiedZScore(self) -> float:
@@ -89,7 +90,7 @@ class AnomalyModel(ABC):
       executedAt.append(el[0])
       values.append(el[1])
     
-    frame = {'executedAt': pd.Series(executedAt + [self._newDataPoint[0]]), 'value': pd.Series(values + [self._newDataPoint[1]])}
+    frame = {'ds': pd.Series(executedAt + [self._newDataPoint[0]]), 'y': pd.Series(values + [self._newDataPoint[1]])}
 
     return frame
 
@@ -105,6 +106,18 @@ class AnomalyModel(ABC):
     self._expectedValueLowerBound = self._calculateBound(self._threshold*-1)
 
     self._deviation = self._newDataPoint[1]/self._expectedValue if self._expectedValue > 0 else 0 
+
+    m = Prophet(yearly_seasonality=True, weekly_seasonality=True, daily_seasonality=True)
+    m.fit(self._data)
+
+    dates = pd.date_range(
+        end=pd.Timestamp.now(),
+        periods=1,
+        )
+
+    future = pd.DataFrame({'ds': dates})
+
+    forecast = m.predict(future)
 
     return ResultDto(self._meanAbsoluteDeviation, self._medianAbsoluteDeviation, self._modifiedZScore, self._isAnomaly(), self._expectedValue, self._expectedValueUpperBound, self._expectedValueLowerBound, self._deviation)
 
