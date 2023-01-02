@@ -17,14 +17,14 @@
         "payload": {
           "json": {
             "body": {
-              "testType": "MaterializationFreshness",
+              "testType": "ColumnCardinality",
               "targetOrgId": "631789bf27518f97cf1c82b7"
             },
             "headers": {
-              "Authorization": "BearereyJraWQiOiI3Wld4S1wvUEYrWU1rUWhcLzlpR1JzZEtjVDE1ZFpUdFNnMXRxMTFPcEdCdW89IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoic3lzdGVtLWludGVybmFsXC9zeXN0ZW0taW50ZXJuYWwiLCJhdXRoX3RpbWUiOjE2NzA4Mzc5OTIsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS1jZW50cmFsLTEuYW1hem9uYXdzLmNvbVwvZXUtY2VudHJhbC0xXzBtdUd0S01rMyIsImV4cCI6MTY3MDg0MTU5MiwiaWF0IjoxNjcwODM3OTkyLCJ2ZXJzaW9uIjoyLCJqdGkiOiI5MGIyNTM2Ny05YTAzLTRlOTQtOGQwMS01ZmU4NzMzMDdmZTMiLCJjbGllbnRfaWQiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSJ9.abG0NRQBS8kaOzXbJ-jtPtUm4QvssNmUGxwdB7lu4sQhpTr_tISxdg-QUxPsZNaUgRwUR19y18CMaqGi_yfNnCdT-MXAA0bhVJhZyLhCZwYlBs7pQA0KZGWCmwWOt1Isd6Pdwhrsd3uz1U-0FZTAl8rIZE5ZEmX3nEZ4ZC1ducyH9ka1iEHC5oC3D5-xwQX40nkd012ljEX3-WhBy8y9e-Vt2UEok9mEKbHJo_Mkhpr5gxckZ4GjFfE2pJHaEPQ2CyEkSufN9cemcHUBgzDq6Uo35yMSd7JJq2Wb89ZHpgAQ-43CGWrjRy_-X8Z4uD4swQObFZuZ1gMGZLLwTFOVFA"
+              "Authorization": "BearereyJraWQiOiI3Wld4S1wvUEYrWU1rUWhcLzlpR1JzZEtjVDE1ZFpUdFNnMXRxMTFPcEdCdW89IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoic3lzdGVtLWludGVybmFsXC9zeXN0ZW0taW50ZXJuYWwiLCJhdXRoX3RpbWUiOjE2NzI2NTYyMjksImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS1jZW50cmFsLTEuYW1hem9uYXdzLmNvbVwvZXUtY2VudHJhbC0xXzBtdUd0S01rMyIsImV4cCI6MTY3MjY1OTgyOSwiaWF0IjoxNjcyNjU2MjI5LCJ2ZXJzaW9uIjoyLCJqdGkiOiI0ZDgwYzE2MS03ZWFhLTQ1MGEtYWM4MC01Mjg0ZjYwODM4Y2EiLCJjbGllbnRfaWQiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSJ9.U-W4V6tZSLWNTafrRv-1vMSPtrd2vN1KyvYD_uKFBle7gLo5xNlf0RFyK3rpC8mTn7lBi-pXBYlRS6cnjBCG6tNkA3ula4pAKiF14kGfIXKb6Hv5_h6IkAK6nG3sPCfM6OW3dth5Cz2TledzFsYLX--kz7pnlNVZwPyL0wq-9UFF7TE5sefg4h_kbsJwh4-F9nI_s11ZcVA-AX5AwdfWEywYQFWVKUXIQDYRY8_4PCl6IXKkpH3OJjibzuBHz-VfocCZPjYHZRtMCisCmDJDhzkphRdcgZnugRKhvIEFEFIgE4_q11LlJp8FBn7KLPXGyoQetCuu3XbvdaZrXCmHYw"
             },
             "pathParameters": {
-              "testSuiteId": "ff34751d-e56c-4267-9f05-97c6c279f0c6",
+              "testSuiteId": "148cbac9-437f-4e26-80e4-bdc4968d839f",
             }
           }
         },
