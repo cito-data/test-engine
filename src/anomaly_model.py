@@ -119,6 +119,7 @@ class AnomalyModel(ABC):
 
     forecast = m.predict(future)
 
+
     return ResultDto(self._meanAbsoluteDeviation, self._medianAbsoluteDeviation, self._modifiedZScore, self._isAnomaly(), self._expectedValue, self._expectedValueUpperBound, self._expectedValueLowerBound, self._deviation)
 
 class CommonModel(AnomalyModel):
