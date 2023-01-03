@@ -8,58 +8,83 @@ from prophet import Prophet
 
 
 @dataclass
+class _AnalysisResult(ABC):
+    expectedValue: float
+    expectedValueUpper: float
+    expectedValueLower: float
+    deviation: float
+    isAnomaly: bool
+
+
+@dataclass
+class _ZScoreResult(_AnalysisResult):
+    median: float
+    medianAbsoluteDeviation: float
+    meanAbsoluteDeviation: Union[float, None]
+    modifiedZScore: float
+
+
+@dataclass
 class ResultDto:
     meanAbsoluteDeviation: Union[float, None]
     medianAbsoluteDeviation: float
     modifiedZScore: float
 
-    isAnomaly: bool
-
     expectedValue: float
-    expectedValueUpperBound: float
-    expectedValueLowerBound: float
-
-    forecastValue: float
-    forecastValueUpperBound: float
-    forecastValueLowerBound: float
-
-    yearlySeasonalityForecastValue: float
-    yearlySeasonalityForecastValueUpperBound: float
-    yearlySeasonalityForecastValueLowerBound: float
-
-    weeklySeasonalityForecastValue: float
-    weeklySeasonalityForecastValueUpperBound: float
-    weeklySeasonalityForecastValueLowerBound: float
-
-    dailySeasonalityForecastValue: float
-    dailySeasonalityForecastValueUpperBound: float
-    dailySeasonalityForecastValueLowerBound: float
+    expectedValueUpper: float
+    expectedValueLower: float
 
     deviation: float
 
+    isAnomaly: bool
 
-class AnomalyModel(ABC):
 
+class _Analysis(ABC):
     _newDataPoint: pd.DataFrame
     _historicalData: pd.DataFrame
     _threshold: int
-
-    _median: float
-    _medianAbsoluteDeviation: float
-    _meanAbsoluteDeviation: Union[float, None] = None
-    _modifiedZScore: float
-
-    _expectedValue: float
-    _expectedValueUpperBound: float
-    _expectedValueLowerBound: float
-
-    _deviation: float
 
     @abstractmethod
     def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int) -> None:
         self._newDataPoint = self._buildNewDataPointFrame(newDataPoint)
         self._historicalData = self._buildHistoricalDF(historicalData)
         self._threshold = threshold
+
+    def _buildNewDataPointFrame(self, newDataPoint: "tuple[str, float]") -> pd.DataFrame:
+        return pd.DataFrame({'ds': pd.Series([newDataPoint[0]]), 'y': pd.Series([newDataPoint[1]])})
+
+    def _buildHistoricalDF(self, historicalData: "list[tuple[str, float]]") -> pd.DataFrame:
+        executedAt = []
+        values = []
+
+        for el in historicalData:
+            executedAt.append(el[0])
+            values.append(el[1])
+
+        frame = {'ds': pd.Series(executedAt), 'y': pd.Series(values)}
+
+        return pd.DataFrame(frame)
+
+    @abstractmethod
+    def _runAnomalyCheck(self):
+        return
+
+    @abstractmethod
+    def analyze(self):
+        return
+
+
+class _ZScoreAnalysis(_Analysis):
+    _median: float
+    _medianAbsoluteDeviation: float
+    _meanAbsoluteDeviation: Union[float, None]
+    _modifiedZScore: float
+    _expectedValue: float
+    _expectedValueUpper: float
+    _expectedValueLower: float
+
+    def __init__(self, newDataPoint: float, historicalData: "list[tuple[str, float]]", threshold: int, ) -> None:
+        super().__init__(newDataPoint, historicalData, threshold)
 
     def _absoluteDeviation(self, x) -> float:
         return abs(x - self._median)
@@ -94,38 +119,73 @@ class AnomalyModel(ABC):
             return (1.253314*self._meanAbsoluteDeviation)*zScoreThreshold + self._median
         return (1.486*self._medianAbsoluteDeviation)*zScoreThreshold + self._median
 
-    def _isAnomaly(self) -> bool:
-        return bool(abs(self._modifiedZScore) > self._threshold)
+    def _runAnomalyCheck(self) -> _AnalysisResult:
+        newValue = self._newDataPoint['y'].values[0]
 
-    def _buildNewDataPointFrame(self, newDataPoint: "tuple[str, float]") -> pd.DataFrame:
-        return pd.DataFrame({'ds': pd.Series([newDataPoint[0]]), 'y': pd.Series([newDataPoint[1]])})
+        isAnomaly = abs(self._modifiedZScore) > self._threshold
+        deviation = newValue / \
+            self._expectedValue if self._expectedValue > 0 else 0
 
-    def _buildHistoricalDF(self, historicalData: "list[tuple[str, float]]") -> pd.DataFrame:
-        executedAt = []
-        values = []
+        return _AnalysisResult(self._expectedValue, self._expectedValueUpper, self._expectedValueLower, deviation, isAnomaly)
 
-        for el in historicalData:
-            executedAt.append(el[0])
-            values.append(el[1])
-
-        frame = {'ds': pd.Series(executedAt), 'y': pd.Series(values)}
-
-        return pd.DataFrame(frame)
-
-    def run(self) -> ResultDto:
+    def analyze(self) -> _ZScoreResult:
         self._medianAbsoluteDeviation = self._calculateMedianAbsoluteDeviation()
         self._meanAbsoluteDeviation = self._mad()
 
         self._modifiedZScore = self._calculateModifiedZScore()
 
         self._expectedValue = self._median
-        self._expectedValueUpperBound = self._calculateBound(self._threshold*1)
-        self._expectedValueLowerBound = self._calculateBound(
+        self._expectedValueUpper = self._calculateBound(self._threshold*1)
+        self._expectedValueLower = self._calculateBound(
             self._threshold*-1)
 
-        self._deviation = self._newDataPoint['y'].values[0] / \
-            self._expectedValue if self._expectedValue > 0 else 0
+        anomalyCheckResult = self._runAnomalyCheck()
 
+        return _ZScoreResult(anomalyCheckResult.expectedValue, anomalyCheckResult.expectedValueUpper, anomalyCheckResult.expectedValueLower, anomalyCheckResult.deviation, anomalyCheckResult.isAnomaly, self._median, self._medianAbsoluteDeviation, self._meanAbsoluteDeviation, self._modifiedZScore, self._expectedValueUpper, self._expectedValueLower)
+
+
+class _ForecastAnalysis(_Analysis):
+    _yhat: float
+    _yhat_lower: float
+    _yhat_upper: float
+    _daily: Union[float, None]
+    _daily_lower: Union[float, None]
+    _daily_upper: Union[float, None]
+    _weekly: Union[float, None]
+    _weekly_lower: Union[float, None]
+    _weekly_upper: Union[float, None]
+    _yearly: Union[float, None]
+    _yearly_lower: Union[float, None]
+    _yearly_upper: Union[float, None]
+
+    def __init__(self, newDataPoint: float, historicalData: "list[tuple[str, float]]", threshold: int, ) -> None:
+        super().__init__(newDataPoint, historicalData, threshold)
+
+    def _runAnomalyCheck(self) -> _AnalysisResult:
+        newValue = self._newDataPoint['y'].values[0]
+
+        if self._daily and (newValue <= self._daily_upper or newValue >= self._daily_lower):
+            deviation = self._newDataPoint['y'].values[0] / \
+                self._daily if self._daily > 0 else 0
+            return _AnalysisResult(self._daily, self._daily_upper, self._daily_lower, deviation, False)
+
+        if self._weekly and (newValue <= self._weekly_upper or newValue >= self._weekly_lower):
+            deviation = self._newDataPoint['y'].values[0] / \
+                self._weekly if self._weekly > 0 else 0
+            return _AnalysisResult(self._weekly, self._weekly_upper, self._weekly_lower, deviation, False)
+
+        if self._yearly and (newValue <= self._yearly_upper or newValue >= self._yearly_lower):
+            deviation = self._newDataPoint['y'].values[0] / \
+                self._yearly if self._yearly > 0 else 0
+            return _AnalysisResult(self._yearly, self._yearly_upper, self._yearly_lower, deviation, False)
+
+        deviation = self._newDataPoint['y'].values[0] / \
+            self._yhat if self._yhat > 0 else 0
+        isAnomaly = newValue <= self._yhat_upper or newValue >= self._yhat_lower
+
+        return _AnalysisResult(self._yhat, self._yhat_upper, self._yhat_lower, deviation, isAnomaly)
+
+    def analyze(self) -> _AnalysisResult:
         m = Prophet()
         m.fit(self._historicalData)
 
@@ -138,24 +198,57 @@ class AnomalyModel(ABC):
 
         forecast = m.predict(future)
 
-        forecastResult = {
-            'yhat': forecast['yhat'].values[0],
-            'yhat_lower': forecast['yhat_lower'].values[0],
-            'yhat_upper': forecast['yhat_upper'].values[0],
-            'daily': forecast['daily'].values[0] if 'daily' in forecast.columns else None,
-            'daily_lower': forecast['daily_lower'].values[0] if 'daily_lower' in forecast.columns else None,
-            'daily_upper': forecast['daily_upper'].values[0] if 'daily_upper' in forecast.columns else None,
-            'weekly': forecast['weekly'].values[0] if 'weekly' in forecast.columns else None,
-            'weekly_lower': forecast['weekly_lower'].values[0] if 'weekly_lower' in forecast.columns else None,
-            'weekly_upper': forecast['weekly_upper'].values[0] if 'weekly_upper' in forecast.columns else None,
-            'yearly': forecast['yearly'].values[0] if 'yearly' in forecast.columns else None,
-            'yearly_lower': forecast['yearly_lower'].values[0] if 'yearly_lower' in forecast.columns else None,
-            'yearly_upper': forecast['yearly_upper'].values[0] if 'yearly_upper' in forecast.columns else None,
-        }
+        self._yhat = forecast['yhat'].values[0]
+        self._yhat_lower = forecast['yhat_lower'].values[0]
+        self._yhat_upper = forecast['yhat_upper'].values[0]
+        self._daily = forecast['daily'].values[0] if 'daily' in forecast.columns else None
+        self._daily_lower = forecast['daily_lower'].values[0] if 'daily_lower' in forecast.columns else None
+        self._daily_upper = forecast['daily_upper'].values[0] if 'daily_upper' in forecast.columns else None
+        self._weekly = forecast['weekly'].values[0] if 'weekly' in forecast.columns else None
+        self._weekly_lower = forecast['weekly_lower'].values[0] if 'weekly_lower' in forecast.columns else None
+        self._weekly_upper = forecast['weekly_upper'].values[0] if 'weekly_upper' in forecast.columns else None
+        self._yearly = forecast['yearly'].values[0] if 'yearly' in forecast.columns else None
+        self._yearly_lower = forecast['yearly_lower'].values[0] if 'yearly_lower' in forecast.columns else None
+        self._yearly_upper = forecast['yearly_upper'].values[0] if 'yearly_upper' in forecast.columns else None
 
-        return ResultDto(self._meanAbsoluteDeviation, self._medianAbsoluteDeviation, self._modifiedZScore, self._isAnomaly(), self._expectedValue, self._expectedValueUpperBound, self._expectedValueLowerBound, forecastResult['yhat'], forecastResult['yhat_upper'], forecastResult['yhat_lower'], forecastResult['daily'], forecastResult['daily_upper'], forecastResult['daily_lower'], forecastResult['weekly'], forecastResult['weekly_upper'], forecastResult['weekly_lower'], forecastResult['yearly'], forecastResult['yearly_upper'], forecastResult['yearly_lower'], self._deviation)
+        anomalyCheckResult = self._runAnomalyCheck()
+
+        return _AnalysisResult(anomalyCheckResult.expectedValue, anomalyCheckResult.expectedValueUpper, anomalyCheckResult.expectedValueLower, anomalyCheckResult.deviation, anomalyCheckResult.isAnomaly)
 
 
-class CommonModel(AnomalyModel):
-    def __init__(self, newData: float, historicalData: "list[tuple[str, float]]", threshold: int, ) -> None:
-        super().__init__(newData, historicalData, threshold)
+class _AnomalyModel(ABC):
+    _newDataPoint: "tuple[str, float]"
+
+    _zScoreAnalysis: _ZScoreAnalysis
+    _forecastAnalysis: _ForecastAnalysis
+
+    @abstractmethod
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int) -> None:
+        self._zScoreAnalysis = _ZScoreAnalysis(
+            newDataPoint, historicalData, threshold)
+        self._forecastAnalysis = _ForecastAnalysis(
+            newDataPoint, historicalData, threshold)
+
+    def run(self) -> ResultDto:
+        zScoreAnalysisResult = self._zScoreAnalysis.analyze()
+        forecastAnalysisResult = self._forecastAnalysis.analyze()
+
+        isAnomaly = zScoreAnalysisResult.isAnomaly and forecastAnalysisResult.isAnomaly
+
+        deviation = zScoreAnalysisResult.deviation if abs(zScoreAnalysisResult.expectedValue - self._newDataPoint[1]) <= abs(
+            forecastAnalysisResult.expectedValue - self._newDataPoint[1]) else forecastAnalysisResult.deviation
+
+        expectedValue = zScoreAnalysisResult.expectedValue if abs(zScoreAnalysisResult.expectedValue - self._newDataPoint[1]) <= abs(
+            forecastAnalysisResult.expectedValue - self._newDataPoint[1]) else forecastAnalysisResult.expectedValue
+        expectedValueUpper = zScoreAnalysisResult.expectedValueUpper \
+            if zScoreAnalysisResult.expectedValueUpper > forecastAnalysisResult.expectedValueUpper \
+            else forecastAnalysisResult.expectedValueUpper
+        expectedValueLower = zScoreAnalysisResult.expectedValueLower \
+            if zScoreAnalysisResult.expectedValueLower < forecastAnalysisResult.expectedValueLower \
+            else forecastAnalysisResult.expectedValueLower
+
+        return ResultDto(zScoreAnalysisResult.meanAbsoluteDeviation, zScoreAnalysisResult.medianAbsoluteDeviation, zScoreAnalysisResult.modifiedZScore, expectedValue, expectedValueUpper, expectedValueLower, deviation, isAnomaly)
+
+class CommonModel(_AnomalyModel):
+    def __init__(self, newDataPoint: tuple(str, float), historicalData: "list[tuple[str, float]]", threshold: int, ) -> None:
+        super().__init__(newDataPoint, historicalData, threshold)
