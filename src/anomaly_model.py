@@ -122,7 +122,7 @@ class _ZScoreAnalysis(_Analysis):
     def _runAnomalyCheck(self) -> _AnalysisResult:
         newValue = self._newDataPoint['y'].values[0]
 
-        isAnomaly = abs(self._modifiedZScore) > self._threshold
+        isAnomaly = bool(abs(self._modifiedZScore) > self._threshold)
         deviation = newValue / \
             self._expectedValue if self._expectedValue > 0 else 0
 
@@ -141,7 +141,7 @@ class _ZScoreAnalysis(_Analysis):
 
         anomalyCheckResult = self._runAnomalyCheck()
 
-        return _ZScoreResult(anomalyCheckResult.expectedValue, anomalyCheckResult.expectedValueUpper, anomalyCheckResult.expectedValueLower, anomalyCheckResult.deviation, anomalyCheckResult.isAnomaly, self._median, self._medianAbsoluteDeviation, self._meanAbsoluteDeviation, self._modifiedZScore, self._expectedValueUpper, self._expectedValueLower)
+        return _ZScoreResult(anomalyCheckResult.expectedValue, anomalyCheckResult.expectedValueUpper, anomalyCheckResult.expectedValueLower, anomalyCheckResult.deviation, anomalyCheckResult.isAnomaly, self._median, self._medianAbsoluteDeviation, self._meanAbsoluteDeviation, self._modifiedZScore)
 
 
 class _ForecastAnalysis(_Analysis):
@@ -181,7 +181,7 @@ class _ForecastAnalysis(_Analysis):
 
         deviation = self._newDataPoint['y'].values[0] / \
             self._yhat if self._yhat > 0 else 0
-        isAnomaly = newValue <= self._yhat_upper or newValue >= self._yhat_lower
+        isAnomaly = bool(newValue <= self._yhat_upper or newValue >= self._yhat_lower)
 
         return _AnalysisResult(self._yhat, self._yhat_upper, self._yhat_lower, deviation, isAnomaly)
 
@@ -228,6 +228,7 @@ class _AnomalyModel(ABC):
             newDataPoint, historicalData, threshold)
         self._forecastAnalysis = _ForecastAnalysis(
             newDataPoint, historicalData, threshold)
+        self._newDataPoint = newDataPoint
 
     def run(self) -> ResultDto:
         zScoreAnalysisResult = self._zScoreAnalysis.analyze()
@@ -250,5 +251,5 @@ class _AnomalyModel(ABC):
         return ResultDto(zScoreAnalysisResult.meanAbsoluteDeviation, zScoreAnalysisResult.medianAbsoluteDeviation, zScoreAnalysisResult.modifiedZScore, expectedValue, expectedValueUpper, expectedValueLower, deviation, isAnomaly)
 
 class CommonModel(_AnomalyModel):
-    def __init__(self, newDataPoint: tuple(str, float), historicalData: "list[tuple[str, float]]", threshold: int, ) -> None:
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, ) -> None:
         super().__init__(newDataPoint, historicalData, threshold)

@@ -70,8 +70,8 @@ class _AlertData:
 
 @dataclass
 class AnomalyTestAlertData(_AlertData):
-    expectedUpperBound: Union[float, None]
-    expectedLowerBound: Union[float, None]
+    expectedUpper: Union[float, None]
+    expectedLower: Union[float, None]
     columnName: Union[str, None]
     value: float
 
@@ -228,9 +228,9 @@ class ExecuteTest(IUseCase):
             {'name': 'expected_value', 'type': 'float',
              'value': testResult.expectedValue},
             {'name': 'expected_value_upper_bound', 'type': 'float',
-             'value': testResult.expectedValueUpperBound},
+             'value': testResult.expectedValueUpper},
             {'name': 'expected_value_lower_bound', 'type': 'float',
-             'value': testResult.expectedValueLowerBound},
+             'value': testResult.expectedValueLower},
             {'name': 'deviation', 'type': 'float', 'value': testResult.deviation},
             {'name': 'is_anomalous', 'type': 'boolean',
                 'value': testResult.isAnomaly},
@@ -308,7 +308,7 @@ class ExecuteTest(IUseCase):
         
         return newData
 
-    def _runModel(self, threshold: integer, newData: float, historicalData: "list[tuple[str, float]]") -> AnomalyTestResultDto:
+    def _runModel(self, threshold: int, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]") -> AnomalyTestResultDto:
         return CommonModel(newData, historicalData, threshold).run()
 
     def _runTest(self, newDataPoint, historicalData: "list[(str,float)]") -> AnomalyTestExecutionResult:
@@ -350,8 +350,8 @@ class ExecuteTest(IUseCase):
             self._insertAlertEntry(
                 alertId, anomalyMessage, CitoTableType.TestAlerts)
 
-            alertData = AnomalyTestAlertData(alertId, anomalyMessage, databaseName, schemaName, materializationName, materializationType, testResult.expectedValueUpperBound,
-                                                  testResult.expectedValueLowerBound, columnName, newDataPoint)
+            alertData = AnomalyTestAlertData(alertId, anomalyMessage, databaseName, schemaName, materializationName, materializationType, testResult.expectedValueUpper,
+                                                  testResult.expectedValueLower, columnName, newDataPoint)
 
         testData = AnomalyTestData(executedOnISOFormat, testResult.isAnomaly, testResult.modifiedZScore, testResult.deviation)
         
