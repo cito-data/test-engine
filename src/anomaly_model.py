@@ -164,24 +164,24 @@ class _ForecastAnalysis(_Analysis):
     def _runAnomalyCheck(self) -> _AnalysisResult:
         newValue = self._newDataPoint['y'].values[0]
 
-        if self._daily and (newValue <= self._daily_upper or newValue >= self._daily_lower):
+        if self._daily and (newValue <= self._daily_upper and newValue >= self._daily_lower):
             deviation = self._newDataPoint['y'].values[0] / \
                 self._daily if self._daily > 0 else 0
             return _AnalysisResult(self._daily, self._daily_upper, self._daily_lower, deviation, False)
 
-        if self._weekly and (newValue <= self._weekly_upper or newValue >= self._weekly_lower):
+        if self._weekly and (newValue <= self._weekly_upper and newValue >= self._weekly_lower):
             deviation = self._newDataPoint['y'].values[0] / \
                 self._weekly if self._weekly > 0 else 0
             return _AnalysisResult(self._weekly, self._weekly_upper, self._weekly_lower, deviation, False)
 
-        if self._yearly and (newValue <= self._yearly_upper or newValue >= self._yearly_lower):
+        if self._yearly and (newValue <= self._yearly_upper and newValue >= self._yearly_lower):
             deviation = self._newDataPoint['y'].values[0] / \
                 self._yearly if self._yearly > 0 else 0
             return _AnalysisResult(self._yearly, self._yearly_upper, self._yearly_lower, deviation, False)
 
         deviation = self._newDataPoint['y'].values[0] / \
             self._yhat if self._yhat > 0 else 0
-        isAnomaly = bool(newValue <= self._yhat_upper or newValue >= self._yhat_lower)
+        isAnomaly = bool(newValue > self._yhat_upper or newValue < self._yhat_lower)
 
         return _AnalysisResult(self._yhat, self._yhat_upper, self._yhat_lower, deviation, isAnomaly)
 

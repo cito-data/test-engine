@@ -630,13 +630,13 @@ class ExecuteTest(IUseCase):
     def execute(self, request: ExecuteTestRequestDto, auth: ExecuteTestAuthDto) -> ExecuteTestResponseDto:
         try:
             if auth.isSystemInternal and not request.targetOrgId:
-                raise Exception('Target organization id missing');
+                raise Exception('Target organization id missing')
             if not auth.isSystemInternal and not auth.callerOrgId:
-                raise Exception('Caller organization id missing');
+                raise Exception('Caller organization id missing')
             if not request.targetOrgId and not auth.callerOrgId:
-                raise Exception('No organization Id instance provided');
+                raise Exception('No organization Id instance provided')
             if request.targetOrgId and auth.callerOrgId:
-                raise Exception('callerOrgId and targetOrgId provided. Not allowed');
+                raise Exception('callerOrgId and targetOrgId provided. Not allowed')
 
             self._testSuiteId = request.testSuiteId
             self._testType = request.testType
