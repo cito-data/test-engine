@@ -1,6 +1,6 @@
 from enum import Enum
 
-class NominalMatTest(Enum):
+class QualMatTest(Enum):
     MaterializationSchemaChange = 'MaterializationSchemaChange'
 
 class AnomalyMatTest (Enum):
