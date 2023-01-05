@@ -670,6 +670,15 @@ class ExecuteTest(IUseCase):
             else:
                 raise Exception('Test type mismatch')
 
+
+       const instanceOfAnomalyTestExecutionResultDto = (
+        object: any
+      ): object is AnomalyTestExecutionResultDto => 'isWarmup' in object;
+      
+      if (!instanceOfAnomalyTestExecutionResultDto(testExecutionResult))
+        await this.#createQualTestExecutionResult(testExecutionResult);
+      else await this.#createAnomalyTestExecutionResult(testExecutionResult);
+
             return Result.ok(testResult)
 
         except Exception as e:
