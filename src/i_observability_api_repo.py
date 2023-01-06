@@ -1,7 +1,7 @@
 
 
 from abc import ABC, abstractmethod
-from execute_test import QualTestExecutionResult, QuantTestExecutionResult
+from test_execution_result import QualTestExecutionResult, QuantTestExecutionResult
 
 
 class IObservabilityApiRepo(ABC):

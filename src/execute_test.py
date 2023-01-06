@@ -1,14 +1,14 @@
-from dataclasses import dataclass, asdict
-from datetime import date, datetime, timezone
+from dataclasses import dataclass
+from datetime import datetime
 import json
 from typing import Any, Union
-from numpy import integer
 from cito_data_query import CitoTableType, getHistoryQuery, getInsertQuery, getTestQuery, getLastMatSchemaQuery
 from new_column_data_query import getCardinalityQuery, getDistributionQuery, getNullnessQuery, getUniquenessQuery, getFreshnessQuery as getColumnFreshnessQuery
 from new_materialization_data_query import MaterializationType, getColumnCountQuery, getFreshnessQuery, getRowCountQuery, getSchemaChangeQuery
 from qual_model import MaterializationSchema, SchemaChangeModel, ResultDto as QualResultDto, SchemaDiff
 from quant_model import ResultDto as QuantTestResultDto, CommonModel
 from query_snowflake import QuerySnowflake, QuerySnowflakeAuthDto, QuerySnowflakeRequestDto, QuerySnowflakeResponseDto
+from test_execution_result import QualTestAlertData, QualTestData, QualTestExecutionResult, QuantTestAlertData, QuantTestData, QuantTestExecutionResult
 from test_type import QuantColumnTest, QuantMatTest, QualMatTest
 from use_case import IUseCase
 from i_observability_api_repo import IObservabilityApiRepo
@@ -44,69 +44,6 @@ def getAnomalyMessage(targetResourceId: str, databaseName: str, schemaName: str,
         return f"Schema change for materialization <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
     else:
         raise Exception('Unhandled anomaly message test type')
-
-
-@dataclass
-class _TestData:
-    executedOn: str
-
-
-@dataclass
-class QuantTestData(_TestData):
-    isAnomolous: bool
-    modifiedZScore: float
-    deviation: float
-
-
-@dataclass
-class QualTestData(_TestData):
-    deviations: str
-    isIdentical: bool
-
-
-@dataclass
-class _AlertData:
-    alertId: str
-    message: str
-    databaseName: str
-    schemaName: str
-    materializationName: str
-    materializationType: str
-
-
-@dataclass
-class QuantTestAlertData(_AlertData):
-    expectedUpper: Union[float, None]
-    expectedLower: Union[float, None]
-    columnName: Union[str, None]
-    value: float
-
-
-@dataclass
-class QualTestAlertData(_AlertData):
-    deviatons: str
-
-
-@dataclass
-class _TestExecutionResult:
-    testSuiteId: str
-    testType: str
-    executionId: str
-    targetResourceId: str
-    organizationId: str
-
-
-@dataclass
-class QuantTestExecutionResult(_TestExecutionResult):
-    isWarmup: bool
-    testData: Union[QuantTestData, None]
-    alertData: Union[QuantTestAlertData, None]
-
-
-@dataclass
-class QualTestExecutionResult(_TestExecutionResult):
-    testData: QualTestData
-    alertData: Union[QualTestAlertData, None]
 
 
 @dataclass
