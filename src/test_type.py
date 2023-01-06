@@ -1,14 +1,17 @@
 from enum import Enum
 
+
 class QualMatTest(Enum):
     MaterializationSchemaChange = 'MaterializationSchemaChange'
 
-class AnomalyMatTest (Enum):
+
+class QuantMatTest (Enum):
     MaterializationRowCount = 'MaterializationRowCount'
     MaterializationColumnCount = 'MaterializationColumnCount'
     MaterializationFreshness = 'MaterializationFreshness'
 
-class AnomalyColumnTest(Enum):
+
+class QuantColumnTest(Enum):
     ColumnFreshness = 'ColumnFreshness'
     ColumnCardinality = 'ColumnCardinality'
     ColumnUniqueness = 'ColumnUniqueness'

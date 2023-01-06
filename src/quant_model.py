@@ -181,7 +181,8 @@ class _ForecastAnalysis(_Analysis):
 
         deviation = self._newDataPoint['y'].values[0] / \
             self._yhat if self._yhat > 0 else 0
-        isAnomaly = bool(newValue > self._yhat_upper or newValue < self._yhat_lower)
+        isAnomaly = bool(
+            newValue > self._yhat_upper or newValue < self._yhat_lower)
 
         return _AnalysisResult(self._yhat, self._yhat_upper, self._yhat_lower, deviation, isAnomaly)
 
@@ -216,7 +217,7 @@ class _ForecastAnalysis(_Analysis):
         return _AnalysisResult(anomalyCheckResult.expectedValue, anomalyCheckResult.expectedValueUpper, anomalyCheckResult.expectedValueLower, anomalyCheckResult.deviation, anomalyCheckResult.isAnomaly)
 
 
-class _AnomalyModel(ABC):
+class _QuantModel(ABC):
     _newDataPoint: "tuple[str, float]"
 
     _zScoreAnalysis: _ZScoreAnalysis
@@ -250,6 +251,7 @@ class _AnomalyModel(ABC):
 
         return ResultDto(zScoreAnalysisResult.meanAbsoluteDeviation, zScoreAnalysisResult.medianAbsoluteDeviation, zScoreAnalysisResult.modifiedZScore, expectedValue, expectedValueUpper, expectedValueLower, deviation, isAnomaly)
 
-class CommonModel(_AnomalyModel):
+
+class CommonModel(_QuantModel):
     def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, ) -> None:
         super().__init__(newDataPoint, historicalData, threshold)

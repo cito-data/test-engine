@@ -7,9 +7,9 @@ from cito_data_query import CitoTableType, getHistoryQuery, getInsertQuery, getT
 from new_column_data_query import getCardinalityQuery, getDistributionQuery, getNullnessQuery, getUniquenessQuery, getFreshnessQuery as getColumnFreshnessQuery
 from new_materialization_data_query import MaterializationType, getColumnCountQuery, getFreshnessQuery, getRowCountQuery, getSchemaChangeQuery
 from qual_model import MaterializationSchema, SchemaChangeModel, ResultDto as QualResultDto, SchemaDiff
-from quant_model import ResultDto as AnomalyTestResultDto, CommonModel
+from quant_model import ResultDto as QuantTestResultDto, CommonModel
 from query_snowflake import QuerySnowflake, QuerySnowflakeAuthDto, QuerySnowflakeRequestDto, QuerySnowflakeResponseDto
-from test_type import AnomalyColumnTest, AnomalyMatTest, QualMatTest
+from test_type import QuantColumnTest, QuantMatTest, QualMatTest
 from use_case import IUseCase
 from i_integration_api_repo import IIntegrationApiRepo
 import logging
@@ -24,21 +24,21 @@ logger.setLevel(logging.INFO)
 def getAnomalyMessage(targetResourceId: str, databaseName: str, schemaName: str, materializationName: str, columnName: Union[str, None], testType: str):
     targetResourceUrlTemplate = f'__base_url__?targetResourceId={targetResourceId}&ampisColumn={not not columnName}'
 
-    if (testType == AnomalyColumnTest.ColumnFreshness.value):
+    if (testType == QuantColumnTest.ColumnFreshness.value):
         return f"Freshness deviation for column <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
-    elif (testType == AnomalyColumnTest.ColumnDistribution.value):
+    elif (testType == QuantColumnTest.ColumnDistribution.value):
         return f"Distribution deviation for column <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
-    elif (testType == AnomalyColumnTest.ColumnCardinality.value):
+    elif (testType == QuantColumnTest.ColumnCardinality.value):
         return f"Cardinality deviation for column <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
-    elif (testType == AnomalyColumnTest.ColumnNullness.value):
+    elif (testType == QuantColumnTest.ColumnNullness.value):
         return f"Nullness deviation for column <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
-    elif (testType == AnomalyColumnTest.ColumnUniqueness.value):
+    elif (testType == QuantColumnTest.ColumnUniqueness.value):
         return f"Uniqueness deviation for column <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
-    elif (testType == AnomalyMatTest.MaterializationColumnCount.value):
+    elif (testType == QuantMatTest.MaterializationColumnCount.value):
         return f"Column count deviation for materialization <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
-    elif (testType == AnomalyMatTest.MaterializationRowCount.value):
+    elif (testType == QuantMatTest.MaterializationRowCount.value):
         return f"Row count deviation for materialization <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
-    elif (testType == AnomalyMatTest.MaterializationFreshness.value):
+    elif (testType == QuantMatTest.MaterializationFreshness.value):
         return f"Freshness deviation for materialization <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
     elif (testType == QualMatTest.MaterializationSchemaChange.value):
         return f"Schema change for materialization <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
@@ -52,7 +52,7 @@ class _TestData:
 
 
 @dataclass
-class AnomalyTestData(_TestData):
+class QuantTestData(_TestData):
     isAnomolous: bool
     modifiedZScore: float
     deviation: float
@@ -75,7 +75,7 @@ class _AlertData:
 
 
 @dataclass
-class AnomalyTestAlertData(_AlertData):
+class QuantTestAlertData(_AlertData):
     expectedUpper: Union[float, None]
     expectedLower: Union[float, None]
     columnName: Union[str, None]
@@ -97,10 +97,10 @@ class _TestExecutionResult:
 
 
 @dataclass
-class AnomalyTestExecutionResult(_TestExecutionResult):
+class QuantTestExecutionResult(_TestExecutionResult):
     isWarmup: bool
-    testData: Union[AnomalyTestData, None]
-    alertData: Union[AnomalyTestAlertData, None]
+    testData: Union[QuantTestData, None]
+    alertData: Union[QuantTestAlertData, None]
 
 
 @dataclass
@@ -112,7 +112,7 @@ class QualTestExecutionResult(_TestExecutionResult):
 @dataclass
 class ExecuteTestRequestDto:
     testSuiteId: str
-    testType: Union[AnomalyColumnTest, AnomalyMatTest, QualMatTest]
+    testType: Union[QuantColumnTest, QuantMatTest, QualMatTest]
     targetOrgId: Union[str, None]
 
 
@@ -123,7 +123,7 @@ class ExecuteTestAuthDto:
     isSystemInternal: bool
 
 
-ExecuteTestResponseDto = Result[Union[AnomalyTestExecutionResult,
+ExecuteTestResponseDto = Result[Union[QuantTestExecutionResult,
     QualTestExecutionResult]]
 
 
@@ -133,7 +133,7 @@ class ExecuteTest(IUseCase):
     _MIN_HISTORICAL_DATA_DAY_NUMBER_CONDITION = 7
 
     _testSuiteId: str
-    _testType: Union[AnomalyColumnTest, AnomalyMatTest, QualMatTest]
+    _testType: Union[QuantColumnTest, QuantMatTest, QualMatTest]
     _testDefinition: "dict[str, Any]"
 
     _targetOrgId: str
@@ -229,7 +229,7 @@ class ExecuteTest(IUseCase):
         if not resultEntryInsertResult.success:
             raise Exception(resultEntryInsertResult.error)
 
-    def _insertResultEntry(self, testResult: AnomalyTestResultDto):
+    def _insertResultEntry(self, testResult: QuantTestResultDto):
         valueSets = [
             {'name': 'id', 'type': 'string', 'value': str(uuid.uuid4())},
             {'name': 'test_type', 'type': 'string',
@@ -324,10 +324,10 @@ class ExecuteTest(IUseCase):
 
         return newData
 
-    def _runModel(self, threshold: int, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]") -> AnomalyTestResultDto:
+    def _runModel(self, threshold: int, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]") -> QuantTestResultDto:
         return CommonModel(newData, historicalData, threshold).run()
 
-    def _runTest(self, newDataPoint, historicalData: "list[(str,float)]") -> AnomalyTestExecutionResult:
+    def _runTest(self, newDataPoint, historicalData: "list[(str,float)]") -> QuantTestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
         schemaName = self._testDefinition['SCHEMA_NAME']
         materializationName = self._testDefinition['MATERIALIZATION_NAME']
@@ -350,7 +350,7 @@ class ExecuteTest(IUseCase):
             self._insertHistoryEntry(
                 newDataPoint, False, None)
 
-            return AnomalyTestExecutionResult(testSuiteId, self._testDefinition['TEST_TYPE'], self._executionId, targetResourceId, self._organizationId, True, None, None)
+            return QuantTestExecutionResult(testSuiteId, self._testDefinition['TEST_TYPE'], self._executionId, targetResourceId, self._organizationId, True, None, None)
 
         testResult = self._runModel(
             threshold, (executedOnISOFormat, newDataPoint), historicalData)
@@ -367,16 +367,16 @@ class ExecuteTest(IUseCase):
             self._insertAlertEntry(
                 alertId, anomalyMessage, CitoTableType.TestAlerts)
 
-            alertData = AnomalyTestAlertData(alertId, anomalyMessage, databaseName, schemaName, materializationName, materializationType, testResult.expectedValueUpper,
+            alertData = QuantTestAlertData(alertId, anomalyMessage, databaseName, schemaName, materializationName, materializationType, testResult.expectedValueUpper,
                                                   testResult.expectedValueLower, columnName, newDataPoint)
 
-        testData = AnomalyTestData(
+        testData = QuantTestData(
             executedOnISOFormat, testResult.isAnomaly, testResult.modifiedZScore, testResult.deviation)
 
         self._insertHistoryEntry(
             newDataPoint, testResult.isAnomaly, alertId)
 
-        return AnomalyTestExecutionResult(testSuiteId, self._testDefinition['TEST_TYPE'], self._executionId, targetResourceId, self._organizationId, False, testData, alertData)
+        return QuantTestExecutionResult(testSuiteId, self._testDefinition['TEST_TYPE'], self._executionId, targetResourceId, self._organizationId, False, testData, alertData)
 
     def _runSchemaChangeModel(self, oldSchema: MaterializationSchema, newSchema: MaterializationSchema) -> QualResultDto:
         return SchemaChangeModel(newSchema, oldSchema).run()
@@ -421,7 +421,7 @@ class ExecuteTest(IUseCase):
             executedOn, testResult.deviations, testResult.isIdentical)
         return QualTestExecutionResult(testSuiteId, testType, self._executionId, targetResourceId, self._organizationId, testData, alertData)
 
-    def _runMaterializationRowCountTest(self) -> AnomalyTestExecutionResult:
+    def _runMaterializationRowCountTest(self) -> QuantTestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
         schemaName = self._testDefinition['SCHEMA_NAME']
         materializationName = self._testDefinition['MATERIALIZATION_NAME']
@@ -445,7 +445,7 @@ class ExecuteTest(IUseCase):
 
         return testResult
 
-    def _runMaterializationColumnCountTest(self) -> AnomalyTestExecutionResult:
+    def _runMaterializationColumnCountTest(self) -> QuantTestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
         schemaName = self._testDefinition['SCHEMA_NAME']
         materializationName = self._testDefinition['MATERIALIZATION_NAME']
@@ -468,7 +468,7 @@ class ExecuteTest(IUseCase):
 
         return testResult
 
-    def _runMaterializationFreshnessTest(self) -> AnomalyTestExecutionResult:
+    def _runMaterializationFreshnessTest(self) -> QuantTestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
         schemaName = self._testDefinition['SCHEMA_NAME']
         materializationName = self._testDefinition['MATERIALIZATION_NAME']
@@ -514,7 +514,7 @@ class ExecuteTest(IUseCase):
 
         return testResult
 
-    def _runColumnCardinalityTest(self) -> AnomalyTestExecutionResult:
+    def _runColumnCardinalityTest(self) -> QuantTestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
         schemaName = self._testDefinition['SCHEMA_NAME']
         materializationName = self._testDefinition['MATERIALIZATION_NAME']
@@ -538,7 +538,7 @@ class ExecuteTest(IUseCase):
 
         return testResult
 
-    def _runColumnDistributionTest(self) -> AnomalyTestExecutionResult:
+    def _runColumnDistributionTest(self) -> QuantTestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
         schemaName = self._testDefinition['SCHEMA_NAME']
         materializationName = self._testDefinition['MATERIALIZATION_NAME']
@@ -562,7 +562,7 @@ class ExecuteTest(IUseCase):
 
         return testResult
 
-    def _runColumnFreshnessTest(self) -> AnomalyTestExecutionResult:
+    def _runColumnFreshnessTest(self) -> QuantTestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
         schemaName = self._testDefinition['SCHEMA_NAME']
         materializationName = self._testDefinition['MATERIALIZATION_NAME']
@@ -586,7 +586,7 @@ class ExecuteTest(IUseCase):
 
         return testResult
 
-    def _runColumnNullnessTest(self) -> AnomalyTestExecutionResult:
+    def _runColumnNullnessTest(self) -> QuantTestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
         schemaName = self._testDefinition['SCHEMA_NAME']
         materializationName = self._testDefinition['MATERIALIZATION_NAME']
@@ -610,7 +610,7 @@ class ExecuteTest(IUseCase):
 
         return testResult
 
-    def _runColumnUniquenessTest(self) -> AnomalyTestExecutionResult:
+    def _runColumnUniquenessTest(self) -> QuantTestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
         schemaName = self._testDefinition['SCHEMA_NAME']
         materializationName = self._testDefinition['MATERIALIZATION_NAME']
@@ -671,21 +671,21 @@ class ExecuteTest(IUseCase):
 
             testTypeKey = 'TEST_TYPE'
 
-            if self._testDefinition[testTypeKey] == AnomalyMatTest.MaterializationRowCount.value:
+            if self._testDefinition[testTypeKey] == QuantMatTest.MaterializationRowCount.value:
                 testResult = self._runMaterializationRowCountTest()
-            elif self._testDefinition[testTypeKey] == AnomalyMatTest.MaterializationColumnCount.value:
+            elif self._testDefinition[testTypeKey] == QuantMatTest.MaterializationColumnCount.value:
                 testResult = self._runMaterializationColumnCountTest()
-            elif self._testDefinition[testTypeKey] == AnomalyMatTest.MaterializationFreshness.value:
+            elif self._testDefinition[testTypeKey] == QuantMatTest.MaterializationFreshness.value:
                 testResult = self._runMaterializationFreshnessTest()
-            elif self._testDefinition[testTypeKey] == AnomalyColumnTest.ColumnCardinality.value:
+            elif self._testDefinition[testTypeKey] == QuantColumnTest.ColumnCardinality.value:
                 testResult = self._runColumnCardinalityTest()
-            elif self._testDefinition[testTypeKey] == AnomalyColumnTest.ColumnDistribution.value:
+            elif self._testDefinition[testTypeKey] == QuantColumnTest.ColumnDistribution.value:
                 testResult = self._runColumnDistributionTest()
-            elif self._testDefinition[testTypeKey] == AnomalyColumnTest.ColumnFreshness.value:
+            elif self._testDefinition[testTypeKey] == QuantColumnTest.ColumnFreshness.value:
                 testResult = self._runColumnFreshnessTest()
-            elif self._testDefinition[testTypeKey] == AnomalyColumnTest.ColumnNullness.value:
+            elif self._testDefinition[testTypeKey] == QuantColumnTest.ColumnNullness.value:
                 testResult = self._runColumnNullnessTest()
-            elif self._testDefinition[testTypeKey] == AnomalyColumnTest.ColumnUniqueness.value:
+            elif self._testDefinition[testTypeKey] == QuantColumnTest.ColumnUniqueness.value:
                 testResult = self._runColumnUniquenessTest()
             elif self._testDefinition[testTypeKey] == QualMatTest.MaterializationSchemaChange.value:
                 testResult = self._runMaterializationSchemaChangeTest()
@@ -693,13 +693,13 @@ class ExecuteTest(IUseCase):
                 raise Exception('Test type mismatch')
 
 
-       const instanceOfAnomalyTestExecutionResultDto = (
+       const instanceOfQuantTestExecutionResultDto = (
         object: any
-      ): object is AnomalyTestExecutionResultDto => 'isWarmup' in object;
+      ): object is QuantTestExecutionResultDto => 'isWarmup' in object;
       
-      if (!instanceOfAnomalyTestExecutionResultDto(testExecutionResult))
+      if (!instanceOfQuantTestExecutionResultDto(testExecutionResult))
         await this.#createQualTestExecutionResult(testExecutionResult);
-      else await this.#createAnomalyTestExecutionResult(testExecutionResult);
+      else await this.#createQuantTestExecutionResult(testExecutionResult);
 
             return Result.ok(testResult)
 
