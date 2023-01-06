@@ -635,9 +635,11 @@ class ExecuteTest(IUseCase):
             if type(testResult) is QualTestExecutionResult:
                 self._observabilityApiRepo.sendQualTestExecutionResult(
                     testResult, self._jwt)
-            else:
+            elif type(testResult) is QuantTestExecutionResult:
                 self._observabilityApiRepo.sendQuantTestExecutionResult(
                     testResult, self._jwt)
+            else:
+                raise Exception('Unecpected test execution result type')
 
             return Result.ok(testResult)
 

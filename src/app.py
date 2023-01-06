@@ -1,3 +1,5 @@
+import os
+from register import register
 import json
 import traceback
 
@@ -14,11 +16,10 @@ logger.setLevel(logging.INFO)
 
 # import requests
 
-from register import register
 register = register()
 
-import os
 print(f'Running in {os.environ.get("ENVIRONMENT")}')
+
 
 def lambda_handler(event, context):
     """Sample pure Lambda function
@@ -74,10 +75,11 @@ def lambda_handler(event, context):
 
         logger.debug(f'Executing test with id {testId}')
 
-        controllerRequest = Request(None, {'testId': testId}, None, mappedBody, processedAuthObject)
+        controllerRequest = Request(
+            None, {'testId': testId}, None, mappedBody, processedAuthObject)
 
         controller = ExecuteTestController(
-            register['getAccounts'], register['integrationApiRepo'], register['querySnowflake'])
+            register['getAccounts'], register['observabilityApiRepo'], register['querySnowflake'])
         result = controller.execute(controllerRequest)
 
         return {

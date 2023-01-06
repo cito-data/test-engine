@@ -16,6 +16,7 @@ def register():
     return {
         'integrationApiRepo': integrationApiRepo,
         'accountApiRepo': accountApiRepo,
+        'observabilityApiRepo': observabilityApiRepo,
 
         'querySnowflake': querySnowflake,
         'getAccounts': getAccounts,
