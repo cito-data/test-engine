@@ -7,7 +7,7 @@ from cito_data_query import CitoTableType, getHistoryQuery, getInsertQuery, getT
 from new_column_data_query import getCardinalityQuery, getDistributionQuery, getNullnessQuery, getUniquenessQuery, getFreshnessQuery as getColumnFreshnessQuery
 from new_materialization_data_query import MaterializationType, getColumnCountQuery, getFreshnessQuery, getRowCountQuery, getSchemaChangeQuery
 from qual_model import MaterializationSchema, SchemaChangeModel, ResultDto as QualResultDto, SchemaDiff
-from anomaly_model import ResultDto as AnomalyTestResultDto, CommonModel
+from quant_model import ResultDto as AnomalyTestResultDto, CommonModel
 from query_snowflake import QuerySnowflake, QuerySnowflakeAuthDto, QuerySnowflakeRequestDto, QuerySnowflakeResponseDto
 from test_type import AnomalyColumnTest, AnomalyMatTest, QualMatTest
 from use_case import IUseCase
@@ -20,33 +20,36 @@ from result import Result
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
 def getAnomalyMessage(targetResourceId: str, databaseName: str, schemaName: str, materializationName: str, columnName: Union[str, None], testType: str):
     targetResourceUrlTemplate = f'__base_url__?targetResourceId={targetResourceId}&ampisColumn={not not columnName}'
 
-    if(testType == AnomalyColumnTest.ColumnFreshness.value ):
+    if (testType == AnomalyColumnTest.ColumnFreshness.value):
         return f"Freshness deviation for column <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
-    elif(testType == AnomalyColumnTest.ColumnDistribution.value ):
+    elif (testType == AnomalyColumnTest.ColumnDistribution.value):
         return f"Distribution deviation for column <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
-    elif(testType == AnomalyColumnTest.ColumnCardinality.value ):
+    elif (testType == AnomalyColumnTest.ColumnCardinality.value):
         return f"Cardinality deviation for column <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
-    elif(testType == AnomalyColumnTest.ColumnNullness.value ):
+    elif (testType == AnomalyColumnTest.ColumnNullness.value):
         return f"Nullness deviation for column <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
-    elif(testType == AnomalyColumnTest.ColumnUniqueness.value ):
+    elif (testType == AnomalyColumnTest.ColumnUniqueness.value):
         return f"Uniqueness deviation for column <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
-    elif(testType == AnomalyMatTest.MaterializationColumnCount.value ):
+    elif (testType == AnomalyMatTest.MaterializationColumnCount.value):
         return f"Column count deviation for materialization <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
-    elif(testType == AnomalyMatTest.MaterializationRowCount.value ):
+    elif (testType == AnomalyMatTest.MaterializationRowCount.value):
         return f"Row count deviation for materialization <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
-    elif(testType == AnomalyMatTest.MaterializationFreshness.value ):
+    elif (testType == AnomalyMatTest.MaterializationFreshness.value):
         return f"Freshness deviation for materialization <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
-    elif(testType == QualMatTest.MaterializationSchemaChange.value ):
+    elif (testType == QualMatTest.MaterializationSchemaChange.value):
         return f"Schema change for materialization <{targetResourceUrlTemplate}|{databaseName}.{schemaName}.{materializationName}{f'.{columnName}' if columnName else ''}> detected"
     else:
         raise Exception('Unhandled anomaly message test type')
 
+
 @dataclass
 class _TestData:
     executedOn: str
+
 
 @dataclass
 class AnomalyTestData(_TestData):
@@ -54,10 +57,12 @@ class AnomalyTestData(_TestData):
     modifiedZScore: float
     deviation: float
 
+
 @dataclass
 class QualTestData(_TestData):
     deviations: str
     isIdentical: bool
+
 
 @dataclass
 class _AlertData:
@@ -68,6 +73,7 @@ class _AlertData:
     materializationName: str
     materializationType: str
 
+
 @dataclass
 class AnomalyTestAlertData(_AlertData):
     expectedUpper: Union[float, None]
@@ -75,9 +81,11 @@ class AnomalyTestAlertData(_AlertData):
     columnName: Union[str, None]
     value: float
 
+
 @dataclass
 class QualTestAlertData(_AlertData):
     deviatons: str
+
 
 @dataclass
 class _TestExecutionResult:
@@ -87,30 +95,36 @@ class _TestExecutionResult:
     targetResourceId: str
     organizationId: str
 
+
 @dataclass
 class AnomalyTestExecutionResult(_TestExecutionResult):
     isWarmup: bool
     testData: Union[AnomalyTestData, None]
     alertData: Union[AnomalyTestAlertData, None]
 
+
 @dataclass
 class QualTestExecutionResult(_TestExecutionResult):
     testData: QualTestData
     alertData: Union[QualTestAlertData, None]
 
+
 @dataclass
 class ExecuteTestRequestDto:
     testSuiteId: str
-    testType: Union[AnomalyColumnTest, AnomalyMatTest, QualMatTest] 
+    testType: Union[AnomalyColumnTest, AnomalyMatTest, QualMatTest]
     targetOrgId: Union[str, None]
+
 
 @dataclass
 class ExecuteTestAuthDto:
     jwt: str
     callerOrgId: Union[str, None]
     isSystemInternal: bool
-    
-ExecuteTestResponseDto = Result[Union[AnomalyTestExecutionResult, QualTestExecutionResult]]
+
+
+ExecuteTestResponseDto = Result[Union[AnomalyTestExecutionResult,
+    QualTestExecutionResult]]
 
 
 class ExecuteTest(IUseCase):
@@ -151,13 +165,15 @@ class ExecuteTest(IUseCase):
 
     def _insertQualHistoryEntry(self, value: MaterializationSchema, isIdentical: bool, alertId: Union[str, None]):
         valueSets = [
-        { 'name': 'id', 'type': 'string', 'value': str(uuid.uuid4())},
-        { 'name': 'test_type', 'type': 'string', 'value': self._testDefinition['TEST_TYPE']},
-        { 'name': 'value', 'type': 'string', 'value':  json.dumps(value)},
-        { 'name': 'is_identical', 'type': 'boolean', 'value': 'true' if isIdentical else 'false'},
-        { 'name': 'test_suite_id', 'type': 'string', 'value': self._testSuiteId},
-        { 'name': 'execution_id', 'type': 'string', 'value':  self._executionId},
-        { 'name': 'alert_id', 'type': 'string', 'value':  alertId},
+        {'name': 'id', 'type': 'string', 'value': str(uuid.uuid4())},
+        {'name': 'test_type', 'type': 'string',
+            'value': self._testDefinition['TEST_TYPE']},
+        {'name': 'value', 'type': 'string', 'value':  json.dumps(value)},
+        {'name': 'is_identical', 'type': 'boolean',
+            'value': 'true' if isIdentical else 'false'},
+        {'name': 'test_suite_id', 'type': 'string', 'value': self._testSuiteId},
+        {'name': 'execution_id', 'type': 'string', 'value':  self._executionId},
+        {'name': 'alert_id', 'type': 'string', 'value':  alertId},
         ]
 
         testHistoryQuery = getInsertQuery(
@@ -197,7 +213,8 @@ class ExecuteTest(IUseCase):
                 'value': self._testDefinition['TEST_TYPE']},
             {'name': 'expected_value', 'type': 'string',
              'value': json.dumps(testResult.expectedValue) if testResult.expectedValue else None},
-            {'name': 'deviation', 'type': 'string', 'value': testResult.deviations},
+            {'name': 'deviation', 'type': 'string',
+                'value': testResult.deviations},
             {'name': 'is_identical', 'type': 'boolean',
                 'value': testResult.isIdentical},
             {'name': 'test_suite_id', 'type': 'string', 'value': self._testSuiteId},
@@ -211,8 +228,6 @@ class ExecuteTest(IUseCase):
 
         if not resultEntryInsertResult.success:
             raise Exception(resultEntryInsertResult.error)
-
-
 
     def _insertResultEntry(self, testResult: AnomalyTestResultDto):
         valueSets = [
@@ -285,7 +300,8 @@ class ExecuteTest(IUseCase):
 
     def _getLastMatSchema(self) -> Union[MaterializationSchema, None]:
         query = getLastMatSchemaQuery(self._testSuiteId)
-        queryResult = self._querySnowflake.execute(QuerySnowflakeRequestDto(query, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
+        queryResult = self._querySnowflake.execute(QuerySnowflakeRequestDto(
+            query, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
 
         if not queryResult.success:
             raise Exception(queryResult.error)
@@ -305,7 +321,7 @@ class ExecuteTest(IUseCase):
             raise Exception('Sf query error - operation: new data')
 
         newData = getNewDataResult.value.content[self._organizationId]
-        
+
         return newData
 
     def _runModel(self, threshold: int, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]") -> AnomalyTestResultDto:
@@ -320,7 +336,6 @@ class ExecuteTest(IUseCase):
         testSuiteId = self._testDefinition['ID']
         threshold = self._testDefinition['THRESHOLD']
         targetResourceId = self._testDefinition['TARGET_RESOURCE_ID']
-        
 
         executedOn = datetime.utcnow()
         executedOnISOFormat = executedOn.isoformat()
@@ -329,8 +344,9 @@ class ExecuteTest(IUseCase):
             executedOnISOFormat, CitoTableType.TestExecutions)
 
         historicalDataLength = len(historicalData)
-        belowDayBoundary = True if historicalDataLength == 0 else (executedOn - datetime.fromisoformat(historicalData[0][0].replace('Z', ''))).days <= self._MIN_HISTORICAL_DATA_DAY_NUMBER_CONDITION
-        if(historicalDataLength <= self._MIN_HISTORICAL_DATA_TEST_NUMBER_CONDITION or belowDayBoundary):
+        belowDayBoundary = True if historicalDataLength == 0 else (executedOn - datetime.fromisoformat(
+            historicalData[0][0].replace('Z', ''))).days <= self._MIN_HISTORICAL_DATA_DAY_NUMBER_CONDITION
+        if (historicalDataLength <= self._MIN_HISTORICAL_DATA_TEST_NUMBER_CONDITION or belowDayBoundary):
             self._insertHistoryEntry(
                 newDataPoint, False, None)
 
@@ -341,7 +357,8 @@ class ExecuteTest(IUseCase):
 
         self._insertResultEntry(testResult)
 
-        anomalyMessage = getAnomalyMessage(targetResourceId, databaseName, schemaName, materializationName, columnName, self._testDefinition['TEST_TYPE'])
+        anomalyMessage = getAnomalyMessage(
+            targetResourceId, databaseName, schemaName, materializationName, columnName, self._testDefinition['TEST_TYPE'])
 
         alertData = None
         alertId = None
@@ -353,8 +370,9 @@ class ExecuteTest(IUseCase):
             alertData = AnomalyTestAlertData(alertId, anomalyMessage, databaseName, schemaName, materializationName, materializationType, testResult.expectedValueUpper,
                                                   testResult.expectedValueLower, columnName, newDataPoint)
 
-        testData = AnomalyTestData(executedOnISOFormat, testResult.isAnomaly, testResult.modifiedZScore, testResult.deviation)
-        
+        testData = AnomalyTestData(
+            executedOnISOFormat, testResult.isAnomaly, testResult.modifiedZScore, testResult.deviation)
+
         self._insertHistoryEntry(
             newDataPoint, testResult.isAnomaly, alertId)
 
@@ -372,7 +390,7 @@ class ExecuteTest(IUseCase):
         testSuiteId = self._testDefinition['ID']
         testType = self._testDefinition['TEST_TYPE']
         targetResourceId = self._testDefinition['TARGET_RESOURCE_ID']
-        
+
         executedOn = datetime.utcnow().isoformat()
 
         testResult = self._runSchemaChangeModel(
@@ -383,7 +401,8 @@ class ExecuteTest(IUseCase):
 
         self._insertQualTestResultEntry(testResult)
 
-        anomalyMessage = getAnomalyMessage(targetResourceId, databaseName, schemaName, materializationName, columnName, self._testDefinition['TEST_TYPE'])
+        anomalyMessage = getAnomalyMessage(
+            targetResourceId, databaseName, schemaName, materializationName, columnName, self._testDefinition['TEST_TYPE'])
 
         alertData = None
         alertId = None
@@ -392,14 +411,16 @@ class ExecuteTest(IUseCase):
             self._insertAlertEntry(
                 alertId, anomalyMessage, CitoTableType.TestAlertsQual)
 
-            alertData = QualTestAlertData(alertId, anomalyMessage, databaseName, schemaName, materializationName, materializationType, testResult.deviations)
+            alertData = QualTestAlertData(alertId, anomalyMessage, databaseName, schemaName,
+                                          materializationName, materializationType, testResult.deviations)
 
         self._insertQualHistoryEntry(
             newSchema, testResult.isIdentical, alertId)
 
-        testData = QualTestData(executedOn, testResult.deviations, testResult.isIdentical)
+        testData = QualTestData(
+            executedOn, testResult.deviations, testResult.isIdentical)
         return QualTestExecutionResult(testSuiteId, testType, self._executionId, targetResourceId, self._organizationId, testData, alertData)
-        
+
     def _runMaterializationRowCountTest(self) -> AnomalyTestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
         schemaName = self._testDefinition['SCHEMA_NAME']
@@ -411,7 +432,7 @@ class ExecuteTest(IUseCase):
 
         newData = self._getNewData(newDataQuery)
 
-        if(len(newData) != 1):
+        if (len(newData) != 1):
             raise Exception(
                 f'Mat row count - More than one or no matching new data entries found')
 
@@ -434,7 +455,7 @@ class ExecuteTest(IUseCase):
 
         newData = self._getNewData(newDataQuery)
 
-        if(len(newData) != 1):
+        if (len(newData) != 1):
             raise Exception(
                 'Mat column count - More than one or no matching new data entries found')
 
@@ -458,7 +479,7 @@ class ExecuteTest(IUseCase):
 
         newData = self._getNewData(newDataQuery)
 
-        if(len(newData) != 1):
+        if (len(newData) != 1):
             raise Exception(
                 'Mat freshness - More than one or no matching new data entries found')
 
@@ -504,7 +525,7 @@ class ExecuteTest(IUseCase):
 
         newData = self._getNewData(newDataQuery)
 
-        if(len(newData) != 1):
+        if (len(newData) != 1):
             raise Exception(
                 'Col cardinality - More than one or no matching new data entries found')
 
@@ -528,7 +549,7 @@ class ExecuteTest(IUseCase):
 
         newData = self._getNewData(newDataQuery)
 
-        if(len(newData) != 1):
+        if (len(newData) != 1):
             raise Exception(
                 'Col Distribution - More than one or no matching new data entries found')
 
@@ -552,7 +573,7 @@ class ExecuteTest(IUseCase):
 
         newData = self._getNewData(newDataQuery)
 
-        if(len(newData) != 1):
+        if (len(newData) != 1):
             raise Exception(
                 'Col Freshness - More than one or no matching new data entries found')
 
@@ -576,7 +597,7 @@ class ExecuteTest(IUseCase):
 
         newData = self._getNewData(newDataQuery)
 
-        if(len(newData) != 1):
+        if (len(newData) != 1):
             raise Exception(
                 'Col Nullness - More than one or no matching new data entries found')
 
@@ -600,7 +621,7 @@ class ExecuteTest(IUseCase):
 
         newData = self._getNewData(newDataQuery)
 
-        if(len(newData) != 1):
+        if (len(newData) != 1):
             raise Exception(
                 'Col Uniqueness - More than one or no matching new data entries found')
 
@@ -636,7 +657,8 @@ class ExecuteTest(IUseCase):
             if not request.targetOrgId and not auth.callerOrgId:
                 raise Exception('No organization Id instance provided')
             if request.targetOrgId and auth.callerOrgId:
-                raise Exception('callerOrgId and targetOrgId provided. Not allowed')
+                raise Exception(
+                    'callerOrgId and targetOrgId provided. Not allowed')
 
             self._testSuiteId = request.testSuiteId
             self._testType = request.testType
