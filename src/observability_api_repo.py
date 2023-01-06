@@ -1,19 +1,19 @@
 from typing import Union
 import requests
 
-from i_integration_api_repo import IIntegrationApiRepo
+from i_observability_api_repo import IObservabilityApiRepo
 from snowflake_query_result_dto import SnowflakeQueryResultDto
 import logging
-from config import getIntegrationApiRoot
+from config import getObservabilityApiRoot
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class IntegrationApiRepo(IIntegrationApiRepo):
+class ObservabilityApiRepo(IObservabilityApiRepo):
     def __init__(self) -> None:
         self._version = 'v1'
-        self._apiRoot = getIntegrationApiRoot()
+        self._apiRoot = getObservabilityApiRoot()
 
     def querySnowflake(self, query: str, jwt: str, targetOrgId: Union[str, None]) -> SnowflakeQueryResultDto:
         data = {'query': query}

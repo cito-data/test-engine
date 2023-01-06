@@ -21,11 +21,10 @@
               "targetOrgId": "6374e43d0aee515b64effd87"
             },
             "headers": {
-              
               "Authorization": "BearereyJraWQiOiI3Wld4S1wvUEYrWU1rUWhcLzlpR1JzZEtjVDE1ZFpUdFNnMXRxMTFPcEdCdW89IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoic3lzdGVtLWludGVybmFsXC9zeXN0ZW0taW50ZXJuYWwiLCJhdXRoX3RpbWUiOjE2NzI4NDUyMjAsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS1jZW50cmFsLTEuYW1hem9uYXdzLmNvbVwvZXUtY2VudHJhbC0xXzBtdUd0S01rMyIsImV4cCI6MTY3Mjg0ODgyMCwiaWF0IjoxNjcyODQ1MjIwLCJ2ZXJzaW9uIjoyLCJqdGkiOiJiNzE4OGQwYS02MjZkLTRhN2ItODMwNC00NTUxNjNhYTIzZTYiLCJjbGllbnRfaWQiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSJ9.TbBLi4m4d8PhSdggnAofhDSBMIoh8w-JApqjSOwACweUF_GkpJ3eSCVLJFQ5qUys_WR6TSXLY2kj5qkMkRBDEOn6rxfQRaGeB9N8NuGADYagH8kRrDzQct6ww9VF4edgQIqKs8KjKJW2m18I_Q21cG5a2uO04dLDC5vrhpiV8afj_p7N9Jnhd7jPUSEoP1qAZpVkFYylCEogxFZ84qCer2Wo92s1wSLJxm23eAeQffbOsFi7P8aM2Tite6zYyIeVxcLfzQdtLvGYsyF5wHlgT36KAAoYM3SoWsNaUjoKx0_jqPUP1rSGgJrOgriT0zRA_OvG5Z66axTuxMpo1NUb1w"
             },
             "pathParameters": {
-              "testSuiteId": "2c72d3fa-6014-4b9a-bfb4-9f3f7a0c2c4c",
+              "testSuiteId": "2c72d3fa-6014-4b9a-bfb4-9f3f7a0c2c4c"
             }
           }
         },
@@ -36,7 +35,8 @@
           // "API_ROOT_INTEGRATION_SERVICE": "http://172.17.0.1:3002",
           "ENVIRONMENT": "production",
           "API_ROOT_ACCOUNT_SERVICE": "https://b5oerjsr53kgpitik7yu3i6eca0pklio.lambda-url.eu-central-1.on.aws",
-          "API_ROOT_INTEGRATION_SERVICE": "https://hnyjrlph7pkg2ty2trf3bo7o6m0emujf.lambda-url.eu-central-1.on.aws"
+          "API_ROOT_INTEGRATION_SERVICE": "https://hnyjrlph7pkg2ty2trf3bo7o6m0emujf.lambda-url.eu-central-1.on.aws",
+          "API_ROOT_OBSERVABILITY_SERVICE": "https://k45v4v7jrgn5tjcyb4xwpc56de0wjpbr.lambda-url.eu-central-1.on.aws"
         }
       }
     }

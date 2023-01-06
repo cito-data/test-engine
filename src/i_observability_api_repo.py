@@ -1,11 +1,14 @@
 
 
 from abc import ABC, abstractmethod
-from typing import Union
-from snowflake_query_result_dto import SnowflakeQueryResultDto
+from execute_test import QualTestExecutionResult, QuantTestExecutionResult
 
 
 class IObservabilityApiRepo(ABC):
     @abstractmethod
-    def sendResult(self, result: str, jwt: str, targetOrgId: Union[str, None]) -> SnowflakeQueryResultDto:
+    def sendQuantTestExecutionResult(self, result: QuantTestExecutionResult, jwt: str) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def sendQualTestExecutionResult(self, result: QualTestExecutionResult, jwt: str) -> None:
         raise NotImplementedError

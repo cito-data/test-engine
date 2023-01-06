@@ -11,7 +11,7 @@ from quant_model import ResultDto as QuantTestResultDto, CommonModel
 from query_snowflake import QuerySnowflake, QuerySnowflakeAuthDto, QuerySnowflakeRequestDto, QuerySnowflakeResponseDto
 from test_type import QuantColumnTest, QuantMatTest, QualMatTest
 from use_case import IUseCase
-from i_integration_api_repo import IIntegrationApiRepo
+from i_observability_api_repo import IObservabilityApiRepo
 import logging
 import uuid
 
@@ -124,7 +124,7 @@ class ExecuteTestAuthDto:
 
 
 ExecuteTestResponseDto = Result[Union[QuantTestExecutionResult,
-    QualTestExecutionResult]]
+                                      QualTestExecutionResult]]
 
 
 class ExecuteTest(IUseCase):
@@ -144,8 +144,11 @@ class ExecuteTest(IUseCase):
 
     _requestLoggingInfo: str
 
-    def __init__(self, integrationApiRepo: IIntegrationApiRepo, querySnowflake: QuerySnowflake) -> None:
-        self._integrationApiRepo = integrationApiRepo
+    _observabilityApiRepo: IObservabilityApiRepo
+    _querySnowflake: QuerySnowflake
+
+    def __init__(self, observabilityApiRepo: IObservabilityApiRepo, querySnowflake: QuerySnowflake) -> None:
+        self._observabilityApiRepo = observabilityApiRepo
         self._querySnowflake = querySnowflake
 
     def _insertExecutionEntry(self, executedOn: str, tableType: CitoTableType):
@@ -165,15 +168,15 @@ class ExecuteTest(IUseCase):
 
     def _insertQualHistoryEntry(self, value: MaterializationSchema, isIdentical: bool, alertId: Union[str, None]):
         valueSets = [
-        {'name': 'id', 'type': 'string', 'value': str(uuid.uuid4())},
-        {'name': 'test_type', 'type': 'string',
-            'value': self._testDefinition['TEST_TYPE']},
-        {'name': 'value', 'type': 'string', 'value':  json.dumps(value)},
-        {'name': 'is_identical', 'type': 'boolean',
-            'value': 'true' if isIdentical else 'false'},
-        {'name': 'test_suite_id', 'type': 'string', 'value': self._testSuiteId},
-        {'name': 'execution_id', 'type': 'string', 'value':  self._executionId},
-        {'name': 'alert_id', 'type': 'string', 'value':  alertId},
+            {'name': 'id', 'type': 'string', 'value': str(uuid.uuid4())},
+            {'name': 'test_type', 'type': 'string',
+             'value': self._testDefinition['TEST_TYPE']},
+            {'name': 'value', 'type': 'string', 'value':  json.dumps(value)},
+            {'name': 'is_identical', 'type': 'boolean',
+             'value': 'true' if isIdentical else 'false'},
+            {'name': 'test_suite_id', 'type': 'string', 'value': self._testSuiteId},
+            {'name': 'execution_id', 'type': 'string', 'value':  self._executionId},
+            {'name': 'alert_id', 'type': 'string', 'value':  alertId},
         ]
 
         testHistoryQuery = getInsertQuery(
@@ -296,7 +299,7 @@ class ExecuteTest(IUseCase):
                 'Sf query error - operation: history data')
 
         return sorted([(element['EXECUTED_ON'], element['VALUE'])
-                for element in getHistoricalDataResult.value.content[self._organizationId]])
+                       for element in getHistoricalDataResult.value.content[self._organizationId]])
 
     def _getLastMatSchema(self) -> Union[MaterializationSchema, None]:
         query = getLastMatSchemaQuery(self._testSuiteId)
@@ -368,7 +371,7 @@ class ExecuteTest(IUseCase):
                 alertId, anomalyMessage, CitoTableType.TestAlerts)
 
             alertData = QuantTestAlertData(alertId, anomalyMessage, databaseName, schemaName, materializationName, materializationType, testResult.expectedValueUpper,
-                                                  testResult.expectedValueLower, columnName, newDataPoint)
+                                           testResult.expectedValueLower, columnName, newDataPoint)
 
         testData = QuantTestData(
             executedOnISOFormat, testResult.isAnomaly, testResult.modifiedZScore, testResult.deviation)
@@ -692,17 +695,16 @@ class ExecuteTest(IUseCase):
             else:
                 raise Exception('Test type mismatch')
 
-
-       const instanceOfQuantTestExecutionResultDto = (
-        object: any
-      ): object is QuantTestExecutionResultDto => 'isWarmup' in object;
-      
-      if (!instanceOfQuantTestExecutionResultDto(testExecutionResult))
-        await this.#createQualTestExecutionResult(testExecutionResult);
-      else await this.#createQuantTestExecutionResult(testExecutionResult);
+            if type(testResult) is QualTestExecutionResult:
+                self._observabilityApiRepo.sendQualTestExecutionResult(
+                    testResult, self._jwt)
+            else:
+                self._observabilityApiRepo.sendQuantTestExecutionResult(
+                    testResult, self._jwt)
 
             return Result.ok(testResult)
 
         except Exception as e:
-            logger.exception(f'error: {e}' if e.args[0] else f'error: unknown - {self._requestLoggingInfo}')
+            logger.exception(
+                f'error: {e}' if e.args[0] else f'error: unknown - {self._requestLoggingInfo}')
             return Result.fail('')
