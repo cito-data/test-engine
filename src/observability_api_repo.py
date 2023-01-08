@@ -22,19 +22,22 @@ class ObservabilityApiRepo(IObservabilityApiRepo):
 
         response = requests.post(f'{self._apiRoot}/api/{self._version}/test-suite/execution/result/handle',
                                  data=data, headers={'Authorization': f'Bearer {jwt}'})
-        jsonPayload = response.json()
         if response.status_code == 201:
             return
+
+        jsonPayload = response.json() if response.text else None
         raise Exception(
-            jsonPayload['message'] if jsonPayload['message'] else 'Unknown Error')
+            jsonPayload['message'] if jsonPayload and jsonPayload['message'] else 'Unknown Error')
 
     def sendQualTestExecutionResult(self, result: QualTestExecutionResult, jwt: str) -> None:
         data = asdict(result)
 
         response = requests.post(f'{self._apiRoot}/api/{self._version}/qual-test-suite/execution/result/handle',
                                  data=data, headers={'Authorization': f'Bearer {jwt}'})
-        jsonPayload = response.json()
+
         if response.status_code == 201:
             return
+
+        jsonPayload = response.json() if response.text else None
         raise Exception(
-            jsonPayload['message'] if jsonPayload['message'] else 'Unknown Error')
+            jsonPayload['message'] if jsonPayload and jsonPayload['message'] else 'Unknown Error')
