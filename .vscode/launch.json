@@ -17,14 +17,14 @@
         "payload": {
           "json": {
             "body": {
-              "testType": "ColumnCardinality",
+              "testType": "MaterializationSchemaChange",
               "targetOrgId": "631789bf27518f97cf1c82b7"
             },
             "headers": {
-              "Authorization": "BearereyJraWQiOiI3Wld4S1wvUEYrWU1rUWhcLzlpR1JzZEtjVDE1ZFpUdFNnMXRxMTFPcEdCdW89IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoic3lzdGVtLWludGVybmFsXC9zeXN0ZW0taW50ZXJuYWwiLCJhdXRoX3RpbWUiOjE2NzMyMTA2NjEsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS1jZW50cmFsLTEuYW1hem9uYXdzLmNvbVwvZXUtY2VudHJhbC0xXzBtdUd0S01rMyIsImV4cCI6MTY3MzIxNDI2MSwiaWF0IjoxNjczMjEwNjYxLCJ2ZXJzaW9uIjoyLCJqdGkiOiJiN2U4YjgzZS0wYmRhLTQwMDEtYWQyNi1mYTAwMTQ2YWI0NjMiLCJjbGllbnRfaWQiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSJ9.S0jMfsJSLW6f9038jXkIFTwEjQLnaEpbBapAyNwYkXYcE2luPoxN2ZD02afn4TPx1EgWQdjkC8S4yvGgXF0ljYHVMtHkIPgyI3VOZRVqHpZfk1D0RAI_tHcdrkg8-owewwwFv66mQT-H1Ux0moww8a__4U6_GxmyVlPGEhBuiI-KcHeK2UvIwMxULj7vC76lXioZstILgc1DynjXt5v0Qf8AT47K0bNHpV0gb7ruWHNPKdDMxflq6Ou_irMwSSXyuAX9ReikL7JOGdVEXeSI64SVzNF18gMT2EHOadE13MZHCJmNwQqqx8tO3he0U6RXyDvg8iuul-NCC60rnWw8uA"
+              "Authorization": "BearereyJraWQiOiI3Wld4S1wvUEYrWU1rUWhcLzlpR1JzZEtjVDE1ZFpUdFNnMXRxMTFPcEdCdW89IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoic3lzdGVtLWludGVybmFsXC9zeXN0ZW0taW50ZXJuYWwiLCJhdXRoX3RpbWUiOjE2NzMyNTM0MTIsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS1jZW50cmFsLTEuYW1hem9uYXdzLmNvbVwvZXUtY2VudHJhbC0xXzBtdUd0S01rMyIsImV4cCI6MTY3MzI1NzAxMiwiaWF0IjoxNjczMjUzNDEyLCJ2ZXJzaW9uIjoyLCJqdGkiOiJiODQ0YmFkMC0xYWM4LTRkM2UtODdhZi05Y2ZhOGJiMjY4ZWQiLCJjbGllbnRfaWQiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSJ9.VSngI7bYrtv8iNHaXqaYs_mlUWkUpvUv6wPbtT6Sv-ISmJkhlrmiM7pA-HP-SenwrLXJgkYaWbBQgp5j-RCsrM9e9a0L9S5OtDL1hdBB_OYe_O4B4_PQ_yDTaqUebKq-5JCnElp1pQkZz7ZOb23E5hvY3O8IW-oNQ1dj4ISfyuNF5IcTJIZvXKOwVjIlG7JzI3JlNaWdVIK-pBNowxXE7PHoMpd5m4xjiPvrgTy1X6BQ8CvohJ3FoFiycp-gkSeUFZ_TJLQpZPkfSKxujCxHIHWnx0qwJ9nk97uiRx4-UlghUw-7jyfeT5Nj8VuUdvNErjULWsuVNwI9CRPdbiPyyw"
             },
             "pathParameters": {
-              "testSuiteId": "121bf8ff-7a13-45db-a227-a394503150aa"
+              "testSuiteId": "d6c3d9c6-8160-4309-b956-03f48aa7d171"
             }
           }
         },
