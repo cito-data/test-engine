@@ -24,7 +24,7 @@ Parameters:
   ApiRootObservabilityService:
     Type: String
     Description: prod obs api root
-    Default: https://k45v4v7jrgn5tjcyb4xwpc56de0wjpbr.lambda-url.eu-central-1.on.aws
+    Default: https://5fj5bbhcgczduwgi6s3ps2e4im0fgzau.lambda-url.eu-central-1.on.aws
 
 Resources:
   TestSuiteExecution:

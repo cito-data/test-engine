@@ -36,7 +36,7 @@
           "ENVIRONMENT": "production",
           "API_ROOT_ACCOUNT_SERVICE": "https://b5oerjsr53kgpitik7yu3i6eca0pklio.lambda-url.eu-central-1.on.aws",
           "API_ROOT_INTEGRATION_SERVICE": "https://hnyjrlph7pkg2ty2trf3bo7o6m0emujf.lambda-url.eu-central-1.on.aws",
-          "API_ROOT_OBSERVABILITY_SERVICE": "https://k45v4v7jrgn5tjcyb4xwpc56de0wjpbr.lambda-url.eu-central-1.on.aws"
+          "API_ROOT_OBSERVABILITY_SERVICE": "https://5fj5bbhcgczduwgi6s3ps2e4im0fgzau.lambda-url.eu-central-1.on.aws"
         }
       }
     }
