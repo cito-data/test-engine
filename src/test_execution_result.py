@@ -32,8 +32,8 @@ class _AlertData:
 
 @dataclass
 class QuantTestAlertData(_AlertData):
-    expectedUpper: Union[float, None]
-    expectedLower: Union[float, None]
+    expectedUpperBound: Union[float, None]
+    expectedLowerBound: Union[float, None]
     columnName: Union[str, None]
     value: float
 
