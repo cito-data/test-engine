@@ -1,5 +1,5 @@
-from typing import Union
 import requests
+import json
 from dataclasses import asdict
 
 from i_observability_api_repo import IObservabilityApiRepo
@@ -18,10 +18,10 @@ class ObservabilityApiRepo(IObservabilityApiRepo):
         self._apiRoot = getObservabilityApiRoot()
 
     def sendQuantTestExecutionResult(self, result: QuantTestExecutionResult, jwt: str) -> None:
-        data = asdict(result)
+        data = json.dumps(asdict(result))
 
-        response = requests.post(f'{self._apiRoot}/api/{self._version}/test-suite/execution/result/handle',
-                                 data=data, headers={'Authorization': f'Bearer {jwt}'})
+        response = requests.post(f'{self._apiRoot}/api/{self._version}/test-suite/{result.testSuiteId}/result',
+                                 data=data, headers={'Authorization': f'Bearer {jwt}', 'Content-Type': 'application/json'})
         if response.status_code == 201:
             return
 
@@ -30,10 +30,10 @@ class ObservabilityApiRepo(IObservabilityApiRepo):
             jsonPayload['message'] if jsonPayload and jsonPayload['message'] else 'Unknown Error')
 
     def sendQualTestExecutionResult(self, result: QualTestExecutionResult, jwt: str) -> None:
-        data = asdict(result)
+        data = json.dumps(asdict(result))
 
-        response = requests.post(f'{self._apiRoot}/api/{self._version}/qual-test-suite/execution/result/handle',
-                                 data=data, headers={'Authorization': f'Bearer {jwt}'})
+        response = requests.post(f'{self._apiRoot}/api/{self._version}/qual-test-suite/{result.testSuiteId}/result',
+                                 data=data, headers={'Authorization': f'Bearer {jwt}', 'Content-Type': 'application/json'})
 
         if response.status_code == 201:
             return
