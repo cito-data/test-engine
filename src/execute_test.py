@@ -1,11 +1,11 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from datetime import datetime
 import json
 from typing import Any, Union
 from cito_data_query import CitoTableType, getHistoryQuery, getInsertQuery, getTestQuery, getLastMatSchemaQuery
 from new_column_data_query import getCardinalityQuery, getDistributionQuery, getNullnessQuery, getUniquenessQuery, getFreshnessQuery as getColumnFreshnessQuery
 from new_materialization_data_query import MaterializationType, getColumnCountQuery, getFreshnessQuery, getRowCountQuery, getSchemaChangeQuery
-from qual_model import MaterializationSchema, SchemaChangeModel, ResultDto as QualResultDto, SchemaDiff
+from qual_model import MaterializationSchema, SchemaChangeModel, ResultDto as QualResultDto
 from quant_model import ResultDto as QuantTestResultDto, CommonModel
 from query_snowflake import QuerySnowflake, QuerySnowflakeAuthDto, QuerySnowflakeRequestDto, QuerySnowflakeResponseDto
 from test_execution_result import QualTestAlertData, QualTestData, QualTestExecutionResult, QuantTestAlertData, QuantTestData, QuantTestExecutionResult
@@ -154,7 +154,7 @@ class ExecuteTest(IUseCase):
             {'name': 'expected_value', 'type': 'string',
              'value': json.dumps(testResult.expectedValue) if testResult.expectedValue else None},
             {'name': 'deviation', 'type': 'string',
-                'value': testResult.deviations},
+                'value': json.dumps([asdict(el) for el in testResult.deviations])},
             {'name': 'is_identical', 'type': 'boolean',
                 'value': testResult.isIdentical},
             {'name': 'test_suite_id', 'type': 'string', 'value': self._testSuiteId},

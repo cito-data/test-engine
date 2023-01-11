@@ -17,14 +17,14 @@
         "payload": {
           "json": {
             "body": {
-              "testType": "ColumnDistribution",
+              "testType": "MaterializationSchemaChange",
               "targetOrgId": "631789bf27518f97cf1c82b7"
             },
             "headers": {
-              "Authorization": "BearereyJraWQiOiI3Wld4S1wvUEYrWU1rUWhcLzlpR1JzZEtjVDE1ZFpUdFNnMXRxMTFPcEdCdW89IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoic3lzdGVtLWludGVybmFsXC9zeXN0ZW0taW50ZXJuYWwiLCJhdXRoX3RpbWUiOjE2NzMzMzU1MzcsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS1jZW50cmFsLTEuYW1hem9uYXdzLmNvbVwvZXUtY2VudHJhbC0xXzBtdUd0S01rMyIsImV4cCI6MTY3MzMzOTEzNywiaWF0IjoxNjczMzM1NTM3LCJ2ZXJzaW9uIjoyLCJqdGkiOiJlZGFjZmU2ZC00OTFkLTQ4YjQtOGQyYS1lNTM5MTllZGQxODQiLCJjbGllbnRfaWQiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSJ9.mYTr3VwQgQwIeGlLLUOY_WjrOIJhY6CAMqisQuDPAeAPlgGQ3_x7uawcP-6i6AGkyvyMqhCW3TzuIsYMnMKEvAEMYH030G-X5-ybUNsOO0Aj1MiXZEawu5coQFZTvSMcuL6ZhGcln7rU4RQ-EFmfPKxlMPsr3NbZy-Yz--3kul8XA4HCyxhtmxoZlbGnzhfdf7wSZCasDyeJnNLPWdhIetWk3Z7kUf3FBjld6nqrd-_fjyh50Pnm_S1uDxYYjMEWGEknE4ymT-n99jG2gH7NY7esYJMMUCMXKWaWLu498En0dCjFBJBxFJLNo_s-Yn0ufzPG8aY10B0GkCCbvLEMPw"
+              "Authorization": "BearereyJraWQiOiI3Wld4S1wvUEYrWU1rUWhcLzlpR1JzZEtjVDE1ZFpUdFNnMXRxMTFPcEdCdW89IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoic3lzdGVtLWludGVybmFsXC9zeXN0ZW0taW50ZXJuYWwiLCJhdXRoX3RpbWUiOjE2NzM0MzYzMDYsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS1jZW50cmFsLTEuYW1hem9uYXdzLmNvbVwvZXUtY2VudHJhbC0xXzBtdUd0S01rMyIsImV4cCI6MTY3MzQzOTkwNiwiaWF0IjoxNjczNDM2MzA2LCJ2ZXJzaW9uIjoyLCJqdGkiOiIxYjg3N2E5YS0yNDRhLTQ2YzMtOTc5NS0wM2Q3MzdkMmUwNmUiLCJjbGllbnRfaWQiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSJ9.WKBdSi7ySRMKIeqhtHf0PHs7rcqBO1zKVYZgisOIUbAvgT-rHdZlVQNW1g8Cb2nR9VFwZEIGETtD9X8P9Kg-rvdKGEUjE0NOfR337SEBfSo0DIM-mnQCXWPX8ONeu0xV1MSSHog8iN1Y6GCAGgr0965HlOPv91kn8GKFFODPMM4ktXR98wIhtHyb4igir35DW6gXi6iUZQNV5l_tlmLmU6TVCwKEnNlQSQn8Dhaox5nryemsUJZW1JqnIhqjXergYSub4vq5TFM6fW5dnfBchGDiFJ04ccM9cDNJtxDfTR12Vj_1rR_Mwq9txnHqcIuq_ShE6-7EaiapF_nwMUm-ZA"
             },
             "pathParameters": {
-              "testSuiteId": "aeb86545-aae5-4ac0-b72c-4c62adf16403"
+              "testSuiteId": "d6c3d9c6-8160-4309-b956-03f48aa7d171"
             }
           }
         },

@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import Union
 
+from qual_model import SchemaDiff
+
 
 @dataclass
 class _TestData:
@@ -16,7 +18,7 @@ class QuantTestData(_TestData):
 
 @dataclass
 class QualTestData(_TestData):
-    deviations: str
+    deviations: "list[SchemaDiff]"
     isIdentical: bool
 
 
@@ -40,7 +42,7 @@ class QuantTestAlertData(_AlertData):
 
 @dataclass
 class QualTestAlertData(_AlertData):
-    deviatons: str
+    deviatons: "list[SchemaDiff]"
 
 
 @dataclass
