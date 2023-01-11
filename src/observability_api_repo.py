@@ -25,9 +25,8 @@ class ObservabilityApiRepo(IObservabilityApiRepo):
         if response.status_code == 201:
             return
 
-        jsonPayload = response.json() if response.text else None
         raise Exception(
-            jsonPayload['message'] if jsonPayload and jsonPayload['message'] else 'Unknown Error')
+            response.text if response.text else 'Unknown Error')
 
     def sendQualTestExecutionResult(self, result: QualTestExecutionResult, jwt: str) -> None:
         data = json.dumps(asdict(result))
@@ -38,6 +37,5 @@ class ObservabilityApiRepo(IObservabilityApiRepo):
         if response.status_code == 201:
             return
 
-        jsonPayload = response.json() if response.text else None
         raise Exception(
-            jsonPayload['message'] if jsonPayload and jsonPayload['message'] else 'Unknown Error')
+            response.text if response.text else 'Unknown Error')
