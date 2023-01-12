@@ -21,10 +21,6 @@ Parameters:
     Type: String
     Description: prod integration api root
     Default: https://hnyjrlph7pkg2ty2trf3bo7o6m0emujf.lambda-url.eu-central-1.on.aws
-  ApiRootObservabilityService:
-    Type: String
-    Description: prod obs api root
-    Default: https://5fj5bbhcgczduwgi6s3ps2e4im0fgzau.lambda-url.eu-central-1.on.aws
 
 Resources:
   TestSuiteExecution:
@@ -44,7 +40,6 @@ Resources:
           ENVIRONMENT: !Ref Environment
           API_ROOT_ACCOUNT_SERVICE: !Ref ApiRootAccountService
           API_ROOT_INTEGRATION_SERVICE: !Ref ApiRootIntegrationService
-          API_ROOT_OBSERVABILITY_SERVICE: !Ref ApiRootObservabilityService 
     Metadata:
       Dockerfile: Dockerfile
       DockerContext: ./src

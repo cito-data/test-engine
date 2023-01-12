@@ -2,7 +2,6 @@ from dataclasses import asdict
 import json
 from typing import Any
 
-from observability_api_repo import ObservabilityApiRepo
 from query_snowflake import QuerySnowflake
 from get_accounts import GetAccounts
 from base_controller import Request, Response
@@ -23,13 +22,11 @@ logger.setLevel(logging.INFO)
 class ExecuteTestController(BaseController):
 
     _getAccounts: GetAccounts
-    _observabilityApiRepo: ObservabilityApiRepo
     _querySnowflake: QuerySnowflake
 
-    def __init__(self, getAccounts: GetAccounts, observabilityApiRepo: ObservabilityApiRepo, querySnowflake: QuerySnowflake) -> None:
+    def __init__(self, getAccounts: GetAccounts, querySnowflake: QuerySnowflake) -> None:
         super().__init__()
         self._getAccounts = getAccounts
-        self._observabilityApiRepo = observabilityApiRepo
         self._querySnowflake = querySnowflake
 
     def _buildRequestDto(self, body: "dict[str, Any]", pathParams: "dict[str, str]") -> ExecuteTestRequestDto:
@@ -59,7 +56,7 @@ class ExecuteTestController(BaseController):
             logger.info(
                 f'Executing test suite {requestDto.testSuiteId} for organization {requestDto.targetOrgId if requestDto.targetOrgId else authDto.callerOrgId}...')
 
-            result = ExecuteTest(self._observabilityApiRepo, self._querySnowflake).execute(
+            result = ExecuteTest(self._querySnowflake).execute(
                 requestDto, authDto)
 
             if not result.success:

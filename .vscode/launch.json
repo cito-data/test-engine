@@ -18,13 +18,13 @@
           "json": {
             "body": {
               "testType": "ColumnUniqueness",
-              "targetOrgId": "631789bf27518f97cf1c82b7"
+              "targetOrgId": "6374e43d0aee515b64effd87"
             },
             "headers": {
-              "Authorization": "BearereyJraWQiOiI3Wld4S1wvUEYrWU1rUWhcLzlpR1JzZEtjVDE1ZFpUdFNnMXRxMTFPcEdCdW89IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoic3lzdGVtLWludGVybmFsXC9zeXN0ZW0taW50ZXJuYWwiLCJhdXRoX3RpbWUiOjE2NzM0NjgwMDYsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS1jZW50cmFsLTEuYW1hem9uYXdzLmNvbVwvZXUtY2VudHJhbC0xXzBtdUd0S01rMyIsImV4cCI6MTY3MzQ3MTYwNiwiaWF0IjoxNjczNDY4MDA2LCJ2ZXJzaW9uIjoyLCJqdGkiOiJmMjNmZTk4Yy03Nzk5LTQyYmItOTE2MS1jNTZiMzE0NmFlYzYiLCJjbGllbnRfaWQiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSJ9.ThSjcHTjcN0NDRIWa-hrnRErYfmkXk-odfn3kp6keoOJZE4egfPR7SdtuDZYJTsr0-IR8P8Fec8NBEU-WhR8w5aJUO_hXDSC6FLTfBEZP6IBe-MNPR9x9bMyM9Halwa_GDwkmKTDRMYDHgfyE9PoCVgtWqOekRZc589ycXH7ryutvzCFiNqR1lpHuN1reT7SpL2gYEJb6hkwqjd-VIL2KwszKkI6lDzCRUNmEmXNWg_vymwy-6HuNrajEVP8nOj3_FdLGx0Y78bZqwq8hWFmr7Noe5tqJ7GZvE3SRa0f3FZGrSQLKrHWL6W9XLOgy4sqDT3ZkpGAoRAVSGtfRZer8w"
+              "Authorization": "BearereyJraWQiOiI3Wld4S1wvUEYrWU1rUWhcLzlpR1JzZEtjVDE1ZFpUdFNnMXRxMTFPcEdCdW89IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoic3lzdGVtLWludGVybmFsXC9zeXN0ZW0taW50ZXJuYWwiLCJhdXRoX3RpbWUiOjE2NzM1MjI2MDIsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS1jZW50cmFsLTEuYW1hem9uYXdzLmNvbVwvZXUtY2VudHJhbC0xXzBtdUd0S01rMyIsImV4cCI6MTY3MzUyNjIwMiwiaWF0IjoxNjczNTIyNjAyLCJ2ZXJzaW9uIjoyLCJqdGkiOiJlZDgyZTJlNC0zZjJjLTQ1MDgtOTllMy01NGI3NmFlYWZmZTMiLCJjbGllbnRfaWQiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSJ9.WSnym4izfRMHfv3BZGS262wZ6TfxcylHgbwvmvh6EZsiRypO-1yvcf8Y7UKd-2-Iy_jsKYcCEabRNe0ALAJUQR61RkasHUm-bcsWgQkkVnAZq4P_CgxoNCxQgFZC4WktUnnGFyZo5zyQ6Su8J5kPmlkIw_TFKqv0MyYLvcB5vmj1dSvrdkQCKbK78FUrdQdlYbRyBi2I76r3nJfWGyx-G7XsuTrDLFrOmiK3mXX36Rg8fWybhdw9tQ-nAC_u37W088z83-30iLYaoxT5C5PVuheNCtArxUeukEm8dTC5Jo2vtee5UOqPmANkdDQ6hahAzHT6XMxRyG_nwGjOy1j69A"
             },
             "pathParameters": {
-              "testSuiteId": "0385eacd-1402-4d25-b7b5-795aa0665e40"
+              "testSuiteId": "a931a430-0938-42a0-a31b-04bf48b7748c"
             }
           }
         },
@@ -35,8 +35,7 @@
           // "API_ROOT_INTEGRATION_SERVICE": "http://172.17.0.1:3002",
           "ENVIRONMENT": "production",
           "API_ROOT_ACCOUNT_SERVICE": "https://b5oerjsr53kgpitik7yu3i6eca0pklio.lambda-url.eu-central-1.on.aws",
-          "API_ROOT_INTEGRATION_SERVICE": "https://hnyjrlph7pkg2ty2trf3bo7o6m0emujf.lambda-url.eu-central-1.on.aws",
-          "API_ROOT_OBSERVABILITY_SERVICE": "https://5fj5bbhcgczduwgi6s3ps2e4im0fgzau.lambda-url.eu-central-1.on.aws"
+          "API_ROOT_INTEGRATION_SERVICE": "https://hnyjrlph7pkg2ty2trf3bo7o6m0emujf.lambda-url.eu-central-1.on.aws"
         }
       }
     }

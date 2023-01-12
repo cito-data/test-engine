@@ -11,7 +11,6 @@ from query_snowflake import QuerySnowflake, QuerySnowflakeAuthDto, QuerySnowflak
 from test_execution_result import QualTestAlertData, QualTestData, QualTestExecutionResult, QuantTestAlertData, QuantTestData, QuantTestExecutionResult
 from test_type import QuantColumnTest, QuantMatTest, QualMatTest
 from use_case import IUseCase
-from i_observability_api_repo import IObservabilityApiRepo
 import logging
 import uuid
 
@@ -81,11 +80,9 @@ class ExecuteTest(IUseCase):
 
     _requestLoggingInfo: str
 
-    _observabilityApiRepo: IObservabilityApiRepo
     _querySnowflake: QuerySnowflake
 
-    def __init__(self, observabilityApiRepo: IObservabilityApiRepo, querySnowflake: QuerySnowflake) -> None:
-        self._observabilityApiRepo = observabilityApiRepo
+    def __init__(self, querySnowflake: QuerySnowflake) -> None:
         self._querySnowflake = querySnowflake
 
     def _insertExecutionEntry(self, executedOn: str, tableType: CitoTableType):
@@ -631,15 +628,6 @@ class ExecuteTest(IUseCase):
                 testResult = self._runMaterializationSchemaChangeTest()
             else:
                 raise Exception('Test type mismatch')
-
-            if type(testResult) is QualTestExecutionResult:
-                self._observabilityApiRepo.sendQualTestExecutionResult(
-                    testResult, self._jwt)
-            elif type(testResult) is QuantTestExecutionResult:
-                self._observabilityApiRepo.sendQuantTestExecutionResult(
-                    testResult, self._jwt)
-            else:
-                raise Exception('Unecpected test execution result type')
 
             return Result.ok(testResult)
 

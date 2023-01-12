@@ -24,7 +24,3 @@ def getIntegrationApiRoot():
 
 def getAccountApiRoot():
     return os.environ.get('API_ROOT_ACCOUNT_SERVICE')
-
-
-def getObservabilityApiRoot():
-    return os.environ.get('API_ROOT_OBSERVABILITY_SERVICE')
