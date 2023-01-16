@@ -235,19 +235,20 @@ class _QuantModel(ABC):
         zScoreAnalysisResult = self._zScoreAnalysis.analyze()
         forecastAnalysisResult = self._forecastAnalysis.analyze()
 
-        isAnomaly = zScoreAnalysisResult.isAnomaly and forecastAnalysisResult.isAnomaly
-
-        deviation = zScoreAnalysisResult.deviation if abs(zScoreAnalysisResult.expectedValue - self._newDataPoint[1]) <= abs(
-            forecastAnalysisResult.expectedValue - self._newDataPoint[1]) else forecastAnalysisResult.deviation
-
-        expectedValue = zScoreAnalysisResult.expectedValue if abs(zScoreAnalysisResult.expectedValue - self._newDataPoint[1]) <= abs(
-            forecastAnalysisResult.expectedValue - self._newDataPoint[1]) else forecastAnalysisResult.expectedValue
-        expectedValueUpper = zScoreAnalysisResult.expectedValueUpper \
-            if zScoreAnalysisResult.expectedValueUpper > forecastAnalysisResult.expectedValueUpper \
-            else forecastAnalysisResult.expectedValueUpper
         expectedValueLower = zScoreAnalysisResult.expectedValueLower \
             if zScoreAnalysisResult.expectedValueLower < forecastAnalysisResult.expectedValueLower \
             else forecastAnalysisResult.expectedValueLower
+        expectedValueUpper = zScoreAnalysisResult.expectedValueUpper \
+            if zScoreAnalysisResult.expectedValueUpper > forecastAnalysisResult.expectedValueUpper \
+            else forecastAnalysisResult.expectedValueUpper
+        expectedValue = zScoreAnalysisResult.expectedValue if abs(zScoreAnalysisResult.expectedValue - self._newDataPoint[1]) <= abs(
+            forecastAnalysisResult.expectedValue - self._newDataPoint[1]) else forecastAnalysisResult.expectedValue
+
+        isAnomaly = zScoreAnalysisResult.isAnomaly and forecastAnalysisResult.isAnomaly and (
+            self._newDataPoint[1] < expectedValueLower or self._newDataPoint[1] > expectedValueUpper)
+
+        deviation = zScoreAnalysisResult.deviation if abs(zScoreAnalysisResult.expectedValue - self._newDataPoint[1]) <= abs(
+            forecastAnalysisResult.expectedValue - self._newDataPoint[1]) else forecastAnalysisResult.deviation
 
         return ResultDto(zScoreAnalysisResult.meanAbsoluteDeviation, zScoreAnalysisResult.medianAbsoluteDeviation, zScoreAnalysisResult.modifiedZScore, expectedValue, expectedValueUpper, expectedValueLower, deviation, isAnomaly)
 
