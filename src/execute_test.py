@@ -295,17 +295,16 @@ class ExecuteTest(IUseCase):
 
         self._insertResultEntry(testResult)
 
-        anomalyMessage = getAnomalyMessage(
-            targetResourceId, databaseName, schemaName, materializationName, columnName, testType)
-
         alertData = None
         alertId = None
         if testResult.isAnomaly:
+            anomalyMessage = getAnomalyMessage(
+                targetResourceId, databaseName, schemaName, materializationName, columnName, testType)
             alertId = str(uuid.uuid4())
             self._insertAlertEntry(
                 alertId, anomalyMessage, CitoTableType.TestAlerts)
 
-            alertData = QuantTestAlertData(alertId, anomalyMessage, databaseName, schemaName, materializationName, materializationType, testResult.expectedValueUpper,
+            alertData = QuantTestAlertData(alertId, anomalyMessage, databaseName, schemaName, materializationName, materializationType, testResult.expectedValue, testResult.expectedValueUpper,
                                            testResult.expectedValueLower, columnName, newDataPoint)
 
         testData = QuantTestData(
@@ -339,12 +338,11 @@ class ExecuteTest(IUseCase):
 
         self._insertQualTestResultEntry(testResult)
 
-        anomalyMessage = getAnomalyMessage(
-            targetResourceId, databaseName, schemaName, materializationName, columnName, self._testDefinition['TEST_TYPE'])
-
         alertData = None
         alertId = None
         if not testResult.isIdentical:
+            anomalyMessage = getAnomalyMessage(
+                targetResourceId, databaseName, schemaName, materializationName, columnName, self._testDefinition['TEST_TYPE'])
             alertId = str(uuid.uuid4())
             self._insertAlertEntry(
                 alertId, anomalyMessage, CitoTableType.TestAlertsQual)
