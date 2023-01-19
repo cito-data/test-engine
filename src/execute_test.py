@@ -261,8 +261,8 @@ class ExecuteTest(IUseCase):
 
         return newData
 
-    def _runModel(self, threshold: int, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]") -> QuantTestResultDto:
-        return CommonModel(newData, historicalData, threshold).run()
+    def _runModel(self, threshold: int, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest]) -> QuantTestResultDto:
+        return CommonModel(newData, historicalData, threshold, testType).run()
 
     def _runTest(self, newDataPoint, historicalData: "list[(str,float)]") -> QuantTestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
@@ -273,6 +273,7 @@ class ExecuteTest(IUseCase):
         testSuiteId = self._testDefinition['ID']
         threshold = self._testDefinition['THRESHOLD']
         targetResourceId = self._testDefinition['TARGET_RESOURCE_ID']
+        testType = self._testDefinition['TEST_TYPE']
 
         executedOn = datetime.utcnow()
         executedOnISOFormat = executedOn.isoformat()
@@ -287,15 +288,15 @@ class ExecuteTest(IUseCase):
             self._insertHistoryEntry(
                 newDataPoint, False, None)
 
-            return QuantTestExecutionResult(testSuiteId, self._testDefinition['TEST_TYPE'], self._executionId, targetResourceId, self._organizationId, True, None, None)
+            return QuantTestExecutionResult(testSuiteId, testType, self._executionId, targetResourceId, self._organizationId, True, None, None)
 
         testResult = self._runModel(
-            threshold, (executedOnISOFormat, newDataPoint), historicalData)
+            threshold, (executedOnISOFormat, newDataPoint), historicalData, testType)
 
         self._insertResultEntry(testResult)
 
         anomalyMessage = getAnomalyMessage(
-            targetResourceId, databaseName, schemaName, materializationName, columnName, self._testDefinition['TEST_TYPE'])
+            targetResourceId, databaseName, schemaName, materializationName, columnName, testType)
 
         alertData = None
         alertId = None
@@ -313,7 +314,7 @@ class ExecuteTest(IUseCase):
         self._insertHistoryEntry(
             newDataPoint, testResult.isAnomaly, alertId)
 
-        return QuantTestExecutionResult(testSuiteId, self._testDefinition['TEST_TYPE'], self._executionId, targetResourceId, self._organizationId, False, testData, alertData)
+        return QuantTestExecutionResult(testSuiteId, testType, self._executionId, targetResourceId, self._organizationId, False, testData, alertData)
 
     def _runSchemaChangeModel(self, oldSchema: MaterializationSchema, newSchema: MaterializationSchema) -> QualResultDto:
         return SchemaChangeModel(newSchema, oldSchema).run()

@@ -1,4 +1,4 @@
-
+from test_type import QuantColumnTest, QuantMatTest
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import datetime
@@ -43,12 +43,14 @@ class _Analysis(ABC):
     _newDataPoint: pd.DataFrame
     _historicalData: pd.DataFrame
     _threshold: int
+    _testType: Union[QuantMatTest, QuantColumnTest]
 
     @abstractmethod
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int) -> None:
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest]) -> None:
         self._newDataPoint = self._buildNewDataPointFrame(newDataPoint)
         self._historicalData = self._buildHistoricalDF(historicalData)
         self._threshold = threshold
+        self._testType = testType
 
     def _buildNewDataPointFrame(self, newDataPoint: "tuple[str, float]") -> pd.DataFrame:
         return pd.DataFrame({'ds': pd.Series([newDataPoint[0]]), 'y': pd.Series([newDataPoint[1]])})
@@ -83,8 +85,8 @@ class _ZScoreAnalysis(_Analysis):
     _expectedValueUpper: float
     _expectedValueLower: float
 
-    def __init__(self, newDataPoint: float, historicalData: "list[tuple[str, float]]", threshold: int, ) -> None:
-        super().__init__(newDataPoint, historicalData, threshold)
+    def __init__(self, newDataPoint: float, historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest]) -> None:
+        super().__init__(newDataPoint, historicalData, threshold, testType)
 
     def _absoluteDeviation(self, x) -> float:
         return abs(x - self._median)
@@ -124,7 +126,7 @@ class _ZScoreAnalysis(_Analysis):
 
         isAnomaly = bool(abs(self._modifiedZScore) > self._threshold)
         deviation = newValue / \
-            self._expectedValue if self._expectedValue > 0 else 0
+            self._expectedValue - 1 if self._expectedValue > 0 else 0
 
         return _AnalysisResult(self._expectedValue, self._expectedValueUpper, self._expectedValueLower, deviation, isAnomaly)
 
@@ -136,8 +138,10 @@ class _ZScoreAnalysis(_Analysis):
 
         self._expectedValue = self._median
         self._expectedValueUpper = self._calculateBound(self._threshold*1)
-        self._expectedValueLower = self._calculateBound(
+
+        lowerBound = self._calculateBound(
             self._threshold*-1)
+        self._expectedValueLower = lowerBound if self._testType == QuantColumnTest.ColumnDistribution or self._testType == QuantColumnTest.ColumnDistribution.value or lowerBound > 0 else 0
 
         anomalyCheckResult = self._runAnomalyCheck()
 
@@ -158,29 +162,29 @@ class _ForecastAnalysis(_Analysis):
     _yearly_lower: Union[float, None]
     _yearly_upper: Union[float, None]
 
-    def __init__(self, newDataPoint: float, historicalData: "list[tuple[str, float]]", threshold: int, ) -> None:
-        super().__init__(newDataPoint, historicalData, threshold)
+    def __init__(self, newDataPoint: float, historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest]) -> None:
+        super().__init__(newDataPoint, historicalData, threshold, testType)
 
     def _runAnomalyCheck(self) -> _AnalysisResult:
         newValue = self._newDataPoint['y'].values[0]
 
         if self._daily and (newValue <= self._daily_upper and newValue >= self._daily_lower):
             deviation = self._newDataPoint['y'].values[0] / \
-                self._daily if self._daily > 0 else 0
+                self._daily - 1 if self._daily > 0 else 0
             return _AnalysisResult(self._daily, self._daily_upper, self._daily_lower, deviation, False)
 
         if self._weekly and (newValue <= self._weekly_upper and newValue >= self._weekly_lower):
             deviation = self._newDataPoint['y'].values[0] / \
-                self._weekly if self._weekly > 0 else 0
+                self._weekly - 1 if self._weekly > 0 else 0
             return _AnalysisResult(self._weekly, self._weekly_upper, self._weekly_lower, deviation, False)
 
         if self._yearly and (newValue <= self._yearly_upper and newValue >= self._yearly_lower):
             deviation = self._newDataPoint['y'].values[0] / \
-                self._yearly if self._yearly > 0 else 0
+                self._yearly - 1 if self._yearly > 0 else 0
             return _AnalysisResult(self._yearly, self._yearly_upper, self._yearly_lower, deviation, False)
 
         deviation = self._newDataPoint['y'].values[0] / \
-            self._yhat if self._yhat > 0 else 0
+            self._yhat - 1 if self._yhat > 0 else 0
         isAnomaly = bool(
             newValue > self._yhat_upper or newValue < self._yhat_lower)
 
@@ -200,7 +204,9 @@ class _ForecastAnalysis(_Analysis):
         forecast = m.predict(future)
 
         self._yhat = forecast['yhat'].values[0]
-        self._yhat_lower = forecast['yhat_lower'].values[0]
+        self._yhat_lower = forecast['yhat_lower'].values[0] \
+            if self._testType == QuantColumnTest.ColumnDistribution or self._testType == QuantColumnTest.ColumnDistribution.value \
+            or forecast['yhat_lower'].values[0] > 0 else 0
         self._yhat_upper = forecast['yhat_upper'].values[0]
         self._daily = forecast['daily'].values[0] if 'daily' in forecast.columns else None
         self._daily_lower = forecast['daily_lower'].values[0] if 'daily_lower' in forecast.columns else None
@@ -224,11 +230,11 @@ class _QuantModel(ABC):
     _forecastAnalysis: _ForecastAnalysis
 
     @abstractmethod
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int) -> None:
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest]) -> None:
         self._zScoreAnalysis = _ZScoreAnalysis(
-            newDataPoint, historicalData, threshold)
+            newDataPoint, historicalData, threshold, testType)
         self._forecastAnalysis = _ForecastAnalysis(
-            newDataPoint, historicalData, threshold)
+            newDataPoint, historicalData, threshold, testType)
         self._newDataPoint = newDataPoint
 
     def run(self) -> ResultDto:
@@ -254,5 +260,5 @@ class _QuantModel(ABC):
 
 
 class CommonModel(_QuantModel):
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, ) -> None:
-        super().__init__(newDataPoint, historicalData, threshold)
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest]) -> None:
+        super().__init__(newDataPoint, historicalData, threshold, testType)
