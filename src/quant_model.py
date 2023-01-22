@@ -141,7 +141,7 @@ class _ZScoreAnalysis(_Analysis):
 
         lowerBound = self._calculateBound(
             self._threshold*-1)
-        self._expectedValueLower = lowerBound if self._testType == QuantColumnTest.ColumnDistribution or self._testType == QuantColumnTest.ColumnDistribution.value or lowerBound > 0 else 0
+        self._expectedValueLower = lowerBound if self._testType == QuantColumnTest.ColumnDistribution or self._testType == QuantColumnTest.ColumnDistribution.value or QuantColumnTest.ColumnFreshness or self._testType == QuantColumnTest.ColumnFreshness.value or lowerBound > 0 else 0
 
         anomalyCheckResult = self._runAnomalyCheck()
 
@@ -164,6 +164,12 @@ class _ForecastAnalysis(_Analysis):
 
     def __init__(self, newDataPoint: float, historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest]) -> None:
         super().__init__(newDataPoint, historicalData, threshold, testType)
+
+    # def _isRelevantAnomaly(self, y) -> bool:
+    #     boundaryInterval = self._yhat_upper - self._yhat_lower
+    #     yAbsoluteBoundaryDistance = y - \
+    #         self._yhat_upper if y > self._yhat_upper else y < self._yhat_lower
+    #     # retrieve importanceSensitivity from testSuite
 
     def _runAnomalyCheck(self) -> _AnalysisResult:
         newValue = self._newDataPoint['y'].values[0]
@@ -188,6 +194,9 @@ class _ForecastAnalysis(_Analysis):
         isAnomaly = bool(
             newValue > self._yhat_upper or newValue < self._yhat_lower)
 
+        # isAnomaly = self._isRelevantAnomaly(
+        #     newValue) if isAnomaly else isAnomaly
+
         return _AnalysisResult(self._yhat, self._yhat_upper, self._yhat_lower, deviation, isAnomaly)
 
     def analyze(self) -> _AnalysisResult:
@@ -205,7 +214,7 @@ class _ForecastAnalysis(_Analysis):
 
         self._yhat = forecast['yhat'].values[0]
         self._yhat_lower = forecast['yhat_lower'].values[0] \
-            if self._testType == QuantColumnTest.ColumnDistribution or self._testType == QuantColumnTest.ColumnDistribution.value \
+            if self._testType == QuantColumnTest.ColumnDistribution or self._testType == QuantColumnTest.ColumnDistribution.value or QuantColumnTest.ColumnFreshness or self._testType == QuantColumnTest.ColumnFreshness.value  \
             or forecast['yhat_lower'].values[0] > 0 else 0
         self._yhat_upper = forecast['yhat_upper'].values[0]
         self._daily = forecast['daily'].values[0] if 'daily' in forecast.columns else None
