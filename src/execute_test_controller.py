@@ -6,7 +6,7 @@ from query_snowflake import QuerySnowflake
 from get_accounts import GetAccounts
 from base_controller import Request, Response
 from execute_test import ExecuteTest, ExecuteTestAuthDto, ExecuteTestRequestDto
-from base_controller import BaseController, CodeHttp, UserAccountInfo
+from base_controller import BaseController,  UserAccountInfo
 
 import logging
 
@@ -49,6 +49,12 @@ class ExecuteTestController(BaseController):
             if not getUserAccountInfoResult.value:
                 raise Exception('Authorization failed')
 
+            if not req.body:
+                raise Exception('Request is missing body')
+
+            if not req.pathParams:
+                raise Exception('Request is missing path params')
+
             requestDto = self._buildRequestDto(req.body, req.pathParams)
             authDto = self._buildAuthDto(
                 req.auth.token, getUserAccountInfoResult.value)
@@ -67,7 +73,7 @@ class ExecuteTestController(BaseController):
             logger.info(
                 f'...Test suite {requestDto.testSuiteId} successfully executed for organization {requestDto.targetOrgId if requestDto.targetOrgId else authDto.callerOrgId}')
 
-            return ExecuteTestController.ok(json.dumps(asdict(result.value)), CodeHttp.CREATED.value)
+            return ExecuteTestController.ok(json.dumps(asdict(result.value)), 201)
         except Exception as e:
             logger.exception(f'error: {e}' if e.args[0] else f'error: unknown')
             return ExecuteTestController.fail(e)

@@ -1,5 +1,5 @@
 import os
-from register import register
+from ioc_register import createIOCRegister
 import json
 import traceback
 
@@ -16,7 +16,7 @@ logger.setLevel(logging.INFO)
 
 # import requests
 
-register = register()
+register = createIOCRegister()
 
 print(f'Running in {os.environ.get("ENVIRONMENT")}')
 

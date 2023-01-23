@@ -4,7 +4,7 @@ from account_api_repo import AccountApiRepo
 from integration_api_repo import IntegrationApiRepo
 
 
-def register():
+def createIOCRegister():
     integrationApiRepo = IntegrationApiRepo()
     accountApiRepo = AccountApiRepo()
 

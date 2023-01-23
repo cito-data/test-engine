@@ -5,15 +5,21 @@ from qual_model import SchemaDiff
 
 
 @dataclass
+class AnomalyData:
+    isAnomaly: bool
+    importance: Union[float, None]
+
+
+@dataclass
 class _TestData:
     executedOn: str
 
 
 @dataclass
 class QuantTestData(_TestData):
-    isAnomolous: bool
     modifiedZScore: float
     deviation: float
+    anomaly: AnomalyData
 
 
 @dataclass

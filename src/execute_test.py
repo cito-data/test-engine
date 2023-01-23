@@ -5,10 +5,10 @@ from typing import Any, Union
 from cito_data_query import CitoTableType, getHistoryQuery, getInsertQuery, getTestQuery, getLastMatSchemaQuery
 from new_column_data_query import getCardinalityQuery, getDistributionQuery, getNullnessQuery, getUniquenessQuery, getFreshnessQuery as getColumnFreshnessQuery
 from new_materialization_data_query import MaterializationType, getColumnCountQuery, getFreshnessQuery, getRowCountQuery, getSchemaChangeQuery
-from qual_model import MaterializationSchema, SchemaChangeModel, ResultDto as QualResultDto
+from qual_model import ColumnDefinition, SchemaChangeModel, ResultDto as QualResultDto
 from quant_model import ResultDto as QuantTestResultDto, CommonModel
 from query_snowflake import QuerySnowflake, QuerySnowflakeAuthDto, QuerySnowflakeRequestDto, QuerySnowflakeResponseDto
-from test_execution_result import QualTestAlertData, QualTestData, QualTestExecutionResult, QuantTestAlertData, QuantTestData, QuantTestExecutionResult
+from test_execution_result import QualTestAlertData, QualTestData, QualTestExecutionResult, QuantTestAlertData, QuantTestData, QuantTestExecutionResult, AnomalyData
 from test_type import QuantColumnTest, QuantMatTest, QualMatTest
 from use_case import IUseCase
 import logging
@@ -72,7 +72,7 @@ class ExecuteTest(IUseCase):
     _testType: Union[QuantColumnTest, QuantMatTest, QualMatTest]
     _testDefinition: "dict[str, Any]"
 
-    _targetOrgId: str
+    _targetOrgId: Union[str, None]
     _organizationId: str
 
     _executionId: str
@@ -100,7 +100,7 @@ class ExecuteTest(IUseCase):
         if not executionEntryInsertResult.success:
             raise Exception(executionEntryInsertResult.error)
 
-    def _insertQualHistoryEntry(self, value: MaterializationSchema, isIdentical: bool, alertId: Union[str, None]):
+    def _insertQualHistoryEntry(self, value: "dict[str, ColumnDefinition]", isIdentical: bool, alertId: Union[str, None]):
         valueSets = [
             {'name': 'id', 'type': 'string', 'value': str(uuid.uuid4())},
             {'name': 'test_type', 'type': 'string',
@@ -185,9 +185,11 @@ class ExecuteTest(IUseCase):
              'value': testResult.expectedValueLower},
             {'name': 'deviation', 'type': 'float', 'value': testResult.deviation},
             {'name': 'is_anomalous', 'type': 'boolean',
-                'value': testResult.isAnomaly},
+                'value': testResult.anomaly.isAnomaly},
             {'name': 'test_id', 'type': 'string', 'value': self._testSuiteId},
             {'name': 'execution_id', 'type': 'string', 'value': self._executionId},
+            {'name': 'importance', 'type': 'float',
+                'value': testResult.anomaly.importance},
         ]
 
         testResultQuery = getInsertQuery(
@@ -221,7 +223,7 @@ class ExecuteTest(IUseCase):
 
         return self._querySnowflake.execute(QuerySnowflakeRequestDto(query, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
 
-    def _getHistoricalData(self) -> QuerySnowflakeResponseDto:
+    def _getHistoricalData(self) -> "list[tuple[str, float]]":
         query = getHistoryQuery(self._testSuiteId)
         getHistoricalDataResult = self._querySnowflake.execute(
             QuerySnowflakeRequestDto(query, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
@@ -235,7 +237,7 @@ class ExecuteTest(IUseCase):
         return sorted([(element['EXECUTED_ON'], element['VALUE'])
                        for element in getHistoricalDataResult.value.content[self._organizationId]])
 
-    def _getLastMatSchema(self) -> Union[MaterializationSchema, None]:
+    def _getLastMatSchema(self) -> Union["dict[str, ColumnDefinition]", None]:
         query = getLastMatSchemaQuery(self._testSuiteId)
         queryResult = self._querySnowflake.execute(QuerySnowflakeRequestDto(
             query, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
@@ -248,7 +250,7 @@ class ExecuteTest(IUseCase):
 
         return (json.loads(queryResult.value.content[self._organizationId][0]['VALUE']) if len(queryResult.value.content[self._organizationId]) else None)
 
-    def _getNewData(self, query):
+    def _getNewData(self, query) -> "list[dict[str, Any]]":
         getNewDataResult = self._querySnowflake.execute(
             QuerySnowflakeRequestDto(query, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
 
@@ -261,10 +263,10 @@ class ExecuteTest(IUseCase):
 
         return newData
 
-    def _runModel(self, threshold: int, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest], importanceSensitivity: int) -> QuantTestResultDto:
+    def _runModel(self, threshold: int, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest], importanceSensitivity: float) -> QuantTestResultDto:
         return CommonModel(newData, historicalData, threshold, testType, importanceSensitivity).run()
 
-    def _runTest(self, newDataPoint, historicalData: "list[(str,float)]") -> QuantTestExecutionResult:
+    def _runTest(self, newDataPoint, historicalData: "list[tuple[str,float]]") -> QuantTestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
         schemaName = self._testDefinition['SCHEMA_NAME']
         materializationName = self._testDefinition['MATERIALIZATION_NAME']
@@ -298,7 +300,7 @@ class ExecuteTest(IUseCase):
 
         alertData = None
         alertId = None
-        if testResult.isAnomaly:
+        if testResult.anomaly.isAnomaly:
             anomalyMessage = getAnomalyMessage(
                 targetResourceId, databaseName, schemaName, materializationName, columnName, testType)
             alertId = str(uuid.uuid4())
@@ -309,17 +311,17 @@ class ExecuteTest(IUseCase):
                                            testResult.expectedValueLower, columnName, newDataPoint)
 
         testData = QuantTestData(
-            executedOnISOFormat, testResult.isAnomaly, testResult.modifiedZScore, testResult.deviation)
+            executedOnISOFormat, testResult.modifiedZScore, testResult.deviation, AnomalyData(testResult.anomaly.isAnomaly, testResult.anomaly.importance))
 
         self._insertHistoryEntry(
-            newDataPoint, testResult.isAnomaly, alertId)
+            newDataPoint, testResult.anomaly.isAnomaly, alertId)
 
         return QuantTestExecutionResult(testSuiteId, testType, self._executionId, targetResourceId, self._organizationId, False, testData, alertData)
 
-    def _runSchemaChangeModel(self, oldSchema: MaterializationSchema, newSchema: MaterializationSchema) -> QualResultDto:
+    def _runSchemaChangeModel(self, oldSchema: "dict[str, ColumnDefinition]", newSchema: "dict[str, ColumnDefinition]") -> QualResultDto:
         return SchemaChangeModel(newSchema, oldSchema).run()
 
-    def _runSchemaChangeTest(self, oldSchema: MaterializationSchema, newSchema: MaterializationSchema) -> QualTestExecutionResult:
+    def _runSchemaChangeTest(self, oldSchema: "dict[str, ColumnDefinition]", newSchema: "dict[str, ColumnDefinition]") -> QualTestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
         schemaName = self._testDefinition['SCHEMA_NAME']
         materializationName = self._testDefinition['MATERIALIZATION_NAME']
@@ -376,6 +378,8 @@ class ExecuteTest(IUseCase):
         newDataPoint = newData[0]['ROW_COUNT']
 
         historicalData = self._getHistoricalData()
+
+        historicalData
 
         testResult = self._runTest(
             newDataPoint, historicalData)
@@ -439,13 +443,18 @@ class ExecuteTest(IUseCase):
 
         newData = self._getNewData(newDataQuery)
 
-        newSchema = {}
+        newSchema: dict[str, ColumnDefinition] = {}
         for el in newData:
             columnDefinition = el['COLUMN_DEFINITION']
             ordinalPosition = columnDefinition['ORDINAL_POSITION']
-            newSchema[str(ordinalPosition)] = columnDefinition
+            newSchema[str(ordinalPosition)] = ColumnDefinition(columnDefinition['COLUMN_NAME'],  columnDefinition['DATA_TYPE'],
+                                                               columnDefinition['IS_IDENTITY'],  columnDefinition['IS_NULLABLE'],  columnDefinition['ORDINAL_POSITION'])
 
         oldSchema = self._getLastMatSchema()
+
+        if not oldSchema:
+            raise Exception(
+                'Cannot test for schema change. Missing old schema.')
 
         testResult = self._runSchemaChangeTest(oldSchema, newSchema)
 
@@ -587,20 +596,25 @@ class ExecuteTest(IUseCase):
 
     def execute(self, request: ExecuteTestRequestDto, auth: ExecuteTestAuthDto) -> ExecuteTestResponseDto:
         try:
-            if auth.isSystemInternal and not request.targetOrgId:
-                raise Exception('Target organization id missing')
-            if not auth.isSystemInternal and not auth.callerOrgId:
-                raise Exception('Caller organization id missing')
             if not request.targetOrgId and not auth.callerOrgId:
                 raise Exception('No organization Id instance provided')
             if request.targetOrgId and auth.callerOrgId:
                 raise Exception(
                     'callerOrgId and targetOrgId provided. Not allowed')
 
+            if auth.isSystemInternal:
+                if not request.targetOrgId:
+                    raise Exception('Target organization id missing')
+                orgId = request.targetOrgId
+            else:
+                if not auth.callerOrgId:
+                    raise Exception('Caller organization id missing')
+                orgId = auth.callerOrgId
+
             self._testSuiteId = request.testSuiteId
             self._testType = request.testType
             self._targetOrgId = request.targetOrgId
-            self._organizationId = request.targetOrgId if request.targetOrgId else auth.callerOrgId
+            self._organizationId = orgId
             self._requestLoggingInfo = f'(organizationId: {self._organizationId}, testSuiteId: {self._testSuiteId}, testType: {self._testType})'
             self._executionId = str(uuid.uuid4())
             self._jwt = auth.jwt

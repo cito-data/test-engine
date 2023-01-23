@@ -25,6 +25,17 @@ class _ZScoreResult(_AnalysisResult):
 
 
 @dataclass
+class _ForecastResult(_AnalysisResult):
+    importance: Union[float, None]
+
+
+@dataclass
+class _AnomalyResult:
+    isAnomaly: bool
+    importance: Union[float, None]
+
+
+@dataclass
 class ResultDto:
     meanAbsoluteDeviation: Union[float, None]
     medianAbsoluteDeviation: float
@@ -36,7 +47,7 @@ class ResultDto:
 
     deviation: float
 
-    isAnomaly: bool
+    anomaly: _AnomalyResult
 
 
 class _Analysis(ABC):
@@ -85,7 +96,7 @@ class _ZScoreAnalysis(_Analysis):
     _expectedValueUpper: float
     _expectedValueLower: float
 
-    def __init__(self, newDataPoint: float, historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest]) -> None:
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest]) -> None:
         super().__init__(newDataPoint, historicalData, threshold, testType)
 
     def _absoluteDeviation(self, x) -> float:
@@ -109,6 +120,10 @@ class _ZScoreAnalysis(_Analysis):
         # https://www.ibm.com/docs/en/cognos-analytics/11.1.0?topic=terms-modified-z-score
         y = self._newDataPoint['y'].values[0]
 
+        if not y:
+            raise Exception(
+                'Cannot calc modified z-score. New data value not found')
+
         if self._medianAbsoluteDeviation == 0 and self._meanAbsoluteDeviation == 0:
             return 0.0
         if self._medianAbsoluteDeviation == 0:
@@ -117,15 +132,23 @@ class _ZScoreAnalysis(_Analysis):
         return (y - self._median)/(1.486*self._medianAbsoluteDeviation)
 
     def _calculateBound(self, zScoreThreshold: int) -> float:
+        if not self._meanAbsoluteDeviation:
+            raise Exception(
+                'Cannot calc bound. Mean abs deviation not available')
+
         if self._medianAbsoluteDeviation == 0:
             return (1.253314*self._meanAbsoluteDeviation)*zScoreThreshold + self._median
         return (1.486*self._medianAbsoluteDeviation)*zScoreThreshold + self._median
 
     def _runAnomalyCheck(self) -> _AnalysisResult:
-        newValue = self._newDataPoint['y'].values[0]
+        y = self._newDataPoint['y'].values[0]
+
+        if not y:
+            raise Exception(
+                'Cannot run anomaly check. New data value not found')
 
         isAnomaly = bool(abs(self._modifiedZScore) > self._threshold)
-        deviation = newValue / \
+        deviation = y / \
             self._expectedValue - 1 if self._expectedValue > 0 else 0
 
         return _AnalysisResult(self._expectedValue, self._expectedValueUpper, self._expectedValueLower, deviation, isAnomaly)
@@ -161,48 +184,66 @@ class _ForecastAnalysis(_Analysis):
     _yearly: Union[float, None]
     _yearly_lower: Union[float, None]
     _yearly_upper: Union[float, None]
-    _importanceSensitivity: Union[bool, None]
+    _importanceSensitivity: Union[float, None]
 
-    def __init__(self, newDataPoint: float, historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest], importanceSensitivity: int) -> None:
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest], importanceSensitivity: float) -> None:
         super().__init__(newDataPoint, historicalData, threshold, testType)
-        self._importanceSensitivity
+        self._importanceSensitivity = importanceSensitivity
 
-    def _isRelevantAnomaly(self, y) -> bool:
+    def _calcAnomalyImportance(self, y) -> float:
         boundaryInterval = self._yhat_upper - self._yhat_lower
         yAbsoluteBoundaryDistance = y - \
             self._yhat_upper if y > self._yhat_upper else y < self._yhat_lower
         importance = yAbsoluteBoundaryDistance/boundaryInterval
-        return importance > self._importanceSensitivity
+        return importance
 
-    def _runAnomalyCheck(self) -> _AnalysisResult:
-        newValue = self._newDataPoint['y'].values[0]
+    def _runAnomalyCheck(self) -> _ForecastResult:
+        y = self._newDataPoint['y'].values[0]
 
-        if self._daily and (newValue <= self._daily_upper and newValue >= self._daily_lower):
-            deviation = self._newDataPoint['y'].values[0] / \
-                self._daily - 1 if self._daily > 0 else 0
-            return _AnalysisResult(self._daily, self._daily_upper, self._daily_lower, deviation, False)
+        if not y:
+            raise Exception(
+                'Cannot run anomaly check. New data value not found')
 
-        if self._weekly and (newValue <= self._weekly_upper and newValue >= self._weekly_lower):
-            deviation = self._newDataPoint['y'].values[0] / \
-                self._weekly - 1 if self._weekly > 0 else 0
-            return _AnalysisResult(self._weekly, self._weekly_upper, self._weekly_lower, deviation, False)
+        if self._daily:
+            if not self._daily_lower or not self._daily_upper:
+                raise Exception('Missing daily lower or upper boundary')
+            if y <= self._daily_upper and y >= self._daily_lower:
+                deviation = (y / self._daily if self._daily !=
+                             0 else y / 0.0001) - 1
+                return _ForecastResult(self._daily, self._daily_upper, self._daily_lower, deviation, False, None)
 
-        if self._yearly and (newValue <= self._yearly_upper and newValue >= self._yearly_lower):
-            deviation = self._newDataPoint['y'].values[0] / \
-                self._yearly - 1 if self._yearly > 0 else 0
-            return _AnalysisResult(self._yearly, self._yearly_upper, self._yearly_lower, deviation, False)
+        if self._weekly:
+            if not self._weekly_lower or not self._weekly_upper:
+                raise Exception('Missing weekly lower or upper boundary')
+            if y <= self._weekly_upper and y >= self._weekly_lower:
+                deviation = (y / self._weekly if self._weekly !=
+                             0 else y / 0.0001) - 1
+                return _ForecastResult(self._weekly, self._weekly_upper, self._weekly_lower, deviation, False, None)
 
-        deviation = self._newDataPoint['y'].values[0] / \
-            self._yhat - 1 if self._yhat > 0 else 0
+        if self._yearly:
+            if not self._yearly_lower or not self._yearly_upper:
+                raise Exception('Missing yearly lower or upper boundary')
+            if not y <= self._yearly_upper and y >= self._yearly_lower:
+                deviation = (y / self._yearly if self._yearly !=
+                             0 else y / 0.0001) - 1
+                return _ForecastResult(self._yearly, self._yearly_upper, self._yearly_lower, deviation, False, None)
+
+        deviation = (y / self._yhat if self._yhat != 0 else y / 0.0001) - 1
         isAnomaly = bool(
-            newValue > self._yhat_upper or newValue < self._yhat_lower)
+            y > self._yhat_upper or y < self._yhat_lower)
 
-        isAnomaly = self._isRelevantAnomaly(
-            newValue) if isAnomaly and self._importanceSensitivity != -1 else isAnomaly
+        importance = None
+        if (isAnomaly):
+            if not self._importanceSensitivity:
+                raise Exception('Missing importance sensitivity')
 
-        return _AnalysisResult(self._yhat, self._yhat_upper, self._yhat_lower, deviation, isAnomaly)
+            importance = self._calcAnomalyImportance(
+                y)
+            isAnomaly = importance > self._importanceSensitivity
 
-    def analyze(self) -> _AnalysisResult:
+        return _ForecastResult(self._yhat, self._yhat_upper, self._yhat_lower, deviation, isAnomaly, importance)
+
+    def analyze(self) -> _ForecastResult:
         m = Prophet()
         m.fit(self._historicalData)
 
@@ -216,9 +257,7 @@ class _ForecastAnalysis(_Analysis):
         forecast = m.predict(future)
 
         self._yhat = forecast['yhat'].values[0]
-        self._yhat_lower = forecast['yhat_lower'].values[0] \
-            if self._testType == QuantColumnTest.ColumnDistribution or self._testType == QuantColumnTest.ColumnDistribution.value or QuantColumnTest.ColumnFreshness or self._testType == QuantColumnTest.ColumnFreshness.value  \
-            or forecast['yhat_lower'].values[0] > 0 else 0
+        self._yhat_lower = forecast['yhat_lower'].values[0] if self._testType == QuantColumnTest.ColumnDistribution or self._testType == QuantColumnTest.ColumnDistribution.value or QuantColumnTest.ColumnFreshness or self._testType == QuantColumnTest.ColumnFreshness.value or forecast['yhat_lower'].values[0] > 0 else 0
         self._yhat_upper = forecast['yhat_upper'].values[0]
         self._daily = forecast['daily'].values[0] if 'daily' in forecast.columns else None
         self._daily_lower = forecast['daily_lower'].values[0] if 'daily_lower' in forecast.columns else None
@@ -232,7 +271,7 @@ class _ForecastAnalysis(_Analysis):
 
         anomalyCheckResult = self._runAnomalyCheck()
 
-        return _AnalysisResult(anomalyCheckResult.expectedValue, anomalyCheckResult.expectedValueUpper, anomalyCheckResult.expectedValueLower, anomalyCheckResult.deviation, anomalyCheckResult.isAnomaly)
+        return _ForecastResult(anomalyCheckResult.expectedValue, anomalyCheckResult.expectedValueUpper, anomalyCheckResult.expectedValueLower, anomalyCheckResult.deviation, anomalyCheckResult.isAnomaly, anomalyCheckResult.importance)
 
 
 class _QuantModel(ABC):
@@ -241,8 +280,8 @@ class _QuantModel(ABC):
     _zScoreAnalysis: _ZScoreAnalysis
     _forecastAnalysis: _ForecastAnalysis
 
-    @abstractmethod
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest], importanceSensitivity: int) -> None:
+    @ abstractmethod
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest], importanceSensitivity: float) -> None:
         self._zScoreAnalysis = _ZScoreAnalysis(
             newDataPoint, historicalData, threshold, testType)
         self._forecastAnalysis = _ForecastAnalysis(
@@ -253,12 +292,8 @@ class _QuantModel(ABC):
         zScoreAnalysisResult = self._zScoreAnalysis.analyze()
         forecastAnalysisResult = self._forecastAnalysis.analyze()
 
-        expectedValueLower = zScoreAnalysisResult.expectedValueLower \
-            if zScoreAnalysisResult.expectedValueLower < forecastAnalysisResult.expectedValueLower \
-            else forecastAnalysisResult.expectedValueLower
-        expectedValueUpper = zScoreAnalysisResult.expectedValueUpper \
-            if zScoreAnalysisResult.expectedValueUpper > forecastAnalysisResult.expectedValueUpper \
-            else forecastAnalysisResult.expectedValueUpper
+        expectedValueLower = zScoreAnalysisResult.expectedValueLower if zScoreAnalysisResult.expectedValueLower < forecastAnalysisResult.expectedValueLower else forecastAnalysisResult.expectedValueLower
+        expectedValueUpper = zScoreAnalysisResult.expectedValueUpper if zScoreAnalysisResult.expectedValueUpper > forecastAnalysisResult.expectedValueUpper else forecastAnalysisResult.expectedValueUpper
         expectedValue = zScoreAnalysisResult.expectedValue if abs(zScoreAnalysisResult.expectedValue - self._newDataPoint[1]) <= abs(
             forecastAnalysisResult.expectedValue - self._newDataPoint[1]) else forecastAnalysisResult.expectedValue
 
@@ -268,10 +303,10 @@ class _QuantModel(ABC):
         deviation = zScoreAnalysisResult.deviation if abs(zScoreAnalysisResult.expectedValue - self._newDataPoint[1]) <= abs(
             forecastAnalysisResult.expectedValue - self._newDataPoint[1]) else forecastAnalysisResult.deviation
 
-        return ResultDto(zScoreAnalysisResult.meanAbsoluteDeviation, zScoreAnalysisResult.medianAbsoluteDeviation, zScoreAnalysisResult.modifiedZScore, expectedValue, expectedValueUpper, expectedValueLower, deviation, isAnomaly)
+        return ResultDto(zScoreAnalysisResult.meanAbsoluteDeviation, zScoreAnalysisResult.medianAbsoluteDeviation, zScoreAnalysisResult.modifiedZScore, expectedValue, expectedValueUpper, expectedValueLower, deviation, _AnomalyResult(isAnomaly, forecastAnalysisResult.importance))
 
 
 class CommonModel(_QuantModel):
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest], importanceSensitivity: int) -> None:
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest], importanceSensitivity: float) -> None:
         super().__init__(newDataPoint, historicalData,
                          threshold, testType, importanceSensitivity)

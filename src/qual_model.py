@@ -4,12 +4,12 @@ from typing import Union
 
 
 @dataclass
-class MaterializationSchema:
-    column_name: str
-    data_type: str
-    is_identity: bool
-    is_nullable: bool
-    ordinal_position: int
+class ColumnDefinition:
+    columnName: str
+    dataType: str
+    isIdentity: bool
+    isNullable: bool
+    ordinalPosition: int
 
 
 @dataclass
@@ -24,21 +24,21 @@ class SchemaDiff:
 @dataclass
 class ResultDto:
     isIdentical: bool
-    expectedValue: Union[MaterializationSchema, None]
-    value: MaterializationSchema
+    expectedValue: Union["dict[str, ColumnDefinition]", None]
+    value: "dict[str, ColumnDefinition]"
     deviations: "list[SchemaDiff]"
 
 
 class SchemaChangeModel():
 
-    _oldSchema: MaterializationSchema
-    _newSchema: MaterializationSchema
+    _oldSchema: Union["dict[str, ColumnDefinition]", None]
+    _newSchema: "dict[str, ColumnDefinition]"
 
     _schemaDiffs: "list[SchemaDiff]"
 
-    def __init__(self, newSChema: MaterializationSchema, oldSchema: Union[MaterializationSchema, None]) -> None:
+    def __init__(self, newSchema: "dict[str,ColumnDefinition]", oldSchema: Union["dict[str, ColumnDefinition]", None]) -> None:
         self._oldSchema = oldSchema
-        self._newSchema = newSChema
+        self._newSchema = newSchema
 
     def run(self) -> ResultDto:
         if not self._oldSchema:
@@ -46,12 +46,6 @@ class SchemaChangeModel():
 
         columnCountOldSchema = len(self._oldSchema)
         columnCountNewSchema = len(self._newSchema)
-
-        columnNameSchemaKey = 'COLUMN_NAME'
-        dataTypeSchemaKey = 'DATA_TYPE'
-        ordinalPositionSchemaKey = 'ORDINAL_POSITION'
-        isIdentitySchemaKey = 'IS_IDENTITY'
-        isNullableSchemaKey = 'IS_NULLABLE'
 
         schemaDiffs: list[SchemaDiff] = []
         for i in range(1, (columnCountNewSchema if columnCountNewSchema > columnCountOldSchema else columnCountOldSchema) + 1):
@@ -61,44 +55,44 @@ class SchemaChangeModel():
                 i)] if i <= columnCountNewSchema else None
 
             if (oldColumnSchemaDefinition and not newColumnSchemaDefinition):
-                schemaDiff = SchemaDiff((oldColumnSchemaDefinition[columnNameSchemaKey], None),
-                                        (oldColumnSchemaDefinition[ordinalPositionSchemaKey], None),
-                                        (oldColumnSchemaDefinition[dataTypeSchemaKey], None),
-                                        (oldColumnSchemaDefinition[isIdentitySchemaKey], None),
-                                        (oldColumnSchemaDefinition[isNullableSchemaKey], None))
+                schemaDiff = SchemaDiff((oldColumnSchemaDefinition.columnName, None),
+                                        (oldColumnSchemaDefinition.ordinalPosition, None),
+                                        (oldColumnSchemaDefinition.dataType, None),
+                                        (oldColumnSchemaDefinition.isIdentity, None),
+                                        (oldColumnSchemaDefinition.isNullable, None))
 
                 schemaDiffs.append(schemaDiff)
             elif (newColumnSchemaDefinition and not oldColumnSchemaDefinition):
 
-                schemaDiff = SchemaDiff((None, newColumnSchemaDefinition[columnNameSchemaKey]),
+                schemaDiff = SchemaDiff((None, newColumnSchemaDefinition.columnName),
                                         (None,
-                                         newColumnSchemaDefinition[ordinalPositionSchemaKey]),
+                                         newColumnSchemaDefinition.ordinalPosition),
                                         (None,
-                                         newColumnSchemaDefinition[dataTypeSchemaKey]),
+                                         newColumnSchemaDefinition.dataType),
                                         (None,
-                                         newColumnSchemaDefinition[isIdentitySchemaKey]),
-                                        (None, newColumnSchemaDefinition[isNullableSchemaKey]))
+                                         newColumnSchemaDefinition.isIdentity),
+                                        (None, newColumnSchemaDefinition.isNullable))
 
                 schemaDiffs.append(schemaDiff)
             else:
-                oldColumnName = oldColumnSchemaDefinition[columnNameSchemaKey]
-                newColumnName = newColumnSchemaDefinition[columnNameSchemaKey]
+                oldColumnName = oldColumnSchemaDefinition.columnName if oldColumnSchemaDefinition else None
+                newColumnName = newColumnSchemaDefinition.columnName if newColumnSchemaDefinition else None
                 columnNameIdentical = oldColumnName == newColumnName
 
-                oldDataType = oldColumnSchemaDefinition[dataTypeSchemaKey]
-                newDataType = newColumnSchemaDefinition[dataTypeSchemaKey]
+                oldDataType = oldColumnSchemaDefinition.dataType if oldColumnSchemaDefinition else None
+                newDataType = newColumnSchemaDefinition.dataType if newColumnSchemaDefinition else None
                 dataTypeIdentical = oldDataType == newDataType
 
-                oldOrdinalPosition = oldColumnSchemaDefinition[ordinalPositionSchemaKey]
-                newOrdinalPosition = newColumnSchemaDefinition[ordinalPositionSchemaKey]
+                oldOrdinalPosition = oldColumnSchemaDefinition.ordinalPosition if oldColumnSchemaDefinition else None
+                newOrdinalPosition = newColumnSchemaDefinition.ordinalPosition if newColumnSchemaDefinition else None
                 ordinalPositionIdentical = oldOrdinalPosition == newOrdinalPosition
 
-                oldIsIdentity = oldColumnSchemaDefinition[isIdentitySchemaKey]
-                newIsIdentity = newColumnSchemaDefinition[isIdentitySchemaKey]
+                oldIsIdentity = oldColumnSchemaDefinition.isIdentity if oldColumnSchemaDefinition else None
+                newIsIdentity = newColumnSchemaDefinition.isIdentity if newColumnSchemaDefinition else None
                 isIdentityIdentical = oldIsIdentity == newIsIdentity
 
-                oldIsNullable = oldColumnSchemaDefinition[isNullableSchemaKey]
-                newIsNullable = newColumnSchemaDefinition[isNullableSchemaKey]
+                oldIsNullable = oldColumnSchemaDefinition.isNullable if oldColumnSchemaDefinition else None
+                newIsNullable = newColumnSchemaDefinition.isNullable if newColumnSchemaDefinition else None
                 isNullableIdentical = oldIsNullable == newIsNullable
 
                 anyDiff = not (
@@ -106,9 +100,9 @@ class SchemaChangeModel():
 
                 if anyDiff:
 
-                    schemaDiff = SchemaDiff((oldColumnName, newColumnName) if anyDiff else None,
+                    schemaDiff = SchemaDiff((oldColumnName, newColumnName),
                                             (oldOrdinalPosition,
-                                             newOrdinalPosition) if anyDiff else None,
+                                             newOrdinalPosition),
                                             (oldDataType, newDataType) if not dataTypeIdentical else None,
                                             (oldIsIdentity,
                                              newIsIdentity) if not isIdentityIdentical else None,

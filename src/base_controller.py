@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from enum import IntEnum
-from typing import Any, TypeVar, Union
+from typing import Any, TypeVar, Union, Literal
 
 from get_accounts import GetAccounts, GetAccountsAuthDto, GetAccountsRequestDto
 
@@ -16,93 +15,97 @@ logger.setLevel(logging.INFO)
 
 T = TypeVar("T")
 
-class CodeHttp(IntEnum):
-  OK = 200,
-  CREATED = 201,
-  BAD_REQUEST = 400,
-  UNAUTHORIZED = 401,
-  FORBIDDEN = 403,
-  NOT_FOUND = 404,
-  CONFLICT = 409,
-  SERVER_ERROR = 500,
 
 @dataclass
 class UserAccountInfo:
-  userId: Union[str, None]
-  accountId: Union[str, None]
-  callerOrgId: Union[str, None]
-  isSystemInternal: bool
+    userId: Union[str, None]
+    accountId: Union[str, None]
+    callerOrgId: Union[str, None]
+    isSystemInternal: bool
+
 
 @dataclass
 class Response:
-  body: Union[str, None]
-  statusCode: int
+    body: Union[Any, None]
+    statusCode: int
+
 
 @dataclass
 class Request:
-  headers: Union["dict[str, str]", None]
-  pathParams: Union["dict[str, str]", None]
-  queryParams: Union["dict[str, str]", None]
-  body: Union["dict[str, Any]", None]
-  auth: ProcessedAuth
+    headers: Union["dict[str, str]", None]
+    pathParams: Union["dict[str, str]", None]
+    queryParams: Union["dict[str, str]", None]
+    body: Union["dict[str, Any]", None]
+    auth: ProcessedAuth
+
 
 class BaseController(ABC):
-  
-  @staticmethod
-  def jsonResponse(code: int, message: str) -> Response:
-    return Response(message, code)
 
-  @staticmethod
-  def ok(dto: Union[T, None], code: Union[CodeHttp, None]) -> Response:
-    codeHttp = code if code  else CodeHttp.OK.value
-    return Response(dto, codeHttp)
+    #     OK = 200,
+    #     CREATED = 201,
+    #     BAD_REQUEST = 400,
+    #     UNAUTHORIZED = 401,
+    #     FORBIDDEN = 403,
+    #     NOT_FOUND = 404,
+    #     CONFLICT = 409,
+    #     SERVER_ERROR = 500,
 
-  @staticmethod
-  def badRequest(message: Union[str, None]) -> Response:
-    return BaseController.jsonResponse(CodeHttp.BAD_REQUEST.value, (message if message else 'Bad Request'))
+    @staticmethod
+    def jsonResponse(code: Literal[200, 201, 400, 401, 403, 404, 409, 500], message: str) -> Response:
+        return Response(message, code)
 
-  @staticmethod
-  def unauthorized(message: Union[str, None]) -> Response:
-    return BaseController.jsonResponse(CodeHttp.UNAUTHORIZED.value, (message if message else 'Unauthorized'))
+    @staticmethod
+    def ok(dto: Union[T, None], code: Literal[200, 201, 400, 401, 403, 404, 409, 500]) -> Response:
+        return Response(dto, code)
 
-  @staticmethod
-  def notFound(message: Union[str, None]) -> Response:
-    return BaseController.jsonResponse(CodeHttp.NOT_FOUND.value, (message if message else 'Not found'))
+    @staticmethod
+    def badRequest(message: Union[str, None]) -> Response:
+        return BaseController.jsonResponse(400, (message if message else 'Bad Request'))
 
-  @staticmethod
-  def fail(error: Union[str, Exception]) -> Response:
-    return Response(str(error), CodeHttp.SERVER_ERROR.value)
+    @staticmethod
+    def unauthorized(message: Union[str, None]) -> Response:
+        return BaseController.jsonResponse(401, (message if message else 'Unauthorized'))
 
-  @abstractmethod
-  def executeImpl(self, req: Request) -> Response:
-    raise NotImplementedError
+    @staticmethod
+    def notFound(message: Union[str, None]) -> Response:
+        return BaseController.jsonResponse(404, (message if message else 'Not found'))
 
-  def execute(self, req: Request) -> Response:
-    try:
-      return self.executeImpl(req)
-    except Exception as e:
-      logger.exception(f'error: {e}' if e.args[0] else f'error: unknown')
-      return BaseController.fail('An unexpected error occurred')
-    
-  def getUserAccountInfo(processedAuth: ProcessedAuth, getAccounts: GetAccounts) -> Result[UserAccountInfo]:
-    if not processedAuth.payload:
-      return Result.fail('Unauthorized - No auth payload')
+    @staticmethod
+    def fail(error: Union[str, Exception]) -> Response:
+        return Response(str(error), 500)
 
-    try:
-        isSystemInternal = 'system-internal/system-internal' in processedAuth.payload['scope'] if 'scope' in processedAuth.payload else False
+    @abstractmethod
+    def executeImpl(self, req: Request) -> Response:
+        raise NotImplementedError
 
-        if isSystemInternal:
-          return Result.ok(UserAccountInfo(None, None, None, isSystemInternal))
+    def execute(self, req: Request) -> Response:
+        try:
+            return self.executeImpl(req)
+        except Exception as e:
+            logger.exception(f'error: {e}' if e.args[0] else f'error: unknown')
+            return BaseController.fail('An unexpected error occurred')
 
+    @staticmethod
+    def getUserAccountInfo(processedAuth: ProcessedAuth, getAccounts: GetAccounts) -> Result[UserAccountInfo]:
+        if not processedAuth.payload:
+            return Result.fail('Unauthorized - No auth payload')
 
-        getAccountResult = getAccounts.execute(GetAccountsRequestDto(processedAuth.payload['username']), GetAccountsAuthDto(processedAuth.token))
+        try:
+            isSystemInternal = 'system-internal/system-internal' in processedAuth.payload[
+                'scope'] if 'scope' in processedAuth.payload else False
 
-        if not getAccountResult.value:
-          raise Exception('No account found')
-        if not len(getAccountResult.value) > 0:
-          raise Exception('No account found')
+            if isSystemInternal:
+                return Result.ok(UserAccountInfo(None, None, None, isSystemInternal))
 
-        return Result.ok(UserAccountInfo(processedAuth.payload['username'], getAccountResult.value[0].id, getAccountResult.value[0].organizationId, isSystemInternal))
-    except Exception as e:
-      logger.exception(f'error: {e}' if e.args[0] else f'error: unknown')
-      return Result.fail('')
+            getAccountResult = getAccounts.execute(GetAccountsRequestDto(
+                processedAuth.payload['username']), GetAccountsAuthDto(processedAuth.token))
+
+            if not getAccountResult.value:
+                raise Exception('No account found')
+            if not len(getAccountResult.value) > 0:
+                raise Exception('No account found')
+
+            return Result.ok(UserAccountInfo(processedAuth.payload['username'], getAccountResult.value[0].id, getAccountResult.value[0].organizationId, isSystemInternal))
+        except Exception as e:
+            logger.exception(f'error: {e}' if e.args[0] else f'error: unknown')
+            return Result.fail('')
