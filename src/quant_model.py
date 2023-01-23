@@ -161,15 +161,18 @@ class _ForecastAnalysis(_Analysis):
     _yearly: Union[float, None]
     _yearly_lower: Union[float, None]
     _yearly_upper: Union[float, None]
+    _importanceSensitivity: Union[bool, None]
 
-    def __init__(self, newDataPoint: float, historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest]) -> None:
+    def __init__(self, newDataPoint: float, historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest], importanceSensitivity: int) -> None:
         super().__init__(newDataPoint, historicalData, threshold, testType)
+        self._importanceSensitivity
 
-    # def _isRelevantAnomaly(self, y) -> bool:
-    #     boundaryInterval = self._yhat_upper - self._yhat_lower
-    #     yAbsoluteBoundaryDistance = y - \
-    #         self._yhat_upper if y > self._yhat_upper else y < self._yhat_lower
-    #     # retrieve importanceSensitivity from testSuite
+    def _isRelevantAnomaly(self, y) -> bool:
+        boundaryInterval = self._yhat_upper - self._yhat_lower
+        yAbsoluteBoundaryDistance = y - \
+            self._yhat_upper if y > self._yhat_upper else y < self._yhat_lower
+        importance = yAbsoluteBoundaryDistance/boundaryInterval
+        return importance > self._importanceSensitivity
 
     def _runAnomalyCheck(self) -> _AnalysisResult:
         newValue = self._newDataPoint['y'].values[0]
@@ -194,8 +197,8 @@ class _ForecastAnalysis(_Analysis):
         isAnomaly = bool(
             newValue > self._yhat_upper or newValue < self._yhat_lower)
 
-        # isAnomaly = self._isRelevantAnomaly(
-        #     newValue) if isAnomaly else isAnomaly
+        isAnomaly = self._isRelevantAnomaly(
+            newValue) if isAnomaly and self._importanceSensitivity != -1 else isAnomaly
 
         return _AnalysisResult(self._yhat, self._yhat_upper, self._yhat_lower, deviation, isAnomaly)
 
@@ -239,11 +242,11 @@ class _QuantModel(ABC):
     _forecastAnalysis: _ForecastAnalysis
 
     @abstractmethod
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest]) -> None:
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest], importanceSensitivity: int) -> None:
         self._zScoreAnalysis = _ZScoreAnalysis(
             newDataPoint, historicalData, threshold, testType)
         self._forecastAnalysis = _ForecastAnalysis(
-            newDataPoint, historicalData, threshold, testType)
+            newDataPoint, historicalData, threshold, testType, importanceSensitivity)
         self._newDataPoint = newDataPoint
 
     def run(self) -> ResultDto:
@@ -269,5 +272,6 @@ class _QuantModel(ABC):
 
 
 class CommonModel(_QuantModel):
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest]) -> None:
-        super().__init__(newDataPoint, historicalData, threshold, testType)
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest], importanceSensitivity: int) -> None:
+        super().__init__(newDataPoint, historicalData,
+                         threshold, testType, importanceSensitivity)

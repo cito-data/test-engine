@@ -261,8 +261,8 @@ class ExecuteTest(IUseCase):
 
         return newData
 
-    def _runModel(self, threshold: int, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest]) -> QuantTestResultDto:
-        return CommonModel(newData, historicalData, threshold, testType).run()
+    def _runModel(self, threshold: int, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest], importanceSensitivity: int) -> QuantTestResultDto:
+        return CommonModel(newData, historicalData, threshold, testType, importanceSensitivity).run()
 
     def _runTest(self, newDataPoint, historicalData: "list[(str,float)]") -> QuantTestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
@@ -274,6 +274,7 @@ class ExecuteTest(IUseCase):
         threshold = self._testDefinition['THRESHOLD']
         targetResourceId = self._testDefinition['TARGET_RESOURCE_ID']
         testType = self._testDefinition['TEST_TYPE']
+        importanceSensitivity = self._testDefinition['IMPORTANCE_SENSITIVITY']
 
         executedOn = datetime.utcnow()
         executedOnISOFormat = executedOn.isoformat()
@@ -291,7 +292,7 @@ class ExecuteTest(IUseCase):
             return QuantTestExecutionResult(testSuiteId, testType, self._executionId, targetResourceId, self._organizationId, True, None, None)
 
         testResult = self._runModel(
-            threshold, (executedOnISOFormat, newDataPoint), historicalData, testType)
+            threshold, (executedOnISOFormat, newDataPoint), historicalData, testType, importanceSensitivity)
 
         self._insertResultEntry(testResult)
 
