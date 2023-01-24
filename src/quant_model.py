@@ -288,6 +288,8 @@ class _QuantModel(ABC):
         isAnomaly = zScoreAnalysisResult.isAnomaly and forecastAnalysisResult.isAnomaly and (
             self._newDataPoint[1] < expectedValueLower or self._newDataPoint[1] > expectedValueUpper)
 
+        globalImportanceThreshold = .1
+
         importance = None
         if (isAnomaly):
             if self._importanceThreshold == None:
@@ -295,7 +297,7 @@ class _QuantModel(ABC):
 
             importance = self._calcAnomalyImportance(
                 self._newDataPoint[1], expectedValueUpper, expectedValueLower)
-            isAnomaly = importance > self._importanceThreshold
+            isAnomaly = importance > globalImportanceThreshold and importance > self._importanceThreshold
 
         deviation = zScoreAnalysisResult.deviation if abs(zScoreAnalysisResult.expectedValue - self._newDataPoint[1]) <= abs(
             forecastAnalysisResult.expectedValue - self._newDataPoint[1]) else forecastAnalysisResult.deviation
