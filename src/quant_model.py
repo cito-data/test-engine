@@ -288,7 +288,7 @@ class _QuantModel(ABC):
         isAnomaly = zScoreAnalysisResult.isAnomaly and forecastAnalysisResult.isAnomaly and (
             self._newDataPoint[1] < expectedValueLower or self._newDataPoint[1] > expectedValueUpper)
 
-        globalImportanceThreshold = .1
+        globalImportanceThreshold = 1.5
 
         importance = None
         if (isAnomaly):
