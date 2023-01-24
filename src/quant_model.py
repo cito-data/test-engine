@@ -272,7 +272,7 @@ class _QuantModel(ABC):
     def _calcAnomalyImportance(y, upper, lower) -> float:
         boundaryInterval = upper - lower
         yAbsoluteBoundaryDistance = y - \
-            upper if y > upper else y < lower
+            upper if y > upper else lower - y
         importance = yAbsoluteBoundaryDistance/boundaryInterval
         return importance
 
