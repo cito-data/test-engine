@@ -301,18 +301,20 @@ class _QuantModel(ABC):
         isAnomaly = zScoreAnalysisResult.isAnomaly and forecastAnalysisResult.isAnomaly and (
             self._newDataPoint[1] < expectedValueLower or self._newDataPoint[1] > expectedValueUpper)
 
-        localBoundsIntervalRelative = 1 - expectedValueLower / \
-            (expectedValueUpper if expectedValueUpper != 0 else 0.0001)
-        globalImportanceThreshold = self._calcImportanceThreshold(localBoundsIntervalRelative, 1.5
-                                                                  )
-
         importance = None
+        localBoundsIntervalRelative = None
         if (isAnomaly):
             if self._importanceThreshold == None:
                 raise Exception('Missing importance threshold')
 
             importance = self._calcAnomalyImportance(
                 self._newDataPoint[1], expectedValueLower, expectedValueUpper)
+
+            localBoundsIntervalRelative = 1 - expectedValueLower / \
+                (expectedValueUpper if expectedValueUpper != 0 else 0.0001)
+            globalImportanceThreshold = self._calcImportanceThreshold(
+                localBoundsIntervalRelative, 1.5)
+
             isAnomaly = importance > globalImportanceThreshold and importance > self._calcImportanceThreshold(
                 self._boundsIntervalRelative, self._importanceThreshold)
 
