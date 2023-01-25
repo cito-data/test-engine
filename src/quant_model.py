@@ -28,6 +28,7 @@ class _ZScoreResult(_AnalysisResult):
 class _AnomalyResult:
     isAnomaly: bool
     importance: Union[float, None]
+    boundsIntervalRelative: Union[float, None]
 
 
 @dataclass
@@ -300,9 +301,9 @@ class _QuantModel(ABC):
         isAnomaly = zScoreAnalysisResult.isAnomaly and forecastAnalysisResult.isAnomaly and (
             self._newDataPoint[1] < expectedValueLower or self._newDataPoint[1] > expectedValueUpper)
 
-        proportionalInterval = 1 - expectedValueLower / \
+        localBoundsIntervalRelative = 1 - expectedValueLower / \
             (expectedValueUpper if expectedValueUpper != 0 else 0.0001)
-        globalImportanceThreshold = self._calcImportanceThreshold(proportionalInterval, 1.5
+        globalImportanceThreshold = self._calcImportanceThreshold(localBoundsIntervalRelative, 1.5
                                                                   )
 
         importance = None
@@ -318,7 +319,7 @@ class _QuantModel(ABC):
         deviation = zScoreAnalysisResult.deviation if abs(zScoreAnalysisResult.expectedValue - self._newDataPoint[1]) <= abs(
             forecastAnalysisResult.expectedValue - self._newDataPoint[1]) else forecastAnalysisResult.deviation
 
-        return ResultDto(zScoreAnalysisResult.meanAbsoluteDeviation, zScoreAnalysisResult.medianAbsoluteDeviation, zScoreAnalysisResult.modifiedZScore, expectedValue, expectedValueUpper, expectedValueLower, deviation, _AnomalyResult(isAnomaly, importance))
+        return ResultDto(zScoreAnalysisResult.meanAbsoluteDeviation, zScoreAnalysisResult.medianAbsoluteDeviation, zScoreAnalysisResult.modifiedZScore, expectedValue, expectedValueUpper, expectedValueLower, deviation, _AnomalyResult(isAnomaly, importance, localBoundsIntervalRelative))
 
 
 class CommonModel(_QuantModel):

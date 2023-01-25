@@ -8,6 +8,7 @@ from qual_model import SchemaDiff
 class AnomalyData:
     isAnomaly: bool
     importance: Union[float, None]
+    boundsIntervalRelative: Union[float, None]
 
 
 @dataclass

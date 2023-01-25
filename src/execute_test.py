@@ -190,6 +190,8 @@ class ExecuteTest(IUseCase):
             {'name': 'execution_id', 'type': 'string', 'value': self._executionId},
             {'name': 'importance', 'type': 'float',
                 'value': testResult.anomaly.importance},
+            {'name': 'bounds_interval_relative', 'type': 'float',
+                'value': testResult.anomaly.boundsIntervalRelative},
         ]
 
         testResultQuery = getInsertQuery(
@@ -312,7 +314,7 @@ class ExecuteTest(IUseCase):
                                            testResult.expectedValueLower, columnName, newDataPoint)
 
         testData = QuantTestData(
-            executedOnISOFormat, testResult.modifiedZScore, testResult.deviation, AnomalyData(testResult.anomaly.isAnomaly, testResult.anomaly.importance))
+            executedOnISOFormat, testResult.modifiedZScore, testResult.deviation, AnomalyData(testResult.anomaly.isAnomaly, testResult.anomaly.importance, testResult.anomaly.boundsIntervalRelative))
 
         self._insertHistoryEntry(
             newDataPoint, testResult.anomaly.isAnomaly, alertId)
