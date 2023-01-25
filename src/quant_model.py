@@ -269,12 +269,22 @@ class _QuantModel(ABC):
         self._importanceThreshold = importanceThreshold
 
     @staticmethod
-    def _calcAnomalyImportance(y, upper, lower) -> float:
+    def _calcAnomalyImportance(y: float, lower: float, upper: float) -> float:
         boundaryInterval = upper - lower
         yAbsoluteBoundaryDistance = y - \
             upper if y > upper else lower - y
-        importance = yAbsoluteBoundaryDistance/boundaryInterval
+        importance = yAbsoluteBoundaryDistance / \
+            boundaryInterval if boundaryInterval != 0 else .0001
         return importance
+
+    @staticmethod
+    def _calcImportanceThreshold(proportionalInterval: float, importance: float) -> float:
+        slope = 10
+        offset = importance + slope*proportionalInterval
+
+        threshold = -10 * proportionalInterval + offset
+
+        return threshold if threshold > 0 else 0
 
     def run(self) -> ResultDto:
         zScoreAnalysisResult = self._zScoreAnalysis.analyze()
@@ -288,7 +298,10 @@ class _QuantModel(ABC):
         isAnomaly = zScoreAnalysisResult.isAnomaly and forecastAnalysisResult.isAnomaly and (
             self._newDataPoint[1] < expectedValueLower or self._newDataPoint[1] > expectedValueUpper)
 
-        globalImportanceThreshold = 1.5
+        proportionalInterval = 1 - expectedValueLower / \
+            (expectedValueUpper if expectedValueUpper != 0 else 0.0001)
+        globalImportanceThreshold = self._calcImportanceThreshold(proportionalInterval, 1.5
+                                                                  )
 
         importance = None
         if (isAnomaly):
@@ -296,7 +309,7 @@ class _QuantModel(ABC):
                 raise Exception('Missing importance threshold')
 
             importance = self._calcAnomalyImportance(
-                self._newDataPoint[1], expectedValueUpper, expectedValueLower)
+                self._newDataPoint[1], expectedValueLower, expectedValueUpper)
             isAnomaly = importance > globalImportanceThreshold and importance > self._importanceThreshold
 
         deviation = zScoreAnalysisResult.deviation if abs(zScoreAnalysisResult.expectedValue - self._newDataPoint[1]) <= abs(
