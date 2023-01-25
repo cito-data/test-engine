@@ -257,24 +257,26 @@ class _QuantModel(ABC):
     _zScoreAnalysis: _ZScoreAnalysis
     _forecastAnalysis: _ForecastAnalysis
 
-    _importanceThreshold: Union[float, None]
+    _importanceThreshold: float
+    _boundsIntervalRelative: float
 
     @ abstractmethod
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest], importanceThreshold: float) -> None:
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest], importanceThreshold: float, boundsIntervalRelative: float) -> None:
         self._zScoreAnalysis = _ZScoreAnalysis(
             newDataPoint, historicalData, threshold, testType)
         self._forecastAnalysis = _ForecastAnalysis(
             newDataPoint, historicalData, threshold, testType)
         self._newDataPoint = newDataPoint
         self._importanceThreshold = importanceThreshold
+        self._boundsIntervalRelative = boundsIntervalRelative
 
     @staticmethod
     def _calcAnomalyImportance(y: float, lower: float, upper: float) -> float:
-        boundaryInterval = upper - lower
+        boundsIntervalAbsolute = upper - lower
         yAbsoluteBoundaryDistance = y - \
             upper if y > upper else lower - y
         importance = yAbsoluteBoundaryDistance / \
-            boundaryInterval if boundaryInterval != 0 else .0001
+            boundsIntervalAbsolute if boundsIntervalAbsolute != 0 else .0001
         return importance
 
     @staticmethod
@@ -310,7 +312,8 @@ class _QuantModel(ABC):
 
             importance = self._calcAnomalyImportance(
                 self._newDataPoint[1], expectedValueLower, expectedValueUpper)
-            isAnomaly = importance > globalImportanceThreshold and importance > self._importanceThreshold
+            isAnomaly = importance > globalImportanceThreshold and importance > self._calcImportanceThreshold(
+                self._boundsIntervalRelative, self._importanceThreshold)
 
         deviation = zScoreAnalysisResult.deviation if abs(zScoreAnalysisResult.expectedValue - self._newDataPoint[1]) <= abs(
             forecastAnalysisResult.expectedValue - self._newDataPoint[1]) else forecastAnalysisResult.deviation
@@ -319,6 +322,6 @@ class _QuantModel(ABC):
 
 
 class CommonModel(_QuantModel):
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest], importanceThreshold: float) -> None:
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest], importanceThreshold: float, boundsIntervalRelative: float) -> None:
         super().__init__(newDataPoint, historicalData,
-                         threshold, testType, importanceThreshold)
+                         threshold, testType, importanceThreshold, boundsIntervalRelative)
