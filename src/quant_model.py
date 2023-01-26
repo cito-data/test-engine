@@ -281,12 +281,10 @@ class _QuantModel(ABC):
         return importance
 
     @staticmethod
-    def _calcImportanceThreshold(proportionalInterval: float, importance: float) -> float:
-        slope = 10
-        offset = importance + slope*proportionalInterval
-
-        threshold = -10 * proportionalInterval + offset
-
+    def _calcImportanceThreshold(boundsIntervalRelative: float, importance: Union[float, None]) -> float:
+        slope = -10
+        yOffset = importance - slope*boundsIntervalRelative if importance else 1.7
+        threshold = slope * boundsIntervalRelative + yOffset
         return threshold if threshold > 0 else 0
 
     def run(self) -> ResultDto:
@@ -312,8 +310,9 @@ class _QuantModel(ABC):
 
             localBoundsIntervalRelative = 1 - expectedValueLower / \
                 (expectedValueUpper if expectedValueUpper != 0 else 0.0001)
+
             globalImportanceThreshold = self._calcImportanceThreshold(
-                localBoundsIntervalRelative, 1.5)
+                localBoundsIntervalRelative, None)
 
             isAnomaly = importance > globalImportanceThreshold and importance > self._calcImportanceThreshold(
                 self._boundsIntervalRelative, self._importanceThreshold)
