@@ -46,6 +46,20 @@ class ResultDto:
     anomaly: _AnomalyResult
 
 
+def _closestValue(arr: "list[float]", x: float) -> float:
+    if (not len(arr)):
+        raise Exception('Empty array provided. Cannot find closest val.')
+    closestValue = arr[0]
+    for value in arr:
+        if abs(value - x) < abs(closestValue - x):
+            closestValue = value
+    return closestValue
+
+
+def _adjustValue(value: float, testType: Union[QuantMatTest, QuantColumnTest]) -> float:
+    return value if testType == QuantColumnTest.ColumnDistribution or testType == QuantColumnTest.ColumnDistribution.value or testType == QuantColumnTest.ColumnFreshness or testType == QuantColumnTest.ColumnFreshness.value or value > 0 else 0
+
+
 class _Analysis(ABC):
     _newDataPoint: pd.DataFrame
     _historicalData: pd.DataFrame
@@ -155,12 +169,11 @@ class _ZScoreAnalysis(_Analysis):
 
         self._modifiedZScore = self._calculateModifiedZScore()
 
-        self._expectedValue = self._median
-        self._expectedValueUpper = self._calculateBound(self._threshold*1)
-
-        lowerBound = self._calculateBound(
-            self._threshold*-1)
-        self._expectedValueLower = lowerBound if self._testType == QuantColumnTest.ColumnDistribution or self._testType == QuantColumnTest.ColumnDistribution.value or QuantColumnTest.ColumnFreshness or self._testType == QuantColumnTest.ColumnFreshness.value or lowerBound > 0 else 0
+        self._expectedValue = _adjustValue(self._median, self._testType)
+        self._expectedValueUpper = _adjustValue(
+            self._calculateBound(self._threshold*1), self._testType)
+        self._expectedValueLower = _adjustValue(self._calculateBound(
+            self._threshold*-1), self._testType)
 
         anomalyCheckResult = self._runAnomalyCheck()
 
@@ -191,35 +204,22 @@ class _ForecastAnalysis(_Analysis):
             raise Exception(
                 'Cannot run anomaly check. New data value not found')
 
-        if self._daily:
-            if self._daily_lower == None or self._daily_upper == None:
-                raise Exception('Missing daily lower or upper boundary')
-            if y <= self._daily_upper and y >= self._daily_lower:
-                deviation = (y / self._daily if self._daily !=
-                             0 else y / 0.0001) - 1
-                return _AnalysisResult(self._daily, self._daily_upper, self._daily_lower, deviation, False)
+        expectedValues: list[float] = [el for el in [self._daily, self._weekly,
+                                                     self._yearly, self._yhat] if el is not None]
 
-        if self._weekly:
-            if self._weekly_lower == None or self._weekly_upper == None:
-                raise Exception('Missing weekly lower or upper boundary')
-            if y <= self._weekly_upper and y >= self._weekly_lower:
-                deviation = (y / self._weekly if self._weekly !=
-                             0 else y / 0.0001) - 1
-                return _AnalysisResult(self._weekly, self._weekly_upper, self._weekly_lower, deviation, False)
+        bounds: list[float] = [el for el in [self._daily_lower, self._daily_upper, self._weekly_lower, self._weekly_upper,
+                                             self._yearly_lower, self._yearly_upper, self._yhat_lower, self._yhat_upper] if el is not None]
+        upperBound = max(bounds)
+        lowerBound = min(bounds)
+        expectedValue = _closestValue(
+            expectedValues, (upperBound + lowerBound)/2)
 
-        if self._yearly:
-            if self._yearly_lower == None or self._yearly_upper == None:
-                raise Exception('Missing yearly lower or upper boundary')
-            if not y <= self._yearly_upper and y >= self._yearly_lower:
-                deviation = (y / self._yearly if self._yearly !=
-                             0 else y / 0.0001) - 1
-                return _AnalysisResult(self._yearly, self._yearly_upper, self._yearly_lower, deviation, False)
-
-        deviation = (y / self._yhat if self._yhat != 0 else y / 0.0001) - 1
+        deviation = (y / expectedValue if expectedValue !=
+                     0 else y / 0.0001) - 1
         isAnomaly = bool(
-            y > self._yhat_upper or y < self._yhat_lower)
+            y > upperBound or y < lowerBound)
 
-        return _AnalysisResult(self._yhat, self._yhat_upper, self._yhat_lower, deviation, isAnomaly)
+        return _AnalysisResult(expectedValue, upperBound, lowerBound, deviation, isAnomaly)
 
     def analyze(self) -> _AnalysisResult:
         m = Prophet()
@@ -234,18 +234,29 @@ class _ForecastAnalysis(_Analysis):
 
         forecast = m.predict(future)
 
-        self._yhat = forecast['yhat'].values[0]
-        self._yhat_lower = forecast['yhat_lower'].values[0] if self._testType == QuantColumnTest.ColumnDistribution or self._testType == QuantColumnTest.ColumnDistribution.value or QuantColumnTest.ColumnFreshness or self._testType == QuantColumnTest.ColumnFreshness.value or forecast['yhat_lower'].values[0] > 0 else 0
-        self._yhat_upper = forecast['yhat_upper'].values[0]
-        self._daily = forecast['daily'].values[0] if 'daily' in forecast.columns else None
-        self._daily_lower = forecast['daily_lower'].values[0] if 'daily_lower' in forecast.columns else None
-        self._daily_upper = forecast['daily_upper'].values[0] if 'daily_upper' in forecast.columns else None
-        self._weekly = forecast['weekly'].values[0] if 'weekly' in forecast.columns else None
-        self._weekly_lower = forecast['weekly_lower'].values[0] if 'weekly_lower' in forecast.columns else None
-        self._weekly_upper = forecast['weekly_upper'].values[0] if 'weekly_upper' in forecast.columns else None
-        self._yearly = forecast['yearly'].values[0] if 'yearly' in forecast.columns else None
-        self._yearly_lower = forecast['yearly_lower'].values[0] if 'yearly_lower' in forecast.columns else None
-        self._yearly_upper = forecast['yearly_upper'].values[0] if 'yearly_upper' in forecast.columns else None
+        self._yhat = _adjustValue(forecast['yhat'].values[0], self._testType)
+        self._yhat_lower = _adjustValue(
+            forecast['yhat_lower'].values[0], self._testType)
+        self._yhat_upper = _adjustValue(
+            forecast['yhat_upper'].values[0], self._testType)
+        self._daily = _adjustValue(
+            forecast['daily'].values[0], self._testType) if 'daily' in forecast.columns else None
+        self._daily_lower = _adjustValue(
+            forecast['daily_lower'].values[0], self._testType) if 'daily_lower' in forecast.columns else None
+        self._daily_upper = _adjustValue(
+            forecast['daily_upper'].values[0], self._testType) if 'daily_upper' in forecast.columns else None
+        self._weekly = _adjustValue(
+            forecast['weekly'].values[0], self._testType) if 'weekly' in forecast.columns else None
+        self._weekly_lower = _adjustValue(
+            forecast['weekly_lower'].values[0], self._testType) if 'weekly_lower' in forecast.columns else None
+        self._weekly_upper = _adjustValue(
+            forecast['weekly_upper'].values[0], self._testType) if 'weekly_upper' in forecast.columns else None
+        self._yearly = _adjustValue(
+            forecast['yearly'].values[0], self._testType) if 'yearly' in forecast.columns else None
+        self._yearly_lower = _adjustValue(
+            forecast['yearly_lower'].values[0], self._testType) if 'yearly_lower' in forecast.columns else None
+        self._yearly_upper = _adjustValue(
+            forecast['yearly_upper'].values[0], self._testType) if 'yearly_upper' in forecast.columns else None
 
         anomalyCheckResult = self._runAnomalyCheck()
 
@@ -271,7 +282,7 @@ class _QuantModel(ABC):
         self._importanceThreshold = importanceThreshold
         self._boundsIntervalRelative = boundsIntervalRelative
 
-    @staticmethod
+    @ staticmethod
     def _calcAnomalyImportance(y: float, lower: float, upper: float) -> float:
         boundsIntervalAbsolute = upper - lower
         yAbsoluteBoundaryDistance = y - \
@@ -280,7 +291,7 @@ class _QuantModel(ABC):
             boundsIntervalAbsolute if boundsIntervalAbsolute != 0 else .0001
         return importance
 
-    @staticmethod
+    @ staticmethod
     def _calcImportanceThreshold(boundsIntervalRelative: float, importance: Union[float, None]) -> float:
         slope = -10
         yOffset = importance - slope*boundsIntervalRelative if importance else 1.7
@@ -293,8 +304,8 @@ class _QuantModel(ABC):
 
         expectedValueLower = zScoreAnalysisResult.expectedValueLower if zScoreAnalysisResult.expectedValueLower < forecastAnalysisResult.expectedValueLower else forecastAnalysisResult.expectedValueLower
         expectedValueUpper = zScoreAnalysisResult.expectedValueUpper if zScoreAnalysisResult.expectedValueUpper > forecastAnalysisResult.expectedValueUpper else forecastAnalysisResult.expectedValueUpper
-        expectedValue = zScoreAnalysisResult.expectedValue if abs(zScoreAnalysisResult.expectedValue - self._newDataPoint[1]) <= abs(
-            forecastAnalysisResult.expectedValue - self._newDataPoint[1]) else forecastAnalysisResult.expectedValue
+        expectedValue = _closestValue(
+            [zScoreAnalysisResult.expectedValue, forecastAnalysisResult.expectedValue], (expectedValueLower + expectedValueUpper)/2)
 
         isAnomaly = zScoreAnalysisResult.isAnomaly and forecastAnalysisResult.isAnomaly and (
             self._newDataPoint[1] < expectedValueLower or self._newDataPoint[1] > expectedValueUpper)
@@ -314,8 +325,11 @@ class _QuantModel(ABC):
             globalImportanceThreshold = self._calcImportanceThreshold(
                 localBoundsIntervalRelative, None)
 
-            isAnomaly = importance > globalImportanceThreshold and importance > self._calcImportanceThreshold(
-                self._boundsIntervalRelative, self._importanceThreshold)
+            # todo - take boundsIntervalRelative and importanceThreshold provided through feedback into account
+            # isAnomaly = importance > globalImportanceThreshold and importance > self._calcImportanceThreshold(
+            #     self._boundsIntervalRelative, self._importanceThreshold)
+
+            isAnomaly = importance > globalImportanceThreshold
 
         deviation = zScoreAnalysisResult.deviation if abs(zScoreAnalysisResult.expectedValue - self._newDataPoint[1]) <= abs(
             forecastAnalysisResult.expectedValue - self._newDataPoint[1]) else forecastAnalysisResult.deviation
