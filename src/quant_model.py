@@ -184,6 +184,9 @@ class _ForecastAnalysis(_Analysis):
     _yhat: float
     _yhat_lower: float
     _yhat_upper: float
+    _trend: float
+    _trend_lower: float
+    _trend_upper: float
     _daily: Union[float, None]
     _daily_lower: Union[float, None]
     _daily_upper: Union[float, None]
@@ -205,10 +208,10 @@ class _ForecastAnalysis(_Analysis):
                 'Cannot run anomaly check. New data value not found')
 
         expectedValues: list[float] = [el for el in [self._daily, self._weekly,
-                                                     self._yearly, self._yhat] if el is not None]
+                                                     self._yearly, self._yhat, self._trend] if el is not None]
 
         bounds: list[float] = [el for el in [self._daily_lower, self._daily_upper, self._weekly_lower, self._weekly_upper,
-                                             self._yearly_lower, self._yearly_upper, self._yhat_lower, self._yhat_upper] if el is not None]
+                                             self._yearly_lower, self._yearly_upper, self._yhat_lower, self._yhat_upper, self._trend_lower, self._trend_upper] if el is not None]
         upperBound = max(bounds)
         lowerBound = min(bounds)
         expectedValue = _closestValue(
@@ -239,6 +242,11 @@ class _ForecastAnalysis(_Analysis):
             forecast['yhat_lower'].values[0], self._testType)
         self._yhat_upper = _adjustValue(
             forecast['yhat_upper'].values[0], self._testType)
+        self._trend = _adjustValue(forecast['trend'].values[0], self._testType)
+        self._trend_lower = _adjustValue(
+            forecast['trend_lower'].values[0], self._testType)
+        self._trend_upper = _adjustValue(
+            forecast['trend_upper'].values[0], self._testType)
         self._daily = _adjustValue(
             forecast['daily'].values[0], self._testType) if 'daily' in forecast.columns else None
         self._daily_lower = _adjustValue(
@@ -319,7 +327,7 @@ class _QuantModel(ABC):
             importance = self._calcAnomalyImportance(
                 self._newDataPoint[1], expectedValueLower, expectedValueUpper)
 
-            localBoundsIntervalRelative = 1 - expectedValueLower / \
+            localBoundsIntervalRelative = 1 - (expectedValueLower if expectedValueLower != 0 else 0.0001) / \
                 (expectedValueUpper if expectedValueUpper != 0 else 0.0001)
 
             globalImportanceThreshold = self._calcImportanceThreshold(
