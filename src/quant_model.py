@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import datetime
 from typing import Union
 import pandas as pd
+import numpy as np
 from prophet import Prophet
 
 
@@ -207,25 +208,25 @@ class _ForecastAnalysis(_Analysis):
             raise Exception(
                 'Cannot run anomaly check. New data value not found')
 
-        expectedValues: list[float] = [el for el in [self._daily, self._weekly,
-                                                     self._yearly, self._yhat, self._trend] if el is not None]
+        expectedValues: list[float] = [el for el in [
+            self._yhat, self._trend] if el is not None]
 
-        bounds: list[float] = [el for el in [self._daily_lower, self._daily_upper, self._weekly_lower, self._weekly_upper,
-                                             self._yearly_lower, self._yearly_upper, self._yhat_lower, self._yhat_upper, self._trend_lower, self._trend_upper] if el is not None]
+        bounds: list[float] = [el for el in [self._yhat_lower, self._yhat_upper,
+                                             self._trend_lower, self._trend_upper] if el is not None]
         upperBound = max(bounds)
         lowerBound = min(bounds)
         expectedValue = _closestValue(
             expectedValues, (upperBound + lowerBound)/2)
 
-        deviation = (y / expectedValue if expectedValue !=
-                     0 else y / 0.0001) - 1
+        deviation = y / expectedValue - \
+            1 if expectedValue != 0 else -9999
         isAnomaly = bool(
             y > upperBound or y < lowerBound)
 
         return _AnalysisResult(expectedValue, upperBound, lowerBound, deviation, isAnomaly)
 
     def analyze(self) -> _AnalysisResult:
-        m = Prophet()
+        m = Prophet(changepoint_prior_scale=0.1)
         m.fit(self._historicalData)
 
         dates = pd.date_range(
@@ -280,6 +281,8 @@ class _QuantModel(ABC):
     _importanceThreshold: float
     _boundsIntervalRelative: float
 
+    _testType: Union[QuantMatTest, QuantColumnTest]
+
     @ abstractmethod
     def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest], importanceThreshold: float, boundsIntervalRelative: float) -> None:
         self._zScoreAnalysis = _ZScoreAnalysis(
@@ -295,8 +298,11 @@ class _QuantModel(ABC):
         boundsIntervalAbsolute = upper - lower
         yAbsoluteBoundaryDistance = y - \
             upper if y > upper else lower - y
+        if yAbsoluteBoundaryDistance == 0 and boundsIntervalAbsolute == 0:
+            raise Exception(
+                'Detected unusual bounds and y value. Cannot calculate importance')
         importance = yAbsoluteBoundaryDistance / \
-            boundsIntervalAbsolute if boundsIntervalAbsolute != 0 else .0001
+            boundsIntervalAbsolute
         return importance
 
     @ staticmethod
@@ -324,18 +330,13 @@ class _QuantModel(ABC):
             if self._importanceThreshold == None:
                 raise Exception('Missing importance threshold')
 
+            y = self._newDataPoint[1]
+
             importance = self._calcAnomalyImportance(
-                self._newDataPoint[1], expectedValueLower, expectedValueUpper)
+                y, expectedValueLower, expectedValueUpper)
 
-            localBoundsIntervalRelative = 1 - (expectedValueLower if expectedValueLower != 0 else 0.0001) / \
-                (expectedValueUpper if expectedValueUpper != 0 else 0.0001)
-
-            globalImportanceThreshold = self._calcImportanceThreshold(
-                localBoundsIntervalRelative, None)
-
-            # todo - take boundsIntervalRelative and importanceThreshold provided through feedback into account
-            # isAnomaly = importance > globalImportanceThreshold and importance > self._calcImportanceThreshold(
-            #     self._boundsIntervalRelative, self._importanceThreshold)
+            globalImportanceThreshold = 2 if self._testType == QuantColumnTest.ColumnNullness or self._testType == QuantColumnTest.ColumnNullness.value \
+                or self._testType == QuantColumnTest.ColumnUniqueness or self._testType == QuantColumnTest.ColumnUniqueness.value else 1
 
             isAnomaly = importance > globalImportanceThreshold
 
