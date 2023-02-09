@@ -226,7 +226,8 @@ class _ForecastAnalysis(_Analysis):
         return _AnalysisResult(expectedValue, upperBound, lowerBound, deviation, isAnomaly)
 
     def analyze(self) -> _AnalysisResult:
-        m = Prophet(changepoint_prior_scale=0.1)
+        # m = Prophet(changepoint_prior_scale=0.1)
+        m = Prophet()
         m.fit(self._historicalData)
 
         dates = pd.date_range(
