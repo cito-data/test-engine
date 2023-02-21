@@ -336,7 +336,7 @@ class _QuantModel(ABC):
             importance = self._calcAnomalyImportance(
                 y, expectedValueLower, expectedValueUpper)
 
-            globalImportanceThreshold = .8 if self._testType == QuantColumnTest.ColumnNullness or self._testType == QuantColumnTest.ColumnNullness.value \
+            globalImportanceThreshold = .3 if self._testType == QuantColumnTest.ColumnNullness or self._testType == QuantColumnTest.ColumnNullness.value \
                 or self._testType == QuantColumnTest.ColumnUniqueness or self._testType == QuantColumnTest.ColumnUniqueness.value else .8
 
             isAnomaly = importance > globalImportanceThreshold
