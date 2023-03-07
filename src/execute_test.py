@@ -59,6 +59,12 @@ class ExecuteTestAuthDto:
     isSystemInternal: bool
 
 
+@dataclass
+class CustomThreshold:
+    value: float
+    mode: str
+
+
 ExecuteTestResponseDto = Result[Union[QuantTestExecutionResult,
                                       QualTestExecutionResult]]
 
@@ -265,8 +271,8 @@ class ExecuteTest(IUseCase):
 
         return newData
 
-    def _runModel(self, threshold: int, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest], importanceThreshold: float, boundsIntervalRelative: float) -> QuantTestResultDto:
-        return CommonModel(newData, historicalData, threshold, testType, importanceThreshold, boundsIntervalRelative).run()
+    def _runModel(self, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest], importanceThreshold: float, boundsIntervalRelative: float, customLowerThreshold: "Union[CustomThreshold, None]", customUpperThreshold: "Union[CustomThreshold, None]") -> QuantTestResultDto:
+        return CommonModel(newData, historicalData, testType, importanceThreshold, boundsIntervalRelative, customLowerThreshold, customUpperThreshold).run()
 
     def _runTest(self, newDataPoint, historicalData: "list[tuple[str,float]]") -> QuantTestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
@@ -275,7 +281,10 @@ class ExecuteTest(IUseCase):
         materializationType = self._testDefinition['MATERIALIZATION_TYPE']
         columnName = self._testDefinition['COLUMN_NAME']
         testSuiteId = self._testDefinition['ID']
-        threshold = self._testDefinition['THRESHOLD']
+        customLowerThreshold = self._testDefinition['CUSTOM_LOWER_THRESHOLD']
+        customLowerThresholdMode = self._testDefinition['CUSTOM_LOWER_THRESHOLD_MODE']
+        customUpperThreshold = self._testDefinition['CUSTOM_UPPER_THRESHOLD']
+        customUpperThresholdMode = self._testDefinition['CUSTOM_UPPER_THRESHOLD_MODE']
         targetResourceId = self._testDefinition['TARGET_RESOURCE_ID']
         testType = self._testDefinition['TEST_TYPE']
         importanceThreshold = self._testDefinition['IMPORTANCE_THRESHOLD']
@@ -296,8 +305,13 @@ class ExecuteTest(IUseCase):
 
             return QuantTestExecutionResult(testSuiteId, testType, self._executionId, targetResourceId, self._organizationId, True, None, None)
 
+        lowerThreshold = None if customLowerThreshold is None else CustomThreshold(
+            customLowerThreshold, customLowerThresholdMode)
+        upperThreshold = None if customUpperThreshold is None else CustomThreshold(
+            customUpperThreshold, customUpperThresholdMode)
+
         testResult = self._runModel(
-            threshold, (executedOnISOFormat, newDataPoint), historicalData, testType, importanceThreshold, boundsIntervalRelative)
+            (executedOnISOFormat, newDataPoint), historicalData, testType, importanceThreshold, boundsIntervalRelative, lowerThreshold, upperThreshold)
 
         self._insertResultEntry(testResult)
 

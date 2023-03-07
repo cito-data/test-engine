@@ -1,3 +1,4 @@
+from execute_test import CustomThreshold
 from test_type import QuantColumnTest, QuantMatTest
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -64,15 +65,17 @@ def _adjustValue(value: float, testType: Union[QuantMatTest, QuantColumnTest]) -
 class _Analysis(ABC):
     _newDataPoint: pd.DataFrame
     _historicalData: pd.DataFrame
-    _threshold: int
     _testType: Union[QuantMatTest, QuantColumnTest]
+    _customLowerThreshold: "Union[CustomThreshold, None]"
+    _customUpperThreshold: "Union[CustomThreshold, None]"
 
     @abstractmethod
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest]) -> None:
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]",  testType: Union[QuantMatTest, QuantColumnTest], customLowerThreshold: "Union[CustomThreshold, None]", customUpperThreshold: "Union[CustomThreshold, None]") -> None:
         self._newDataPoint = self._buildNewDataPointFrame(newDataPoint)
         self._historicalData = self._buildHistoricalDF(historicalData)
-        self._threshold = threshold
         self._testType = testType
+        self._customLowerThreshold = customLowerThreshold
+        self._customUpperThreshold = customUpperThreshold
 
     def _buildNewDataPointFrame(self, newDataPoint: "tuple[str, float]") -> pd.DataFrame:
         return pd.DataFrame({'ds': pd.Series([newDataPoint[0]]), 'y': pd.Series([newDataPoint[1]])})
@@ -102,13 +105,15 @@ class _ZScoreAnalysis(_Analysis):
     _median: float
     _medianAbsoluteDeviation: float
     _meanAbsoluteDeviation: Union[float, None]
-    _modifiedZScore: float
+    _modifiedZScoreThresholdUpper: float = 3.0
+    _modifiedZScoreThresholdLower: float = - 3.0
     _expectedValue: float
     _expectedValueUpper: float
     _expectedValueLower: float
 
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest]) -> None:
-        super().__init__(newDataPoint, historicalData, threshold, testType)
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]",  testType: Union[QuantMatTest, QuantColumnTest], customLowerThreshold: "Union[CustomThreshold, None]", customUpperThreshold: "Union[CustomThreshold, None]") -> None:
+        super().__init__(newDataPoint, historicalData, testType,
+                         customLowerThreshold, customUpperThreshold)
 
     def _absoluteDeviation(self, x) -> float:
         return abs(x - self._median)
@@ -127,13 +132,8 @@ class _ZScoreAnalysis(_Analysis):
         values = allData['y']
         return (values - values.mean()).abs().mean()
 
-    def _calculateModifiedZScore(self) -> float:
+    def _calculateModifiedZScore(self, y: float) -> float:
         # https://www.ibm.com/docs/en/cognos-analytics/11.1.0?topic=terms-modified-z-score
-        y = self._newDataPoint['y'].values[0]
-
-        if y == None:
-            raise Exception(
-                'Cannot calc modified z-score. New data value not found')
 
         if self._medianAbsoluteDeviation == 0 and self._meanAbsoluteDeviation == 0:
             return 0.0
@@ -142,43 +142,76 @@ class _ZScoreAnalysis(_Analysis):
             return (y - self._median)/(1.253314*self._meanAbsoluteDeviation)
         return (y - self._median)/(1.486*self._medianAbsoluteDeviation)
 
-    def _calculateBound(self, zScoreThreshold: int) -> float:
+    def _calculateBound(self, boundaryValue: float) -> float:
         if self._meanAbsoluteDeviation == None:
             raise Exception(
                 'Cannot calc bound. Mean abs deviation not available')
 
         if self._medianAbsoluteDeviation == 0:
-            return (1.253314*self._meanAbsoluteDeviation)*zScoreThreshold + self._median
-        return (1.486*self._medianAbsoluteDeviation)*zScoreThreshold + self._median
+            return (1.253314*self._meanAbsoluteDeviation)*boundaryValue + self._median
+        return (1.486*self._medianAbsoluteDeviation)*boundaryValue + self._median
 
-    def _runAnomalyCheck(self) -> _AnalysisResult:
+    def _runAnomalyCheck(self, newMZScore: float) -> _AnalysisResult:
         y = self._newDataPoint['y'].values[0]
 
         if y == None:
             raise Exception(
                 'Cannot run anomaly check. New data value not found')
 
-        isAnomaly = bool(abs(self._modifiedZScore) > self._threshold)
+        isAnomaly = bool(
+            newMZScore > self._modifiedZScoreThresholdUpper or newMZScore < self._modifiedZScoreThresholdLower)
         deviation = y / \
             self._expectedValue - 1 if self._expectedValue > 0 else 0
 
         return _AnalysisResult(self._expectedValue, self._expectedValueUpper, self._expectedValueLower, deviation, isAnomaly)
 
+    def _calculateNewModifiedZScore(self) -> float:
+        y = self._newDataPoint['y'].values[0]
+
+        if y == None:
+            raise Exception(
+                'Cannot calc modified z-score. New data value not found')
+
+        return self._calculateModifiedZScore(y)
+
     def analyze(self) -> _ZScoreResult:
         self._medianAbsoluteDeviation = self._calculateMedianAbsoluteDeviation()
         self._meanAbsoluteDeviation = self._mad()
 
-        self._modifiedZScore = self._calculateModifiedZScore()
+        if self._customLowerThreshold != None:
+            if self._customLowerThreshold.mode == 'absolute':
+                self._modifiedZScoreThresholdLower = self._calculateModifiedZScore(
+                    self._customLowerThreshold.value)
+                self._expectedValueLower = self._customLowerThreshold.value
+            elif self._customLowerThreshold.mode == 'relative':
+                value = self._median * self._customLowerThreshold.value
+                self._modifiedZScoreThresholdLower = self._calculateModifiedZScore(
+                    value)
+                self._expectedValueLower = value
+        else:
+            self._expectedValueLower = _adjustValue(self._calculateBound(
+                self._modifiedZScoreThresholdLower*-1), self._testType)
+
+        if self._customUpperThreshold != None:
+            if self._customUpperThreshold.mode == 'absolute':
+                self._modifiedZScoreThresholdUpper = self._calculateModifiedZScore(
+                    self._customUpperThreshold.value)
+                self._expectedValueUpper = self._customUpperThreshold.value
+            elif self._customUpperThreshold.mode == 'relative':
+                value = self._median * self._customUpperThreshold.value
+                self._modifiedZScoreThresholdUpper = self._calculateModifiedZScore(
+                    value)
+                self._expectedValueUpper = value
+        else:
+            self._expectedValueUpper = _adjustValue(
+                self._calculateBound(self._modifiedZScoreThresholdUpper*1), self._testType)
 
         self._expectedValue = _adjustValue(self._median, self._testType)
-        self._expectedValueUpper = _adjustValue(
-            self._calculateBound(self._threshold*1), self._testType)
-        self._expectedValueLower = _adjustValue(self._calculateBound(
-            self._threshold*-1), self._testType)
 
-        anomalyCheckResult = self._runAnomalyCheck()
+        newModifiedZScore = self._calculateNewModifiedZScore()
+        anomalyCheckResult = self._runAnomalyCheck(newModifiedZScore)
 
-        return _ZScoreResult(anomalyCheckResult.expectedValue, anomalyCheckResult.expectedValueUpper, anomalyCheckResult.expectedValueLower, anomalyCheckResult.deviation, anomalyCheckResult.isAnomaly, self._median, self._medianAbsoluteDeviation, self._meanAbsoluteDeviation, self._modifiedZScore)
+        return _ZScoreResult(anomalyCheckResult.expectedValue, anomalyCheckResult.expectedValueUpper, anomalyCheckResult.expectedValueLower, anomalyCheckResult.deviation, anomalyCheckResult.isAnomaly, self._median, self._medianAbsoluteDeviation, self._meanAbsoluteDeviation, newModifiedZScore)
 
 
 class _ForecastAnalysis(_Analysis):
@@ -198,8 +231,9 @@ class _ForecastAnalysis(_Analysis):
     _yearly_lower: Union[float, None]
     _yearly_upper: Union[float, None]
 
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest]) -> None:
-        super().__init__(newDataPoint, historicalData, threshold, testType)
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]",  testType: Union[QuantMatTest, QuantColumnTest], customLowerThreshold: "Union[CustomThreshold, None]", customUpperThreshold: "Union[CustomThreshold, None]") -> None:
+        super().__init__(newDataPoint, historicalData,
+                         testType, customLowerThreshold, customUpperThreshold)
 
     def _runAnomalyCheck(self) -> _AnalysisResult:
         y = self._newDataPoint['y'].values[0]
@@ -217,6 +251,17 @@ class _ForecastAnalysis(_Analysis):
         lowerBound = min(bounds)
         expectedValue = _closestValue(
             expectedValues, (upperBound + lowerBound)/2)
+
+        if self._customLowerThreshold != None:
+            if self._customLowerThreshold.mode == 'absolute':
+                lowerBound = self._customLowerThreshold.value
+            elif self._customLowerThreshold.mode == 'relative':
+                lowerBound = expectedValue * self._customLowerThreshold.value
+        if self._customUpperThreshold != None:
+            if self._customUpperThreshold.mode == 'absolute':
+                upperBound = self._customUpperThreshold.value
+            elif self._customUpperThreshold.mode == 'relative':
+                upperBound = expectedValue * self._customUpperThreshold.value
 
         deviation = y / expectedValue - \
             1 if expectedValue != 0 else -9999
@@ -285,11 +330,11 @@ class _QuantModel(ABC):
     _testType: Union[QuantMatTest, QuantColumnTest]
 
     @ abstractmethod
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest], importanceThreshold: float, boundsIntervalRelative: float) -> None:
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]",  testType: Union[QuantMatTest, QuantColumnTest], importanceThreshold: float, boundsIntervalRelative: float, customLowerThreshold: "Union[CustomThreshold, None]", customUpperThreshold: "Union[CustomThreshold, None]") -> None:
         self._zScoreAnalysis = _ZScoreAnalysis(
-            newDataPoint, historicalData, threshold, testType)
+            newDataPoint, historicalData,  testType, customLowerThreshold, customUpperThreshold)
         self._forecastAnalysis = _ForecastAnalysis(
-            newDataPoint, historicalData, threshold, testType)
+            newDataPoint, historicalData,  testType, customLowerThreshold, customUpperThreshold)
         self._newDataPoint = newDataPoint
         self._importanceThreshold = importanceThreshold
         self._boundsIntervalRelative = boundsIntervalRelative
@@ -348,6 +393,6 @@ class _QuantModel(ABC):
 
 
 class CommonModel(_QuantModel):
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", threshold: int, testType: Union[QuantMatTest, QuantColumnTest], importanceThreshold: float, boundsIntervalRelative: float) -> None:
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest], importanceThreshold: float, boundsIntervalRelative: float, customLowerThreshold: "Union[CustomThreshold, None]", customUpperThreshold: "Union[CustomThreshold, None]") -> None:
         super().__init__(newDataPoint, historicalData,
-                         threshold, testType, importanceThreshold, boundsIntervalRelative)
+                         testType, importanceThreshold, boundsIntervalRelative, customLowerThreshold, customUpperThreshold)
