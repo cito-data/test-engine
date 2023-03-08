@@ -8,6 +8,7 @@ from new_materialization_data_query import MaterializationType, getColumnCountQu
 from qual_model import ColumnDefinition, SchemaChangeModel, ResultDto as QualResultDto
 from quant_model import ResultDto as QuantTestResultDto, CommonModel
 from query_snowflake import QuerySnowflake, QuerySnowflakeAuthDto, QuerySnowflakeRequestDto, QuerySnowflakeResponseDto
+from i_custom_threshold import CustomThreshold
 from test_execution_result import QualTestAlertData, QualTestData, QualTestExecutionResult, QuantTestAlertData, QuantTestData, QuantTestExecutionResult, AnomalyData
 from test_type import QuantColumnTest, QuantMatTest, QualMatTest
 from use_case import IUseCase
@@ -57,12 +58,6 @@ class ExecuteTestAuthDto:
     jwt: str
     callerOrgId: Union[str, None]
     isSystemInternal: bool
-
-
-@dataclass
-class CustomThreshold:
-    value: float
-    mode: str
 
 
 ExecuteTestResponseDto = Result[Union[QuantTestExecutionResult,

@@ -1,4 +1,4 @@
-from execute_test import CustomThreshold
+from i_custom_threshold import CustomThreshold
 from test_type import QuantColumnTest, QuantMatTest
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
