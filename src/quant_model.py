@@ -338,6 +338,7 @@ class _QuantModel(ABC):
         self._newDataPoint = newDataPoint
         self._importanceThreshold = importanceThreshold
         self._boundsIntervalRelative = boundsIntervalRelative
+        self._testType = testType
 
     @ staticmethod
     def _calcAnomalyImportance(y: float, lower: float, upper: float) -> float:

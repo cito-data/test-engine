@@ -17,11 +17,11 @@
         "payload": {
           "json": {
             "body": {
-              "testType": "ColumnUniqueness",
+              "testType": "ColumnDistribution",
               "targetOrgId": "631789bf27518f97cf1c82b7"
             },
             "headers": {
-              "Authorization": "BearereyJraWQiOiI3Wld4S1wvUEYrWU1rUWhcLzlpR1JzZEtjVDE1ZFpUdFNnMXRxMTFPcEdCdW89IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoic3lzdGVtLWludGVybmFsXC9zeXN0ZW0taW50ZXJuYWwiLCJhdXRoX3RpbWUiOjE2NzgyOTIyMTgsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS1jZW50cmFsLTEuYW1hem9uYXdzLmNvbVwvZXUtY2VudHJhbC0xXzBtdUd0S01rMyIsImV4cCI6MTY3ODI5NTgxOCwiaWF0IjoxNjc4MjkyMjE4LCJ2ZXJzaW9uIjoyLCJqdGkiOiJkYTg3YzQyMi1hM2YxLTRmZGEtYTc0My1jNTA1OWZhYjFlNDMiLCJjbGllbnRfaWQiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSJ9.UkzQq3goJaa233yhZ5EqpW7S4auHImESItLzboa2Q3A2tLcc6cfCbaJKwfRxtdJ81hjFGcZ68O9eKWNIq3FxgO9Qy0kH9HesjynI2FjxwP_mYRmcX_HtLSM8Es8T0wZqJsWXkCqiig0ReGOHWTYYTFvPrNs71HOK_Dbhk3ZWuKlbTPKMjxehgGBdzylCxbNnneVAmghveHkEYY0egLocelyY3aFtUdm4X71Y0NNW-SUZUxD4Ac71cE_aYP8UQKW6WJ8l4R3ED6LSRB9gfkUdB312oFc9aauTMdB6KPcpFwNMYAm9iN0Z6qrrI9NOXqTBd18tX73VlfuUQ2rjAmuMhg"
+              "Authorization": "BearereyJraWQiOiI3Wld4S1wvUEYrWU1rUWhcLzlpR1JzZEtjVDE1ZFpUdFNnMXRxMTFPcEdCdW89IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoic3lzdGVtLWludGVybmFsXC9zeXN0ZW0taW50ZXJuYWwiLCJhdXRoX3RpbWUiOjE2Nzg0NDE1NTUsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS1jZW50cmFsLTEuYW1hem9uYXdzLmNvbVwvZXUtY2VudHJhbC0xXzBtdUd0S01rMyIsImV4cCI6MTY3ODQ0NTE1NSwiaWF0IjoxNjc4NDQxNTU1LCJ2ZXJzaW9uIjoyLCJqdGkiOiJlZjJkY2U2Mi0yOWE3LTQ0MDEtYjY0Yi01ZjEwNmMyNDNlM2EiLCJjbGllbnRfaWQiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSJ9.dnS2jgSKexqsw_yirzNpDptxsY4aTcavuFwtdiFZ5qvGVhmb8LLSDWtOf6uV40vqUE9U0D3Tnj4M6rPjH_UOKcTFP7F6fuFxiWUJlTxhrdzfcZQ2WCej4KxjMiFaiON8_RxfVytaOFG37JizcUxFdgkx6D2Hb-5bJOkW4_xQKWir94RL_eE-FRkDBydLIW0yckFmSGS2W0MoFY-Eb1r1eVs2ZMn1PA0zqMILqw10XRIPrIbFFpy_1BZZ7Dj4IQdxLI-_TfMvOD-Do_kjzW6Jen1RCDWvc1OrcgxS9u_HznsLr0g-2EskSwRH5-eWmEApV988Ntan9J6kaudschpSRQ"
             },
             "pathParameters": {
               "testSuiteId": "653956a5-0bf1-40a5-8d57-027886a1d401"
