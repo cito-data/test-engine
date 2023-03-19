@@ -7,6 +7,7 @@ from typing import Union
 import pandas as pd
 import numpy as np
 from prophet import Prophet
+import math
 
 
 @dataclass
@@ -119,24 +120,20 @@ class _ZScoreAnalysis(_Analysis):
         return abs(x - self._median)
 
     def _calculateMedianAbsoluteDeviation(self) -> float:
-        allData = pd.concat(
-            [self._historicalData, self._newDataPoint], ignore_index=True)
-        values = allData['y']
+        values = self._historicalData['y']
         self._median = float(values.median())
         absoluteDeviation = values.apply(self._absoluteDeviation)
         return float(absoluteDeviation.median())
 
     def _mad(self):
-        allData = pd.concat(
-            [self._historicalData, self._newDataPoint], ignore_index=True)
-        values = allData['y']
+        values = self._historicalData['y']
         return (values - values.mean()).abs().mean()
 
     def _calculateModifiedZScore(self, y: float) -> float:
         # https://www.ibm.com/docs/en/cognos-analytics/11.1.0?topic=terms-modified-z-score
 
         if self._medianAbsoluteDeviation == 0 and self._meanAbsoluteDeviation == 0:
-            return 0.0
+            return float('nan')
         if self._medianAbsoluteDeviation == 0:
             self._meanAbsoluteDeviation = self._mad()
             return (y - self._median)/(1.253314*self._meanAbsoluteDeviation)
@@ -159,7 +156,7 @@ class _ZScoreAnalysis(_Analysis):
                 'Cannot run anomaly check. New data value not found')
 
         isAnomaly = bool(
-            newMZScore > self._modifiedZScoreThresholdUpper or newMZScore < self._modifiedZScoreThresholdLower)
+            (math.isnan(newMZScore) and y != self._median) or newMZScore > self._modifiedZScoreThresholdUpper or newMZScore < self._modifiedZScoreThresholdLower)
         deviation = y / \
             self._expectedValue - 1 if self._expectedValue > 0 else 0
 
@@ -190,7 +187,7 @@ class _ZScoreAnalysis(_Analysis):
                 self._expectedValueLower = value
         else:
             self._expectedValueLower = _adjustValue(self._calculateBound(
-                self._modifiedZScoreThresholdLower*-1), self._testType)
+                self._modifiedZScoreThresholdLower), self._testType)
 
         if self._customUpperThreshold != None:
             if self._customUpperThreshold.mode == 'absolute':
@@ -204,7 +201,7 @@ class _ZScoreAnalysis(_Analysis):
                 self._expectedValueUpper = value
         else:
             self._expectedValueUpper = _adjustValue(
-                self._calculateBound(self._modifiedZScoreThresholdUpper*1), self._testType)
+                self._calculateBound(self._modifiedZScoreThresholdUpper), self._testType)
 
         self._expectedValue = _adjustValue(self._median, self._testType)
 

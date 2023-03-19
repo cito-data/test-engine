@@ -314,7 +314,7 @@ class ExecuteTest(IUseCase):
         alertId = None
         if testResult.anomaly.isAnomaly:
             print('Anomaly detected for test suite: ' + testSuiteId +
-                  'and organization: ' + self._organizationId)
+                  ' and organization: ' + self._organizationId)
             anomalyMessage = getAnomalyMessage(
                 targetResourceId, databaseName, schemaName, materializationName, columnName, testType)
             alertId = str(uuid.uuid4())
