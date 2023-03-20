@@ -155,10 +155,10 @@ class _ZScoreAnalysis(_Analysis):
             raise Exception(
                 'Cannot run anomaly check. New data value not found')
 
-        isAnomaly = bool(
-            (math.isnan(newMZScore) and y != self._median) or newMZScore > self._modifiedZScoreThresholdUpper or newMZScore < self._modifiedZScoreThresholdLower)
         deviation = y / \
             self._expectedValue - 1 if self._expectedValue > 0 else 0
+        isAnomaly = bool(
+            (math.isnan(newMZScore) and deviation != 0) or newMZScore > self._modifiedZScoreThresholdUpper or newMZScore < self._modifiedZScoreThresholdLower)
 
         return _AnalysisResult(self._expectedValue, self._expectedValueUpper, self._expectedValueLower, deviation, isAnomaly)
 
@@ -365,8 +365,8 @@ class _QuantModel(ABC):
         expectedValue = _closestValue(
             [zScoreAnalysisResult.expectedValue, forecastAnalysisResult.expectedValue], (expectedValueLower + expectedValueUpper)/2)
 
-        isAnomaly = zScoreAnalysisResult.isAnomaly and forecastAnalysisResult.isAnomaly and (
-            self._newDataPoint[1] < expectedValueLower or self._newDataPoint[1] > expectedValueUpper)
+        isAnomaly = bool(zScoreAnalysisResult.isAnomaly and forecastAnalysisResult.isAnomaly and (
+            self._newDataPoint[1] < expectedValueLower or self._newDataPoint[1] > expectedValueUpper))
 
         importance = None
         localBoundsIntervalRelative = None
@@ -382,7 +382,7 @@ class _QuantModel(ABC):
             globalImportanceThreshold = .1 if self._testType == QuantColumnTest.ColumnNullness or self._testType == QuantColumnTest.ColumnNullness.value \
                 or self._testType == QuantColumnTest.ColumnUniqueness or self._testType == QuantColumnTest.ColumnUniqueness.value else .1
 
-            isAnomaly = importance > globalImportanceThreshold
+            isAnomaly = bool(importance > globalImportanceThreshold)
 
         deviation = zScoreAnalysisResult.deviation if abs(zScoreAnalysisResult.expectedValue - self._newDataPoint[1]) <= abs(
             forecastAnalysisResult.expectedValue - self._newDataPoint[1]) else forecastAnalysisResult.deviation
