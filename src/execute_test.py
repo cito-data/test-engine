@@ -191,8 +191,6 @@ class ExecuteTest(IUseCase):
             {'name': 'execution_id', 'type': 'string', 'value': self._executionId},
             {'name': 'importance', 'type': 'float',
                 'value': testResult.anomaly.importance},
-            {'name': 'bounds_interval_relative', 'type': 'float',
-                'value': testResult.anomaly.boundsIntervalRelative},
         ]
 
         testResultQuery = getInsertQuery(
@@ -266,8 +264,8 @@ class ExecuteTest(IUseCase):
 
         return newData
 
-    def _runModel(self, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest], importanceThreshold: float, boundsIntervalRelative: float, customLowerThreshold: "Union[CustomThreshold, None]", customUpperThreshold: "Union[CustomThreshold, None]") -> QuantTestResultDto:
-        return CommonModel(newData, historicalData, testType, importanceThreshold, boundsIntervalRelative, customLowerThreshold, customUpperThreshold).run()
+    def _runModel(self, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest], importanceThreshold: float,  customLowerThreshold: "Union[CustomThreshold, None]", customUpperThreshold: "Union[CustomThreshold, None]") -> QuantTestResultDto:
+        return CommonModel(newData, historicalData, testType, importanceThreshold,   customLowerThreshold, customUpperThreshold).run()
 
     def _runTest(self, newDataPoint, historicalData: "list[tuple[str,float]]") -> QuantTestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
@@ -283,7 +281,6 @@ class ExecuteTest(IUseCase):
         targetResourceId = self._testDefinition['TARGET_RESOURCE_ID']
         testType = self._testDefinition['TEST_TYPE']
         importanceThreshold = self._testDefinition['IMPORTANCE_THRESHOLD']
-        boundsIntervalRelative = self._testDefinition['BOUNDS_INTERVAL_RELATIVE']
 
         executedOn = datetime.utcnow()
         executedOnISOFormat = executedOn.isoformat()
@@ -306,7 +303,7 @@ class ExecuteTest(IUseCase):
             customUpperThreshold, customUpperThresholdMode)
 
         testResult = self._runModel(
-            (executedOnISOFormat, newDataPoint), historicalData, testType, importanceThreshold, boundsIntervalRelative, lowerThreshold, upperThreshold)
+            (executedOnISOFormat, newDataPoint), historicalData, testType, importanceThreshold,  lowerThreshold, upperThreshold)
 
         self._insertResultEntry(testResult)
 
@@ -325,7 +322,7 @@ class ExecuteTest(IUseCase):
                                            testResult.expectedValueLower, columnName, newDataPoint)
 
         testData = QuantTestData(
-            executedOnISOFormat, testResult.modifiedZScore, testResult.deviation, AnomalyData(testResult.anomaly.isAnomaly, testResult.anomaly.importance, testResult.anomaly.boundsIntervalRelative))
+            executedOnISOFormat, testResult.modifiedZScore, testResult.deviation, AnomalyData(testResult.anomaly.isAnomaly, testResult.anomaly.importance))
 
         self._insertHistoryEntry(
             newDataPoint, testResult.anomaly.isAnomaly, alertId)
