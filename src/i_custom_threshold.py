@@ -2,6 +2,6 @@ from dataclasses import dataclass
 
 
 @dataclass
-class CustomThreshold:
+class ForcedThreshold:
     value: float
     mode: str

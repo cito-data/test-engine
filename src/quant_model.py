@@ -1,4 +1,4 @@
-from i_custom_threshold import CustomThreshold
+from i_custom_threshold import ForcedThreshold
 from test_type import QuantColumnTest, QuantMatTest
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -65,16 +65,16 @@ class _Analysis(ABC):
     _newDataPoint: pd.DataFrame
     _historicalData: pd.DataFrame
     _testType: Union[QuantMatTest, QuantColumnTest]
-    _customLowerThreshold: "Union[CustomThreshold, None]"
-    _customUpperThreshold: "Union[CustomThreshold, None]"
+    _forcedLowerThreshold: "Union[ForcedThreshold, None]"
+    _forcedUpperThreshold: "Union[ForcedThreshold, None]"
 
     @abstractmethod
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]",  testType: Union[QuantMatTest, QuantColumnTest], customLowerThreshold: "Union[CustomThreshold, None]", customUpperThreshold: "Union[CustomThreshold, None]") -> None:
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]",  testType: Union[QuantMatTest, QuantColumnTest], forcedLowerThreshold: "Union[ForcedThreshold, None]", forcedUpperThreshold: "Union[ForcedThreshold, None]") -> None:
         self._newDataPoint = self._buildNewDataPointFrame(newDataPoint)
         self._historicalData = self._buildHistoricalDF(historicalData)
         self._testType = testType
-        self._customLowerThreshold = customLowerThreshold
-        self._customUpperThreshold = customUpperThreshold
+        self._forcedLowerThreshold = forcedLowerThreshold
+        self._forcedUpperThreshold = forcedUpperThreshold
 
     def _buildNewDataPointFrame(self, newDataPoint: "tuple[str, float]") -> pd.DataFrame:
         return pd.DataFrame({'ds': pd.Series([newDataPoint[0]]), 'y': pd.Series([newDataPoint[1]])})
@@ -110,9 +110,9 @@ class _ZScoreAnalysis(_Analysis):
     _modifiedZScoreThresholdUpper: float
     _modifiedZScoreThresholdLower: float
 
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]",  testType: Union[QuantMatTest, QuantColumnTest], customLowerThreshold: "Union[CustomThreshold, None]", customUpperThreshold: "Union[CustomThreshold, None]") -> None:
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]",  testType: Union[QuantMatTest, QuantColumnTest], forcedLowerThreshold: "Union[ForcedThreshold, None]", forcedUpperThreshold: "Union[ForcedThreshold, None]", ) -> None:
         super().__init__(newDataPoint, historicalData, testType,
-                         customLowerThreshold, customUpperThreshold)
+                         forcedLowerThreshold, forcedUpperThreshold)
         self._modifiedZScoreThresholdUpper = 8 if self._testType == QuantColumnTest.ColumnNullness or self._testType == QuantColumnTest.ColumnNullness.value \
             or self._testType == QuantColumnTest.ColumnUniqueness or self._testType == QuantColumnTest.ColumnUniqueness.value else 6
         self._modifiedZScoreThresholdLower = -8 if self._testType == QuantColumnTest.ColumnNullness or self._testType == QuantColumnTest.ColumnNullness.value \
@@ -177,13 +177,13 @@ class _ZScoreAnalysis(_Analysis):
         self._medianAbsoluteDeviation = self._calculateMedianAbsoluteDeviation()
         self._meanAbsoluteDeviation = self._mad()
 
-        if self._customLowerThreshold != None:
-            if self._customLowerThreshold.mode == 'absolute':
+        if self._forcedLowerThreshold != None:
+            if self._forcedLowerThreshold.mode == 'absolute':
                 self._modifiedZScoreThresholdLower = self._calculateModifiedZScore(
-                    self._customLowerThreshold.value)
-                self._expectedValueLower = self._customLowerThreshold.value
-            elif self._customLowerThreshold.mode == 'relative':
-                value = self._median * self._customLowerThreshold.value
+                    self._forcedLowerThreshold.value)
+                self._expectedValueLower = self._forcedLowerThreshold.value
+            elif self._forcedLowerThreshold.mode == 'relative':
+                value = self._median * self._forcedLowerThreshold.value
                 self._modifiedZScoreThresholdLower = self._calculateModifiedZScore(
                     value)
                 self._expectedValueLower = value
@@ -191,13 +191,13 @@ class _ZScoreAnalysis(_Analysis):
             self._expectedValueLower = _adjustValue(self._calculateBound(
                 self._modifiedZScoreThresholdLower), self._testType)
 
-        if self._customUpperThreshold != None:
-            if self._customUpperThreshold.mode == 'absolute':
+        if self._forcedUpperThreshold != None:
+            if self._forcedUpperThreshold.mode == 'absolute':
                 self._modifiedZScoreThresholdUpper = self._calculateModifiedZScore(
-                    self._customUpperThreshold.value)
-                self._expectedValueUpper = self._customUpperThreshold.value
-            elif self._customUpperThreshold.mode == 'relative':
-                value = self._median * self._customUpperThreshold.value
+                    self._forcedUpperThreshold.value)
+                self._expectedValueUpper = self._forcedUpperThreshold.value
+            elif self._forcedUpperThreshold.mode == 'relative':
+                value = self._median * self._forcedUpperThreshold.value
                 self._modifiedZScoreThresholdUpper = self._calculateModifiedZScore(
                     value)
                 self._expectedValueUpper = value
@@ -230,9 +230,9 @@ class _ForecastAnalysis(_Analysis):
     _yearly_lower: Union[float, None]
     _yearly_upper: Union[float, None]
 
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]",  testType: Union[QuantMatTest, QuantColumnTest], customLowerThreshold: "Union[CustomThreshold, None]", customUpperThreshold: "Union[CustomThreshold, None]") -> None:
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]",  testType: Union[QuantMatTest, QuantColumnTest], forcedLowerThreshold: "Union[ForcedThreshold, None]", forcedUpperThreshold: "Union[ForcedThreshold, None]") -> None:
         super().__init__(newDataPoint, historicalData,
-                         testType, customLowerThreshold, customUpperThreshold)
+                         testType, forcedLowerThreshold, forcedUpperThreshold)
 
     def _runAnomalyCheck(self) -> _AnalysisResult:
         y = self._newDataPoint['y'].values[0]
@@ -251,16 +251,16 @@ class _ForecastAnalysis(_Analysis):
         expectedValue = _closestValue(
             expectedValues, (upperBound + lowerBound)/2)
 
-        if self._customLowerThreshold != None:
-            if self._customLowerThreshold.mode == 'absolute':
-                lowerBound = self._customLowerThreshold.value
-            elif self._customLowerThreshold.mode == 'relative':
-                lowerBound = expectedValue * self._customLowerThreshold.value
-        if self._customUpperThreshold != None:
-            if self._customUpperThreshold.mode == 'absolute':
-                upperBound = self._customUpperThreshold.value
-            elif self._customUpperThreshold.mode == 'relative':
-                upperBound = expectedValue * self._customUpperThreshold.value
+        if self._forcedLowerThreshold != None:
+            if self._forcedLowerThreshold.mode == 'absolute':
+                lowerBound = self._forcedLowerThreshold.value
+            elif self._forcedLowerThreshold.mode == 'relative':
+                lowerBound = expectedValue * self._forcedLowerThreshold.value
+        if self._forcedUpperThreshold != None:
+            if self._forcedUpperThreshold.mode == 'absolute':
+                upperBound = self._forcedUpperThreshold.value
+            elif self._forcedUpperThreshold.mode == 'relative':
+                upperBound = expectedValue * self._forcedUpperThreshold.value
 
         deviation = y / expectedValue - \
             1 if expectedValue != 0 else -9999
@@ -326,11 +326,11 @@ class _QuantModel(ABC):
     _testType: Union[QuantMatTest, QuantColumnTest]
 
     @ abstractmethod
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]",  testType: Union[QuantMatTest, QuantColumnTest], customLowerThreshold: "Union[CustomThreshold, None]", customUpperThreshold: "Union[CustomThreshold, None]") -> None:
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]",  testType: Union[QuantMatTest, QuantColumnTest], forcedLowerThreshold: "Union[ForcedThreshold, None]", forcedUpperThreshold: "Union[ForcedThreshold, None]", ) -> None:
         self._zScoreAnalysis = _ZScoreAnalysis(
-            newDataPoint, historicalData,  testType, customLowerThreshold, customUpperThreshold)
+            newDataPoint, historicalData,  testType, forcedLowerThreshold, forcedUpperThreshold)
         self._forecastAnalysis = _ForecastAnalysis(
-            newDataPoint, historicalData,  testType, customLowerThreshold, customUpperThreshold)
+            newDataPoint, historicalData,  testType, forcedLowerThreshold, forcedUpperThreshold)
         self._newDataPoint = newDataPoint
         self._testType = testType
 
@@ -374,6 +374,6 @@ class _QuantModel(ABC):
 
 
 class CommonModel(_QuantModel):
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest], customLowerThreshold: "Union[CustomThreshold, None]", customUpperThreshold: "Union[CustomThreshold, None]") -> None:
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest], forcedLowerThreshold: "Union[ForcedThreshold, None]", forcedUpperThreshold: "Union[ForcedThreshold, None]") -> None:
         super().__init__(newDataPoint, historicalData,
-                         testType, customLowerThreshold, customUpperThreshold)
+                         testType, forcedLowerThreshold, forcedUpperThreshold)

@@ -8,7 +8,7 @@ from new_materialization_data_query import MaterializationType, getColumnCountQu
 from qual_model import ColumnDefinition, SchemaChangeModel, ResultDto as QualResultDto
 from quant_model import ResultDto as QuantTestResultDto, CommonModel
 from query_snowflake import QuerySnowflake, QuerySnowflakeAuthDto, QuerySnowflakeRequestDto, QuerySnowflakeResponseDto
-from i_custom_threshold import CustomThreshold
+from i_custom_threshold import ForcedThreshold
 from test_execution_result import QualTestAlertData, QualTestData, QualTestExecutionResult, QuantTestAlertData, QuantTestData, QuantTestExecutionResult, AnomalyData
 from test_type import QuantColumnTest, QuantMatTest, QualMatTest
 from use_case import IUseCase
@@ -264,8 +264,8 @@ class ExecuteTest(IUseCase):
 
         return newData
 
-    def _runModel(self, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest], customLowerThreshold: "Union[CustomThreshold, None]", customUpperThreshold: "Union[CustomThreshold, None]") -> QuantTestResultDto:
-        return CommonModel(newData, historicalData, testType, customLowerThreshold, customUpperThreshold).run()
+    def _runModel(self, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest], forcedLowerThreshold: "Union[ForcedThreshold, None]", forcedUpperThreshold: "Union[ForcedThreshold, None]", ) -> QuantTestResultDto:
+        return CommonModel(newData, historicalData, testType, forcedLowerThreshold, forcedUpperThreshold, ).run()
 
     def _runTest(self, newDataPoint, historicalData: "list[tuple[str,float]]") -> QuantTestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
@@ -280,6 +280,8 @@ class ExecuteTest(IUseCase):
         customUpperThresholdMode = self._testDefinition['CUSTOM_UPPER_THRESHOLD_MODE']
         targetResourceId = self._testDefinition['TARGET_RESOURCE_ID']
         testType = self._testDefinition['TEST_TYPE']
+        feedbackLowerThreshold = self._testDefinition['FEEDBACK_LOWER_THRESHOLD']
+        feedbackUpperThreshold = self._testDefinition['FEEDBACK_UPPER_THRESHOLD']
 
         executedOn = datetime.utcnow()
         executedOnISOFormat = executedOn.isoformat()
@@ -296,9 +298,13 @@ class ExecuteTest(IUseCase):
 
             return QuantTestExecutionResult(testSuiteId, testType, self._executionId, targetResourceId, self._organizationId, True, None, None)
 
-        lowerThreshold = None if customLowerThreshold is None else CustomThreshold(
+        lowerThreshold = None if feedbackLowerThreshold is None else ForcedThreshold(
+            feedbackLowerThreshold, 'absolute')
+        upperThreshold = None if feedbackUpperThreshold is None else ForcedThreshold(
+            feedbackUpperThreshold, 'absolute')
+        lowerThreshold = lowerThreshold if customLowerThreshold is None else ForcedThreshold(
             customLowerThreshold, customLowerThresholdMode)
-        upperThreshold = None if customUpperThreshold is None else CustomThreshold(
+        upperThreshold = upperThreshold if customUpperThreshold is None else ForcedThreshold(
             customUpperThreshold, customUpperThresholdMode)
 
         testResult = self._runModel(
