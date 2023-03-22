@@ -6,8 +6,7 @@ from qual_model import SchemaDiff
 
 @dataclass
 class AnomalyData:
-    isAnomaly: bool
-    importance: Union[float, None]
+    importance: float
 
 
 @dataclass
@@ -17,9 +16,12 @@ class _TestData:
 
 @dataclass
 class QuantTestData(_TestData):
+    detectedValue: float
+    expectedUpperBound: float
+    expectedLowerBound: float
     modifiedZScore: float
     deviation: float
-    anomaly: AnomalyData
+    anomaly: Union[AnomalyData, None]
 
 
 @dataclass
@@ -40,11 +42,8 @@ class _AlertData:
 
 @dataclass
 class QuantTestAlertData(_AlertData):
-    expectedValue: Union[float, None]
-    expectedUpperBound: Union[float, None]
-    expectedLowerBound: Union[float, None]
-    columnName: Union[str, None]
-    value: float
+    expectedValue: float
+    columnName: str
 
 
 @dataclass

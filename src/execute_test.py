@@ -186,11 +186,11 @@ class ExecuteTest(IUseCase):
              'value': testResult.expectedValueLower},
             {'name': 'deviation', 'type': 'float', 'value': testResult.deviation},
             {'name': 'is_anomalous', 'type': 'boolean',
-                'value': testResult.anomaly.isAnomaly},
+                'value': bool(testResult.anomaly)},
             {'name': 'test_id', 'type': 'string', 'value': self._testSuiteId},
             {'name': 'execution_id', 'type': 'string', 'value': self._executionId},
             {'name': 'importance', 'type': 'float',
-                'value': testResult.anomaly.importance},
+                'value': testResult.anomaly.importance if testResult.anomaly else None},
         ]
 
         testResultQuery = getInsertQuery(
@@ -264,8 +264,8 @@ class ExecuteTest(IUseCase):
 
         return newData
 
-    def _runModel(self, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest], importanceThreshold: float,  customLowerThreshold: "Union[CustomThreshold, None]", customUpperThreshold: "Union[CustomThreshold, None]") -> QuantTestResultDto:
-        return CommonModel(newData, historicalData, testType, importanceThreshold,   customLowerThreshold, customUpperThreshold).run()
+    def _runModel(self, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest], customLowerThreshold: "Union[CustomThreshold, None]", customUpperThreshold: "Union[CustomThreshold, None]") -> QuantTestResultDto:
+        return CommonModel(newData, historicalData, testType, customLowerThreshold, customUpperThreshold).run()
 
     def _runTest(self, newDataPoint, historicalData: "list[tuple[str,float]]") -> QuantTestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
@@ -280,7 +280,6 @@ class ExecuteTest(IUseCase):
         customUpperThresholdMode = self._testDefinition['CUSTOM_UPPER_THRESHOLD_MODE']
         targetResourceId = self._testDefinition['TARGET_RESOURCE_ID']
         testType = self._testDefinition['TEST_TYPE']
-        importanceThreshold = self._testDefinition['IMPORTANCE_THRESHOLD']
 
         executedOn = datetime.utcnow()
         executedOnISOFormat = executedOn.isoformat()
@@ -303,13 +302,13 @@ class ExecuteTest(IUseCase):
             customUpperThreshold, customUpperThresholdMode)
 
         testResult = self._runModel(
-            (executedOnISOFormat, newDataPoint), historicalData, testType, importanceThreshold,  lowerThreshold, upperThreshold)
+            (executedOnISOFormat, newDataPoint), historicalData, testType, lowerThreshold, upperThreshold)
 
         self._insertResultEntry(testResult)
 
         alertData = None
         alertId = None
-        if testResult.anomaly.isAnomaly:
+        if testResult.anomaly:
             print('Anomaly detected for test suite: ' + testSuiteId +
                   ' and organization: ' + self._organizationId)
             anomalyMessage = getAnomalyMessage(
@@ -318,14 +317,15 @@ class ExecuteTest(IUseCase):
             self._insertAlertEntry(
                 alertId, anomalyMessage, CitoTableType.TestAlerts)
 
-            alertData = QuantTestAlertData(alertId, anomalyMessage, databaseName, schemaName, materializationName, materializationType, testResult.expectedValue, testResult.expectedValueUpper,
-                                           testResult.expectedValueLower, columnName, newDataPoint)
+            alertData = QuantTestAlertData(alertId, anomalyMessage, databaseName, schemaName,
+                                           materializationName, materializationType, testResult.expectedValue, columnName)
 
         testData = QuantTestData(
-            executedOnISOFormat, testResult.modifiedZScore, testResult.deviation, AnomalyData(testResult.anomaly.isAnomaly, testResult.anomaly.importance))
+            executedOnISOFormat, newDataPoint, testResult.expectedValueUpper,
+            testResult.expectedValueLower, testResult.modifiedZScore, testResult.deviation, AnomalyData(testResult.anomaly.importance) if testResult.anomaly else None)
 
         self._insertHistoryEntry(
-            newDataPoint, testResult.anomaly.isAnomaly, alertId)
+            newDataPoint, bool(testResult.anomaly), alertId)
 
         return QuantTestExecutionResult(testSuiteId, testType, self._executionId, targetResourceId, self._organizationId, False, testData, alertData)
 

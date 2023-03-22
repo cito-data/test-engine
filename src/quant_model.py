@@ -29,8 +29,7 @@ class _ZScoreResult(_AnalysisResult):
 
 @dataclass
 class _AnomalyResult:
-    isAnomaly: bool
-    importance: Union[float, None]
+    importance: float
 
 
 @dataclass
@@ -45,7 +44,7 @@ class ResultDto:
 
     deviation: float
 
-    anomaly: _AnomalyResult
+    anomaly: Union[_AnomalyResult, None]
 
 
 def _closestValue(arr: "list[float]", x: float) -> float:
@@ -105,15 +104,19 @@ class _ZScoreAnalysis(_Analysis):
     _median: float
     _medianAbsoluteDeviation: float
     _meanAbsoluteDeviation: Union[float, None]
-    _modifiedZScoreThresholdUpper: float = 3.0
-    _modifiedZScoreThresholdLower: float = - 3.0
     _expectedValue: float
     _expectedValueUpper: float
     _expectedValueLower: float
+    _modifiedZScoreThresholdUpper: float
+    _modifiedZScoreThresholdLower: float
 
     def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]",  testType: Union[QuantMatTest, QuantColumnTest], customLowerThreshold: "Union[CustomThreshold, None]", customUpperThreshold: "Union[CustomThreshold, None]") -> None:
         super().__init__(newDataPoint, historicalData, testType,
                          customLowerThreshold, customUpperThreshold)
+        self._modifiedZScoreThresholdUpper = 8 if self._testType == QuantColumnTest.ColumnNullness or self._testType == QuantColumnTest.ColumnNullness.value \
+            or self._testType == QuantColumnTest.ColumnUniqueness or self._testType == QuantColumnTest.ColumnUniqueness.value else 6
+        self._modifiedZScoreThresholdLower = -8 if self._testType == QuantColumnTest.ColumnNullness or self._testType == QuantColumnTest.ColumnNullness.value \
+            or self._testType == QuantColumnTest.ColumnUniqueness or self._testType == QuantColumnTest.ColumnUniqueness.value else -6
 
     def _absoluteDeviation(self, x) -> float:
         return abs(x - self._median)
@@ -320,18 +323,15 @@ class _QuantModel(ABC):
     _zScoreAnalysis: _ZScoreAnalysis
     _forecastAnalysis: _ForecastAnalysis
 
-    _importanceThreshold: float
-
     _testType: Union[QuantMatTest, QuantColumnTest]
 
     @ abstractmethod
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]",  testType: Union[QuantMatTest, QuantColumnTest], importanceThreshold: float,  customLowerThreshold: "Union[CustomThreshold, None]", customUpperThreshold: "Union[CustomThreshold, None]") -> None:
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]",  testType: Union[QuantMatTest, QuantColumnTest], customLowerThreshold: "Union[CustomThreshold, None]", customUpperThreshold: "Union[CustomThreshold, None]") -> None:
         self._zScoreAnalysis = _ZScoreAnalysis(
             newDataPoint, historicalData,  testType, customLowerThreshold, customUpperThreshold)
         self._forecastAnalysis = _ForecastAnalysis(
             newDataPoint, historicalData,  testType, customLowerThreshold, customUpperThreshold)
         self._newDataPoint = newDataPoint
-        self._importanceThreshold = importanceThreshold
         self._testType = testType
 
     @ staticmethod
@@ -358,28 +358,22 @@ class _QuantModel(ABC):
         isAnomaly = bool(zScoreAnalysisResult.isAnomaly and forecastAnalysisResult.isAnomaly and (
             self._newDataPoint[1] < expectedValueLower or self._newDataPoint[1] > expectedValueUpper))
 
-        importance = None
+        anomaly = None
         if (isAnomaly):
-            if self._importanceThreshold == None:
-                raise Exception('Missing importance threshold')
-
             y = self._newDataPoint[1]
 
             importance = self._calcAnomalyImportance(
                 y, expectedValueLower, expectedValueUpper)
 
-            globalImportanceThreshold = .3 if self._testType == QuantColumnTest.ColumnNullness or self._testType == QuantColumnTest.ColumnNullness.value \
-                or self._testType == QuantColumnTest.ColumnUniqueness or self._testType == QuantColumnTest.ColumnUniqueness.value else .1
-
-            isAnomaly = bool(importance > globalImportanceThreshold)
+            anomaly = _AnomalyResult(importance)
 
         deviation = zScoreAnalysisResult.deviation if abs(zScoreAnalysisResult.expectedValue - self._newDataPoint[1]) <= abs(
             forecastAnalysisResult.expectedValue - self._newDataPoint[1]) else forecastAnalysisResult.deviation
 
-        return ResultDto(zScoreAnalysisResult.meanAbsoluteDeviation, zScoreAnalysisResult.medianAbsoluteDeviation, zScoreAnalysisResult.modifiedZScore, expectedValue, expectedValueUpper, expectedValueLower, deviation, _AnomalyResult(isAnomaly, importance))
+        return ResultDto(zScoreAnalysisResult.meanAbsoluteDeviation, zScoreAnalysisResult.medianAbsoluteDeviation, zScoreAnalysisResult.modifiedZScore, expectedValue, expectedValueUpper, expectedValueLower, deviation, anomaly)
 
 
 class CommonModel(_QuantModel):
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest], importanceThreshold: float,  customLowerThreshold: "Union[CustomThreshold, None]", customUpperThreshold: "Union[CustomThreshold, None]") -> None:
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest], customLowerThreshold: "Union[CustomThreshold, None]", customUpperThreshold: "Union[CustomThreshold, None]") -> None:
         super().__init__(newDataPoint, historicalData,
-                         testType, importanceThreshold,  customLowerThreshold, customUpperThreshold)
+                         testType, customLowerThreshold, customUpperThreshold)
