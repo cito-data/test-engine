@@ -19,7 +19,7 @@ class QuantTestData(_TestData):
     detectedValue: float
     expectedUpperBound: float
     expectedLowerBound: float
-    modifiedZScore: float
+    modifiedZScore: Union[float, None]
     deviation: float
     anomaly: Union[AnomalyData, None]
 

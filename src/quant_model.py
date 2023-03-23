@@ -24,7 +24,7 @@ class _ZScoreResult(_AnalysisResult):
     median: float
     medianAbsoluteDeviation: float
     meanAbsoluteDeviation: Union[float, None]
-    modifiedZScore: float
+    modifiedZScore: Union[float, None]
 
 
 @dataclass
@@ -36,7 +36,7 @@ class _AnomalyResult:
 class ResultDto:
     meanAbsoluteDeviation: Union[float, None]
     medianAbsoluteDeviation: float
-    modifiedZScore: float
+    modifiedZScore: Union[float, None]
 
     expectedValue: float
     expectedValueUpper: float
@@ -107,8 +107,8 @@ class _ZScoreAnalysis(_Analysis):
     _expectedValue: float
     _expectedValueUpper: float
     _expectedValueLower: float
-    _modifiedZScoreThresholdUpper: float
-    _modifiedZScoreThresholdLower: float
+    _modifiedZScoreThresholdUpper: Union[float, None]
+    _modifiedZScoreThresholdLower: Union[float, None]
 
     def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]",  testType: Union[QuantMatTest, QuantColumnTest], forcedLowerThreshold: "Union[ForcedThreshold, None]", forcedUpperThreshold: "Union[ForcedThreshold, None]", ) -> None:
         super().__init__(newDataPoint, historicalData, testType,
@@ -131,26 +131,27 @@ class _ZScoreAnalysis(_Analysis):
         values = self._historicalData['y']
         return (values - values.mean()).abs().mean()
 
-    def _calculateModifiedZScore(self, y: float) -> float:
+    def _calculateModifiedZScore(self, y: float) -> Union[float, None]:
         # https://www.ibm.com/docs/en/cognos-analytics/11.1.0?topic=terms-modified-z-score
 
         if self._medianAbsoluteDeviation == 0 and self._meanAbsoluteDeviation == 0:
-            return float('nan')
+            return None
         if self._medianAbsoluteDeviation == 0:
             self._meanAbsoluteDeviation = self._mad()
             return (y - self._median)/(1.253314*self._meanAbsoluteDeviation)
         return (y - self._median)/(1.486*self._medianAbsoluteDeviation)
 
-    def _calculateBound(self, boundaryValue: float) -> float:
-        if self._meanAbsoluteDeviation == None:
-            raise Exception(
-                'Cannot calc bound. Mean abs deviation not available')
+    def _calculateBound(self, boundaryValue: Union[float, None]) -> Union[float, None]:
+        if boundaryValue is None:
+            return None
 
-        if self._medianAbsoluteDeviation == 0:
-            return (1.253314*self._meanAbsoluteDeviation)*boundaryValue + self._median
-        return (1.486*self._medianAbsoluteDeviation)*boundaryValue + self._median
+        if self._medianAbsoluteDeviation != 0:
+            return (1.486*self._medianAbsoluteDeviation)*boundaryValue + self._median
+        if self._meanAbsoluteDeviation is None:
+            return None
+        return (1.253314*self._meanAbsoluteDeviation)*boundaryValue + self._median
 
-    def _runAnomalyCheck(self, newMZScore: float) -> _AnalysisResult:
+    def _runAnomalyCheck(self, newMZScore: Union[float, None]) -> _AnalysisResult:
         y = self._newDataPoint['y'].values[0]
 
         if y == None:
@@ -159,12 +160,17 @@ class _ZScoreAnalysis(_Analysis):
 
         deviation = y / \
             self._expectedValue - 1 if self._expectedValue > 0 else 0
-        isAnomaly = bool(
-            (math.isnan(newMZScore) and deviation != 0) or newMZScore > self._modifiedZScoreThresholdUpper or newMZScore < self._modifiedZScoreThresholdLower)
+
+        isAnomaly = False
+        if newMZScore is None or self._modifiedZScoreThresholdUpper is None or self._modifiedZScoreThresholdLower is None:
+            isAnomaly = bool(deviation != 0)
+        else:
+            isAnomaly = bool(
+                newMZScore > self._modifiedZScoreThresholdUpper or newMZScore < self._modifiedZScoreThresholdLower)
 
         return _AnalysisResult(self._expectedValue, self._expectedValueUpper, self._expectedValueLower, deviation, isAnomaly)
 
-    def _calculateNewModifiedZScore(self) -> float:
+    def _calculateNewModifiedZScore(self) -> Union[float, None]:
         y = self._newDataPoint['y'].values[0]
 
         if y == None:
@@ -177,6 +183,8 @@ class _ZScoreAnalysis(_Analysis):
         self._medianAbsoluteDeviation = self._calculateMedianAbsoluteDeviation()
         self._meanAbsoluteDeviation = self._mad()
 
+        self._expectedValue = _adjustValue(self._median, self._testType)
+
         if self._forcedLowerThreshold != None:
             if self._forcedLowerThreshold.mode == 'absolute':
                 self._modifiedZScoreThresholdLower = self._calculateModifiedZScore(
@@ -188,8 +196,10 @@ class _ZScoreAnalysis(_Analysis):
                     value)
                 self._expectedValueLower = value
         else:
-            self._expectedValueLower = _adjustValue(self._calculateBound(
-                self._modifiedZScoreThresholdLower), self._testType)
+            calculatedBound = self._calculateBound(
+                self._modifiedZScoreThresholdLower)
+            self._expectedValueLower = _adjustValue(
+                calculatedBound if calculatedBound else self._expectedValue, self._testType)
 
         if self._forcedUpperThreshold != None:
             if self._forcedUpperThreshold.mode == 'absolute':
@@ -202,10 +212,10 @@ class _ZScoreAnalysis(_Analysis):
                     value)
                 self._expectedValueUpper = value
         else:
+            calculatedBound = self._calculateBound(
+                self._modifiedZScoreThresholdUpper)
             self._expectedValueUpper = _adjustValue(
-                self._calculateBound(self._modifiedZScoreThresholdUpper), self._testType)
-
-        self._expectedValue = _adjustValue(self._median, self._testType)
+                calculatedBound if calculatedBound else self._expectedValue, self._testType)
 
         newModifiedZScore = self._calculateNewModifiedZScore()
         anomalyCheckResult = self._runAnomalyCheck(newModifiedZScore)
