@@ -8,7 +8,7 @@ from new_materialization_data_query import MaterializationType, getColumnCountQu
 from qual_model import ColumnDefinition, SchemaChangeModel, ResultDto as QualResultDto
 from quant_model import ResultDto as QuantTestResultDto, CommonModel
 from query_snowflake import QuerySnowflake, QuerySnowflakeAuthDto, QuerySnowflakeRequestDto, QuerySnowflakeResponseDto
-from i_custom_threshold import ForcedThreshold
+from i_forced_threshold import ForcedThreshold, ForcedThresholdMode, ForcedThresholdType
 from test_execution_result import QualTestAlertData, QualTestData, QualTestExecutionResult, QuantTestAlertData, QuantTestData, QuantTestExecutionResult, AnomalyData
 from test_type import QuantColumnTest, QuantMatTest, QualMatTest
 from use_case import IUseCase
@@ -299,13 +299,27 @@ class ExecuteTest(IUseCase):
             return QuantTestExecutionResult(testSuiteId, testType, self._executionId, targetResourceId, self._organizationId, True, None, None)
 
         lowerThreshold = None if feedbackLowerThreshold is None else ForcedThreshold(
-            feedbackLowerThreshold, 'absolute')
+            feedbackLowerThreshold, ForcedThresholdMode.ABSOLUTE, ForcedThresholdType.FEEDBACK)
         upperThreshold = None if feedbackUpperThreshold is None else ForcedThreshold(
-            feedbackUpperThreshold, 'absolute')
+            feedbackUpperThreshold, ForcedThresholdMode.ABSOLUTE, ForcedThresholdType.FEEDBACK)
+
+        forcedLowerThresholdMode = ForcedThresholdMode.ABSOLUTE
+        if customLowerThresholdMode == ForcedThresholdMode.RELATIVE.value:
+            forcedLowerThresholdMode = ForcedThresholdMode.RELATIVE
+        elif customLowerThresholdMode != ForcedThresholdMode.ABSOLUTE.value:
+            raise Exception('Invalid custom lower threshold mode')
+
         lowerThreshold = lowerThreshold if customLowerThreshold is None else ForcedThreshold(
-            customLowerThreshold, customLowerThresholdMode)
+            customLowerThreshold, forcedLowerThresholdMode, ForcedThresholdType.CUSTOM)
+
+        forcedUpperThresholdMode = ForcedThresholdMode.ABSOLUTE
+        if customUpperThresholdMode == ForcedThresholdMode.RELATIVE.value:
+            forcedUpperThresholdMode = ForcedThresholdMode.RELATIVE
+        elif customUpperThresholdMode != ForcedThresholdMode.ABSOLUTE.value:
+            raise Exception('Invalid custom upper threshold mode')
+
         upperThreshold = upperThreshold if customUpperThreshold is None else ForcedThreshold(
-            customUpperThreshold, customUpperThresholdMode)
+            customUpperThreshold, forcedUpperThresholdMode, ForcedThresholdType.CUSTOM)
 
         testResult = self._runModel(
             (executedOnISOFormat, newDataPoint), historicalData, testType, lowerThreshold, upperThreshold)

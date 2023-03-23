@@ -1,4 +1,4 @@
-from i_custom_threshold import ForcedThreshold
+from i_forced_threshold import ForcedThreshold, ForcedThresholdMode, ForcedThresholdType
 from test_type import QuantColumnTest, QuantMatTest
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -141,15 +141,15 @@ class _ZScoreAnalysis(_Analysis):
             return (y - self._median)/(1.253314*self._meanAbsoluteDeviation)
         return (y - self._median)/(1.486*self._medianAbsoluteDeviation)
 
-    def _calculateBound(self, boundaryValue: Union[float, None]) -> Union[float, None]:
-        if boundaryValue is None:
+    def _calculateBound(self, zScoreBoundary: Union[float, None]) -> Union[float, None]:
+        if zScoreBoundary is None:
             return None
 
         if self._medianAbsoluteDeviation != 0:
-            return (1.486*self._medianAbsoluteDeviation)*boundaryValue + self._median
+            return (1.486*self._medianAbsoluteDeviation)*zScoreBoundary + self._median
         if self._meanAbsoluteDeviation is None:
             return None
-        return (1.253314*self._meanAbsoluteDeviation)*boundaryValue + self._median
+        return (1.253314*self._meanAbsoluteDeviation)*zScoreBoundary + self._median
 
     def _runAnomalyCheck(self, newMZScore: Union[float, None]) -> _AnalysisResult:
         y = self._newDataPoint['y'].values[0]
@@ -186,11 +186,14 @@ class _ZScoreAnalysis(_Analysis):
         self._expectedValue = _adjustValue(self._median, self._testType)
 
         if self._forcedLowerThreshold != None:
-            if self._forcedLowerThreshold.mode == 'absolute':
-                self._modifiedZScoreThresholdLower = self._calculateModifiedZScore(
+            if self._forcedLowerThreshold.mode == ForcedThresholdMode.ABSOLUTE:
+                localMZScoreLower = self._calculateModifiedZScore(
                     self._forcedLowerThreshold.value)
+                if localMZScoreLower is not None and self._forcedLowerThreshold.type == ForcedThresholdType.FEEDBACK:
+                    localMZScoreLower = localMZScoreLower - 3
+                self._modifiedZScoreThresholdLower = localMZScoreLower
                 self._expectedValueLower = self._forcedLowerThreshold.value
-            elif self._forcedLowerThreshold.mode == 'relative':
+            elif self._forcedLowerThreshold.mode == ForcedThresholdMode.RELATIVE:
                 value = self._median * self._forcedLowerThreshold.value
                 self._modifiedZScoreThresholdLower = self._calculateModifiedZScore(
                     value)
@@ -202,11 +205,14 @@ class _ZScoreAnalysis(_Analysis):
                 calculatedBound if calculatedBound else self._expectedValue, self._testType)
 
         if self._forcedUpperThreshold != None:
-            if self._forcedUpperThreshold.mode == 'absolute':
-                self._modifiedZScoreThresholdUpper = self._calculateModifiedZScore(
+            if self._forcedUpperThreshold.mode == ForcedThresholdMode.ABSOLUTE:
+                localMZScoreUpper = self._calculateModifiedZScore(
                     self._forcedUpperThreshold.value)
+                if localMZScoreUpper is not None and self._forcedUpperThreshold.type == ForcedThresholdType.FEEDBACK:
+                    localMZScoreUpper = localMZScoreUpper + 3
+                self._modifiedZScoreThresholdUpper = localMZScoreUpper
                 self._expectedValueUpper = self._forcedUpperThreshold.value
-            elif self._forcedUpperThreshold.mode == 'relative':
+            elif self._forcedUpperThreshold.mode == ForcedThresholdMode.RELATIVE:
                 value = self._median * self._forcedUpperThreshold.value
                 self._modifiedZScoreThresholdUpper = self._calculateModifiedZScore(
                     value)
@@ -262,14 +268,14 @@ class _ForecastAnalysis(_Analysis):
             expectedValues, (upperBound + lowerBound)/2)
 
         if self._forcedLowerThreshold != None:
-            if self._forcedLowerThreshold.mode == 'absolute':
+            if self._forcedLowerThreshold.mode == ForcedThresholdMode.ABSOLUTE:
                 lowerBound = self._forcedLowerThreshold.value
-            elif self._forcedLowerThreshold.mode == 'relative':
+            elif self._forcedLowerThreshold.mode == ForcedThresholdMode.RELATIVE:
                 lowerBound = expectedValue * self._forcedLowerThreshold.value
         if self._forcedUpperThreshold != None:
-            if self._forcedUpperThreshold.mode == 'absolute':
+            if self._forcedUpperThreshold.mode == ForcedThresholdMode.ABSOLUTE:
                 upperBound = self._forcedUpperThreshold.value
-            elif self._forcedUpperThreshold.mode == 'relative':
+            elif self._forcedUpperThreshold.mode == ForcedThresholdMode.RELATIVE:
                 upperBound = expectedValue * self._forcedUpperThreshold.value
 
         deviation = y / expectedValue - \
