@@ -291,11 +291,9 @@ class ExecuteTest(IUseCase):
             executedOnISOFormat, CitoTableType.TestExecutions)
 
         historicalDataLength = len(historicalData)
-        # Disabled for E. testing
-        # belowDayBoundary = True if historicalDataLength == 0 else (executedOn - datetime.fromisoformat(
-        #     historicalData[0][0].replace('Z', ''))).days <= self._MIN_HISTORICAL_DATA_DAY_NUMBER_CONDITION
-        # if (historicalDataLength <= self._MIN_HISTORICAL_DATA_TEST_NUMBER_CONDITION or belowDayBoundary):
-        if (historicalDataLength <= self._MIN_HISTORICAL_DATA_TEST_NUMBER_CONDITION):
+        belowDayBoundary = True if historicalDataLength == 0 else (executedOn - datetime.fromisoformat(
+            historicalData[0][0].replace('Z', ''))).days <= self._MIN_HISTORICAL_DATA_DAY_NUMBER_CONDITION
+        if (belowDayBoundary and historicalDataLength <= self._MIN_HISTORICAL_DATA_TEST_NUMBER_CONDITION):
             self._insertHistoryEntry(
                 newDataPoint, False, None)
 
