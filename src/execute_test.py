@@ -1,8 +1,8 @@
 from dataclasses import dataclass, asdict
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 from typing import Any, Union
-from cito_data_query import CitoTableType, getHistoryQuery, getInsertQuery, getTestQuery, getLastMatSchemaQuery
+from cito_data_query import CitoTableType, getHistoryQuery, getInsertQuery, getTestQuery, getLastMatSchemaQuery, getUpdateQuery
 from new_column_data_query import getCardinalityQuery, getDistributionQuery, getNullnessQuery, getUniquenessQuery, getFreshnessQuery as getColumnFreshnessQuery
 from new_materialization_data_query import MaterializationType, getColumnCountQuery, getFreshnessQuery, getRowCountQuery, getSchemaChangeQuery
 from qual_model import ColumnDefinition, SchemaChangeModel, ResultDto as QualResultDto
@@ -265,6 +265,15 @@ class ExecuteTest(IUseCase):
 
         return newData
 
+    def _insertLastAlertSent(self, lastAlertSent, is_qual_test):
+        table = CitoTableType.TestSuitesQual if is_qual_test else CitoTableType.TestSuites
+        lastAlertSentQuery = getUpdateQuery('last_alert_sent', lastAlertSent, table, self._testDefinition['ID'])
+        lastAlertSentInsertResult = self._querySnowflake.execute(
+            QuerySnowflakeRequestDto(lastAlertSentQuery, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
+
+        if not lastAlertSentInsertResult.success:
+            raise Exception(lastAlertSentInsertResult.error)
+
     def _runModel(self, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest], forcedLowerThreshold: "Union[ForcedThreshold, None]", forcedUpperThreshold: "Union[ForcedThreshold, None]", ) -> QuantTestResultDto:
         return CommonModel(newData, historicalData, testType, forcedLowerThreshold, forcedUpperThreshold, ).run()
 
@@ -283,6 +292,7 @@ class ExecuteTest(IUseCase):
         testType = self._testDefinition['TEST_TYPE']
         feedbackLowerThreshold = self._testDefinition['FEEDBACK_LOWER_THRESHOLD']
         feedbackUpperThreshold = self._testDefinition['FEEDBACK_UPPER_THRESHOLD']
+        lastAlertSent = self._testDefinition['LAST_ALERT_SENT']
 
         executedOn = datetime.utcnow()
         executedOnISOFormat = executedOn.isoformat()
@@ -297,7 +307,7 @@ class ExecuteTest(IUseCase):
             self._insertHistoryEntry(
                 newDataPoint, False, None)
 
-            return QuantTestExecutionResult(testSuiteId, testType, self._executionId, targetResourceId, self._organizationId, True, None, None)
+            return QuantTestExecutionResult(testSuiteId, testType, self._executionId, targetResourceId, self._organizationId, True, None, None, lastAlertSent)
 
         lowerThreshold = None if feedbackLowerThreshold is None else ForcedThreshold(
             feedbackLowerThreshold, ForcedThresholdMode.ABSOLUTE, ForcedThresholdType.FEEDBACK)
@@ -341,6 +351,20 @@ class ExecuteTest(IUseCase):
             alertData = QuantTestAlertData(alertId, anomalyMessage, databaseName, schemaName,
                                            materializationName, materializationType, testResult.expectedValue, columnName)
 
+            # write to Snowflake if current anomaly is 24 hours past lastAlertSent
+            if not lastAlertSent:
+                lastAlertSent = datetime.utcnow().isoformat() + 'Z'
+                self._insertLastAlertSent(lastAlertSent, is_qual_test=False)
+            else:
+                # converting lastAlertSent from timestamp_ntz to datetime
+                lastAlertSentDt = datetime.fromisoformat(lastAlertSent)
+                currTime = datetime.utcnow()
+                diff = currTime - lastAlertSentDt
+                if diff >= timedelta(hours=24):
+                    # convert current time to timestamp_ntz
+                    currTimeNtz = currTime.isoformat() + 'Z'
+                    self._insertLastAlertSent(currTimeNtz, is_qual_test=False)
+
         testData = QuantTestData(
             executedOnISOFormat, newDataPoint, testResult.expectedValueUpper,
             testResult.expectedValueLower, testResult.modifiedZScore, testResult.deviation, AnomalyData(testResult.anomaly.importance) if testResult.anomaly else None)
@@ -348,7 +372,7 @@ class ExecuteTest(IUseCase):
         self._insertHistoryEntry(
             newDataPoint, bool(testResult.anomaly), alertId)
 
-        return QuantTestExecutionResult(testSuiteId, testType, self._executionId, targetResourceId, self._organizationId, False, testData, alertData)
+        return QuantTestExecutionResult(testSuiteId, testType, self._executionId, targetResourceId, self._organizationId, False, testData, alertData, lastAlertSent)
 
     def _runSchemaChangeModel(self, oldSchema: "dict[str, ColumnDefinition]", newSchema: "dict[str, ColumnDefinition]") -> QualResultDto:
         return SchemaChangeModel(newSchema, oldSchema).run()
@@ -362,6 +386,7 @@ class ExecuteTest(IUseCase):
         testSuiteId = self._testDefinition['ID']
         testType = self._testDefinition['TEST_TYPE']
         targetResourceId = self._testDefinition['TARGET_RESOURCE_ID']
+        lastAlertSent = self._testDefinition['LAST_ALERT_SENT']
 
         executedOn = datetime.utcnow().isoformat()
 
@@ -385,12 +410,26 @@ class ExecuteTest(IUseCase):
             alertData = QualTestAlertData(alertId, anomalyMessage, databaseName, schemaName,
                                           materializationName, materializationType, testResult.deviations)
 
+            # write to Snowflake if current anomaly is 24 hours past lastAlertSent
+            if not lastAlertSent:
+                lastAlertSent = datetime.utcnow().isoformat() + 'Z'
+                self._insertLastAlertSent(lastAlertSent, is_qual_test=False)
+            else:
+                # converting lastAlertSent from timestamp_ntz to datetime
+                lastAlertSentDt = datetime.fromisoformat(lastAlertSent)
+                currTime = datetime.utcnow()
+                diff = currTime - lastAlertSentDt
+                if diff >= timedelta(hours=24):
+                    # convert current time to timestamp_ntz
+                    currTimeNtz = currTime.isoformat() + 'Z'
+                    self._insertLastAlertSent(currTimeNtz, is_qual_test=False)
+
         self._insertQualHistoryEntry(
             newSchema, testResult.isIdentical, alertId)
 
         testData = QualTestData(
             executedOn, testResult.deviations, testResult.isIdentical)
-        return QualTestExecutionResult(testSuiteId, testType, self._executionId, targetResourceId, self._organizationId, testData, alertData)
+        return QualTestExecutionResult(testSuiteId, testType, self._executionId, targetResourceId, self._organizationId, testData, alertData, lastAlertSent)
 
     def _runMaterializationRowCountTest(self) -> QuantTestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
