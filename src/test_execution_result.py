@@ -65,9 +65,11 @@ class QuantTestExecutionResult(_TestExecutionResult):
     isWarmup: bool
     testData: Union[QuantTestData, None]
     alertData: Union[QuantTestAlertData, None]
+    lastAlertSent: str
 
 
 @dataclass
 class QualTestExecutionResult(_TestExecutionResult):
     testData: QualTestData
     alertData: Union[QualTestAlertData, None]
+    lastAlertSent: str

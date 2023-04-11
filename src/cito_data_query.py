@@ -54,3 +54,10 @@ def getTestQuery(testSuiteId: str, testType: Union[QuantColumnTest, QuantMatTest
     return f""" select * from cito.observability.{CitoTableType.TestSuites.value if testType in quantColumnTest or testType in quantMatTest else CitoTableType.TestSuitesQual.value}
   where id = '{testSuiteId}';
   """
+
+def getUpdateQuery(columnName: str, value: str, tableType: CitoTableType, testSuiteId: str):
+    return f"""
+  update cito.observability.{tableType.value} 
+  set {columnName} = '{value}'
+  where id = '{testSuiteId}';
+  """
