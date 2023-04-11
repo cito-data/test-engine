@@ -265,14 +265,28 @@ class ExecuteTest(IUseCase):
 
         return newData
 
-    def _insertLastAlertSent(self, lastAlertSent, is_qual_test):
-        table = CitoTableType.TestSuitesQual if is_qual_test else CitoTableType.TestSuites
-        lastAlertSentQuery = getUpdateQuery('last_alert_sent', lastAlertSent, table, self._testDefinition['ID'])
+    def _updateLastAlertSent(self, lastAlertSent: str, isQualTest: bool):
+        tableType = CitoTableType.TestSuitesQual if isQualTest else CitoTableType.TestSuites
+        lastAlertSentQuery = getUpdateQuery('last_alert_sent', lastAlertSent, tableType, self._testDefinition['ID'])
         lastAlertSentInsertResult = self._querySnowflake.execute(
             QuerySnowflakeRequestDto(lastAlertSentQuery, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
 
         if not lastAlertSentInsertResult.success:
             raise Exception(lastAlertSentInsertResult.error)
+
+    def _calculateLastAlertSent(self, lastAlertSent: str, isQualTest: bool):
+        if not lastAlertSent:
+            lastAlertSent = datetime.utcnow().isoformat()
+            self._updateLastAlertSent(lastAlertSent, isQualTest=isQualTest)
+        else:
+            lastAlertSentDt = datetime.fromisoformat(lastAlertSent)
+            currTime = datetime.utcnow()
+            diff = currTime - lastAlertSentDt
+            if diff >= timedelta(hours=24):
+                currTimeISO = currTime.isoformat()
+                self._updateLastAlertSent(currTimeISO, isQualTest=isQualTest)
+        
+        return lastAlertSent
 
     def _runModel(self, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest], forcedLowerThreshold: "Union[ForcedThreshold, None]", forcedUpperThreshold: "Union[ForcedThreshold, None]", ) -> QuantTestResultDto:
         return CommonModel(newData, historicalData, testType, forcedLowerThreshold, forcedUpperThreshold, ).run()
@@ -351,19 +365,7 @@ class ExecuteTest(IUseCase):
             alertData = QuantTestAlertData(alertId, anomalyMessage, databaseName, schemaName,
                                            materializationName, materializationType, testResult.expectedValue, columnName)
 
-            # write to Snowflake if current anomaly is 24 hours past lastAlertSent
-            if not lastAlertSent:
-                lastAlertSent = datetime.utcnow().isoformat() + 'Z'
-                self._insertLastAlertSent(lastAlertSent, is_qual_test=False)
-            else:
-                # converting lastAlertSent from timestamp_ntz to datetime
-                lastAlertSentDt = datetime.fromisoformat(lastAlertSent)
-                currTime = datetime.utcnow()
-                diff = currTime - lastAlertSentDt
-                if diff >= timedelta(hours=24):
-                    # convert current time to timestamp_ntz
-                    currTimeNtz = currTime.isoformat() + 'Z'
-                    self._insertLastAlertSent(currTimeNtz, is_qual_test=False)
+            lastAlertSent = self._calculateLastAlertSent(lastAlertSent, isQualTest=False)
 
         testData = QuantTestData(
             executedOnISOFormat, newDataPoint, testResult.expectedValueUpper,
@@ -410,19 +412,7 @@ class ExecuteTest(IUseCase):
             alertData = QualTestAlertData(alertId, anomalyMessage, databaseName, schemaName,
                                           materializationName, materializationType, testResult.deviations)
 
-            # write to Snowflake if current anomaly is 24 hours past lastAlertSent
-            if not lastAlertSent:
-                lastAlertSent = datetime.utcnow().isoformat() + 'Z'
-                self._insertLastAlertSent(lastAlertSent, is_qual_test=False)
-            else:
-                # converting lastAlertSent from timestamp_ntz to datetime
-                lastAlertSentDt = datetime.fromisoformat(lastAlertSent)
-                currTime = datetime.utcnow()
-                diff = currTime - lastAlertSentDt
-                if diff >= timedelta(hours=24):
-                    # convert current time to timestamp_ntz
-                    currTimeNtz = currTime.isoformat() + 'Z'
-                    self._insertLastAlertSent(currTimeNtz, is_qual_test=False)
+            lastAlertSent = self._calculateLastAlertSent(lastAlertSent, isQualTest=True)
 
         self._insertQualHistoryEntry(
             newSchema, testResult.isIdentical, alertId)

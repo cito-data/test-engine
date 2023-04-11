@@ -55,9 +55,9 @@ def getTestQuery(testSuiteId: str, testType: Union[QuantColumnTest, QuantMatTest
   where id = '{testSuiteId}';
   """
 
-def getUpdateQuery(column: str, value: str, type: CitoTableType, testSuiteId: str):
+def getUpdateQuery(columnName: str, value: str, tableType: CitoTableType, testSuiteId: str):
     return f"""
-  update cito.observability.{type.value} 
-  set {column} = '{value}'
+  update cito.observability.{tableType.value} 
+  set {columnName} = '{value}'
   where id = '{testSuiteId}';
   """
