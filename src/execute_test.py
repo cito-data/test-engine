@@ -267,7 +267,8 @@ class ExecuteTest(IUseCase):
 
     def _updateLastAlertSent(self, lastAlertSent: str, isQualTest: bool):
         tableType = CitoTableType.TestSuitesQual if isQualTest else CitoTableType.TestSuites
-        lastAlertSentQuery = getUpdateQuery('last_alert_sent', lastAlertSent, tableType, self._testDefinition['ID'])
+        lastAlertSentQuery = getUpdateQuery(
+            'last_alert_sent', lastAlertSent, tableType, self._testDefinition['ID'])
         lastAlertSentInsertResult = self._querySnowflake.execute(
             QuerySnowflakeRequestDto(lastAlertSentQuery, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
 
@@ -285,13 +286,13 @@ class ExecuteTest(IUseCase):
             if diff >= timedelta(hours=24):
                 currTimeISO = currTime.isoformat()
                 self._updateLastAlertSent(currTimeISO, isQualTest=isQualTest)
-        
+
         return lastAlertSent
 
     def _runModel(self, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest], forcedLowerThreshold: "Union[ForcedThreshold, None]", forcedUpperThreshold: "Union[ForcedThreshold, None]", ) -> QuantTestResultDto:
         return CommonModel(newData, historicalData, testType, forcedLowerThreshold, forcedUpperThreshold, ).run()
 
-    def _runTest(self, newDataPoint, historicalData: "list[tuple[str,float]]") -> QuantTestExecutionResult:
+    def _runTest(self, newDataPoint: dict[str, float], historicalData: "list[tuple[str,float]]") -> QuantTestExecutionResult:
         databaseName = self._testDefinition['DATABASE_NAME']
         schemaName = self._testDefinition['SCHEMA_NAME']
         materializationName = self._testDefinition['MATERIALIZATION_NAME']
@@ -365,7 +366,8 @@ class ExecuteTest(IUseCase):
             alertData = QuantTestAlertData(alertId, anomalyMessage, databaseName, schemaName,
                                            materializationName, materializationType, testResult.expectedValue, columnName)
 
-            lastAlertSent = self._calculateLastAlertSent(lastAlertSent, isQualTest=False)
+            lastAlertSent = self._calculateLastAlertSent(
+                lastAlertSent, isQualTest=False)
 
         testData = QuantTestData(
             executedOnISOFormat, newDataPoint, testResult.expectedValueUpper,
@@ -412,7 +414,8 @@ class ExecuteTest(IUseCase):
             alertData = QualTestAlertData(alertId, anomalyMessage, databaseName, schemaName,
                                           materializationName, materializationType, testResult.deviations)
 
-            lastAlertSent = self._calculateLastAlertSent(lastAlertSent, isQualTest=True)
+            lastAlertSent = self._calculateLastAlertSent(
+                lastAlertSent, isQualTest=True)
 
         self._insertQualHistoryEntry(
             newSchema, testResult.isIdentical, alertId)
@@ -439,8 +442,6 @@ class ExecuteTest(IUseCase):
         newDataPoint = newData[0]['ROW_COUNT']
 
         historicalData = self._getHistoricalData()
-
-        historicalData
 
         testResult = self._runTest(
             newDataPoint, historicalData)
@@ -560,12 +561,14 @@ class ExecuteTest(IUseCase):
             raise Exception(
                 'Col Distribution - More than one or no matching new data entries found')
 
-        newDataPoint = newData[0]['MEDIAN']
+        newDataSet = newData[0]
 
+
+get historical test data of all test variants
         historicalData = self._getHistoricalData()
 
         testResult = self._runTest(
-            newDataPoint, historicalData)
+            newDataSet, historicalData)
 
         return testResult
 

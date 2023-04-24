@@ -1,5 +1,17 @@
 def getDistributionQuery(dbName: str, schemaName: str, materializationName: str, columnName: str):
-    return f"""select median("{columnName}") as median from "{dbName}"."{schemaName}"."{materializationName}";"""
+    return f"""
+    select avg("{columnName}") as mean,
+    median("{columnName}") as median,
+    min("{columnName}") as min,
+    max("{columnName}") as max,
+    (max - min) as range,
+    percentile_cont(.25) within group (order by "{columnName}") as lower_quartile,
+    percentile_cont(.75) within group (order by "{columnName}") as upper_quartile,
+    (upper_quartile - lower_quartile) as inter_quartile_range,
+    stddev("{columnName}") as standard_deviation,
+    skew("{columnName}") as skewness,
+    kurtosis("{columnName}") as kurtosis 
+    from "{dbName}"."{schemaName}"."{materializationName}";"""
 
 
 def getCardinalityQuery(dbName: str, schemaName: str, materializationName: str, columnName: str):
