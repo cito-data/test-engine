@@ -24,3 +24,7 @@ def getIntegrationApiRoot():
 
 def getAccountApiRoot():
     return os.environ.get('API_ROOT_ACCOUNT_SERVICE')
+
+def getMongoDetails():
+    return (os.environ.get('MONGODB_DB_NAME'), 
+            os.environ.get('MONGODB_DB_URL'))

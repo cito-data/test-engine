@@ -2,7 +2,8 @@ from dataclasses import dataclass, asdict
 from datetime import datetime, timedelta
 import json
 from typing import Any, Union
-from cito_data_query import CitoTableType, getHistoryQuery, getInsertQuery, getTestQuery, getLastMatSchemaQuery, getUpdateQuery
+from cito_data_query import CitoTableType, insertTableData, getTestData, getHistoryData, getLastMatSchemaData, updateTableData
+from mongo_db import get_mongo_connection
 from new_column_data_query import getCardinalityQuery, getDistributionQuery, getNullnessQuery, getUniquenessQuery, getFreshnessQuery as getColumnFreshnessQuery
 from new_materialization_data_query import MaterializationType, getColumnCountQuery, getFreshnessQuery, getRowCountQuery, getSchemaChangeQuery
 from qual_model import ColumnDefinition, SchemaChangeModel, ResultDto as QualResultDto
@@ -86,171 +87,107 @@ class ExecuteTest(IUseCase):
 
     def __init__(self, querySnowflake: QuerySnowflake) -> None:
         self._querySnowflake = querySnowflake
+        self._dbConnection = get_mongo_connection()
 
     def _insertExecutionEntry(self, executedOn: str, tableType: CitoTableType):
-        valueSets = [
-            {'name': 'id', 'value': self._executionId, 'type': 'string'},
-            {'name': 'executedOn', 'value': executedOn, 'type': 'timestamp_ntz'},
-            {'name': 'testSuiteId', 'value': self._testSuiteId, 'type': 'string'},
-        ]
 
-        executionQuery = getInsertQuery(
-            valueSets, tableType)
-        executionEntryInsertResult = self._querySnowflake.execute(
-            QuerySnowflakeRequestDto(executionQuery, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
-
-        if not executionEntryInsertResult.success:
-            raise Exception(executionEntryInsertResult.error)
+        doc = {
+            'id': self._executionId,
+            'executed_on': executedOn,
+            'test_suite_id': self._testSuiteId
+        }
+        
+        insertTableData(doc, tableType, self._dbConnection, self._organizationId)
 
     def _insertQualHistoryEntry(self, value: "dict[str, ColumnDefinition]", isIdentical: bool, alertId: Union[str, None]):
-        valueSets = [
-            {'name': 'id', 'type': 'string', 'value': str(uuid.uuid4())},
-            {'name': 'test_type', 'type': 'string',
-             'value': self._testDefinition['TEST_TYPE']},
-            {'name': 'value', 'type': 'string', 'value':  json.dumps(value)},
-            {'name': 'is_identical', 'type': 'boolean',
-             'value': 'true' if isIdentical else 'false'},
-            {'name': 'test_suite_id', 'type': 'string', 'value': self._testSuiteId},
-            {'name': 'execution_id', 'type': 'string', 'value':  self._executionId},
-            {'name': 'alert_id', 'type': 'string', 'value':  alertId},
-        ]
 
-        testHistoryQuery = getInsertQuery(
-            valueSets, CitoTableType.TestHistoryQual)
-        historyEntryInsertResult = self._querySnowflake.execute(
-            QuerySnowflakeRequestDto(testHistoryQuery, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
+        doc = {
+            'id': str(uuid.uuid4()),
+            'test_type': self._testDefinition['test_type'],
+            'is_identical': 'true' if isIdentical else 'false',
+            'test_suite_id': self._testSuiteId,
+            'execution_id': self._executionId,
+            'alert_id': alertId
+        }
 
-        if not historyEntryInsertResult.success:
-            raise Exception(historyEntryInsertResult.error)
+        insertTableData(doc, CitoTableType.TestHistoryQual, self._dbConnection, self._organizationId)
 
     def _insertHistoryEntry(self, value: str, isAnomaly: bool, alertId: Union[str, None]):
-        valueSets = [
-            {'name': 'id', 'type': 'string', 'value': str(uuid.uuid4())},
-            {'name': 'test_type', 'type': 'string',
-                'value': self._testDefinition['TEST_TYPE']},
-            {'name': 'value', 'type': 'float', 'value': value},
-            {'name': 'is_anomaly', 'type': 'boolean',
-                'value': 'true' if isAnomaly else 'false'},
-            {'name': 'user_feedback_is_anomaly', 'type': 'integer', 'value': -1},
-            {'name': 'test_id', 'type': 'string', 'value': self._testSuiteId},
-            {'name': 'execution_id', 'type': 'string', 'value': self._executionId},
-            {'name': 'alert_id', 'type': 'string', 'value': alertId},
-        ]
 
-        testHistoryQuery = getInsertQuery(
-            valueSets, CitoTableType.TestHistory)
-        historyEntryInsertResult = self._querySnowflake.execute(
-            QuerySnowflakeRequestDto(testHistoryQuery, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
+        doc = {
+            'id': str(uuid.uuid4()),
+            'test_type': self._testDefinition['test_type'],
+            'value': value,
+            'is_anomaly': 'true' if isAnomaly else 'false',
+            'user_feedback_is_anomaly': -1,
+            'test_suite_id': self._testSuiteId,
+            'execution_id': self._executionId,
+            'alert_id': alertId
+        }
 
-        if not historyEntryInsertResult.success:
-            raise Exception(historyEntryInsertResult.error)
+        insertTableData(doc, CitoTableType.TestHistory, self._dbConnection, self._organizationId)
 
     def _insertQualTestResultEntry(self, testResult: QualResultDto):
-        valueSets = [
-            {'name': 'id', 'type': 'string', 'value': str(uuid.uuid4())},
-            {'name': 'test_type', 'type': 'string',
-                'value': self._testDefinition['TEST_TYPE']},
-            {'name': 'expected_value', 'type': 'string',
-             'value': json.dumps(testResult.expectedValue) if testResult.expectedValue else None},
-            {'name': 'deviation', 'type': 'string',
-                'value': json.dumps([asdict(el) for el in testResult.deviations])},
-            {'name': 'is_identical', 'type': 'boolean',
-                'value': testResult.isIdentical},
-            {'name': 'test_suite_id', 'type': 'string', 'value': self._testSuiteId},
-            {'name': 'execution_id', 'type': 'string', 'value': self._executionId},
-        ]
 
-        testResultQuery = getInsertQuery(
-            valueSets, CitoTableType.TestResultsQual)
-        resultEntryInsertResult = self._querySnowflake.execute(
-            QuerySnowflakeRequestDto(testResultQuery, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
+        doc = {
+            'id': str(uuid.uuid4()),
+            'test_type': self._testDefinition['test_type'],
+            'expected_value': json.dumps(testResult.expectedValue) if testResult.expectedValue else None,
+            'deviation': json.dumps([asdict(el) for el in testResult.deviations]),
+            'is_identical': testResult.isIdentical,
+            'test_suite_id': self._testSuiteId,
+            'execution_id': self._executionId
+        }
 
-        if not resultEntryInsertResult.success:
-            raise Exception(resultEntryInsertResult.error)
+        insertTableData(doc, CitoTableType.TestResultsQual, self._dbConnection, self._organizationId)
 
     def _insertResultEntry(self, testResult: QuantTestResultDto):
-        valueSets = [
-            {'name': 'id', 'type': 'string', 'value': str(uuid.uuid4())},
-            {'name': 'test_type', 'type': 'string',
-                'value': self._testDefinition['TEST_TYPE']},
-            {'name': 'mean_ad', 'type': 'float',
-             'value': testResult.meanAbsoluteDeviation},
-            {'name': 'median_ad', 'type': 'float',
-             'value': testResult.medianAbsoluteDeviation},
-            {'name': 'modified_z_score', 'type': 'float',
-             'value': testResult.modifiedZScore},
-            {'name': 'expected_value', 'type': 'float',
-             'value': testResult.expectedValue},
-            {'name': 'expected_value_upper_bound', 'type': 'float',
-             'value': testResult.expectedValueUpper},
-            {'name': 'expected_value_lower_bound', 'type': 'float',
-             'value': testResult.expectedValueLower},
-            {'name': 'deviation', 'type': 'float', 'value': testResult.deviation},
-            {'name': 'is_anomalous', 'type': 'boolean',
-                'value': bool(testResult.anomaly)},
-            {'name': 'test_id', 'type': 'string', 'value': self._testSuiteId},
-            {'name': 'execution_id', 'type': 'string', 'value': self._executionId},
-            {'name': 'importance', 'type': 'float',
-                'value': testResult.anomaly.importance if testResult.anomaly else None},
-        ]
 
-        testResultQuery = getInsertQuery(
-            valueSets, CitoTableType.TestResults)
-        resultEntryInsertResult = self._querySnowflake.execute(
-            QuerySnowflakeRequestDto(testResultQuery, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
+        doc = {
+            'id': str(uuid.uuid4()),
+            'test_type': self._testDefinition['test_type'],
+            'mean_ad': testResult.meanAbsoluteDeviation,
+            'median_ad': testResult.medianAbsoluteDeviation,
+            'modified_z_score': testResult.modifiedZScore,
+            'expected_value': testResult.expectedValue,
+            'expected_value_upper_bound': testResult.expectedValueUpper,
+            'expected_value_lower_bound': testResult.expectedValueLower,
+            'deviation': testResult.deviation,
+            'is_anomalous': bool(testResult.anomaly),
+            'test_suite_id': self._testSuiteId,
+            'execution_id': self._executionId,
+            'importance': testResult.anomaly.importance if testResult.anomaly else None
+        }
 
-        if not resultEntryInsertResult.success:
-            raise Exception(resultEntryInsertResult.error)
+        insertTableData(doc, CitoTableType.TestResults, self._dbConnection, self._organizationId)
 
     def _insertAlertEntry(self, id, message: str, tableType: CitoTableType):
-        valueSets = [
-            {'name': 'id', 'type': 'string', 'value': id},
-            {'name': 'test_type', 'type': 'string',
-                'value': self._testDefinition['TEST_TYPE']},
-            {'name': 'message', 'type': 'string', 'value': message},
-            {'name': 'test_id', 'type': 'string', 'value': self._testSuiteId},
-            {'name': 'execution_id', 'type': 'string', 'value': self._executionId},
-        ]
 
-        testAlertQuery = getInsertQuery(
-            valueSets, tableType)
-        alertEntryInsertResult = self._querySnowflake.execute(
-            QuerySnowflakeRequestDto(testAlertQuery, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
+        doc = {
+            'id': id,
+            'test_type': self._testDefinition['test_type'],
+            'message': message,
+            'test_suite_id': self._testSuiteId,
+            'execution_id': self._executionId
+        }
 
-        if not alertEntryInsertResult.success:
-            raise Exception(alertEntryInsertResult.error)
+        insertTableData(doc, tableType, self._dbConnection, self._organizationId)
 
-    def _getTestEntry(self) -> QuerySnowflakeResponseDto:
-        query = getTestQuery(self._testSuiteId, self._testType)
+    def _getTestEntry(self) -> Any:
 
-        return self._querySnowflake.execute(QuerySnowflakeRequestDto(query, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
+        return getTestData(self._testSuiteId, self._testType, self._dbConnection, self._organizationId)
 
     def _getHistoricalData(self) -> "list[tuple[str, float]]":
-        query = getHistoryQuery(self._testSuiteId)
-        getHistoricalDataResult = self._querySnowflake.execute(
-            QuerySnowflakeRequestDto(query, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
 
-        if not getHistoricalDataResult.success:
-            raise Exception(getHistoricalDataResult.error)
-        if not getHistoricalDataResult.value:
-            raise Exception(
-                'Sf query error - operation: history data')
+        historyData = getHistoryData(self._testSuiteId, self._dbConnection, self._organizationId)
 
-        return sorted([(element['EXECUTED_ON'], element['VALUE'])
-                       for element in getHistoricalDataResult.value.content[self._organizationId]])
+        return sorted([(element['executed_on'], element['value']) for element in historyData])
 
     def _getLastMatSchema(self) -> Union["dict[str, ColumnDefinition]", None]:
-        query = getLastMatSchemaQuery(self._testSuiteId)
-        queryResult = self._querySnowflake.execute(QuerySnowflakeRequestDto(
-            query, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
 
-        if not queryResult.success:
-            raise Exception(queryResult.error)
-        if not queryResult.value:
-            raise Exception(
-                'Sf query error - operation: last mat schema')
+        result = getLastMatSchemaData(self._testSuiteId, self._dbConnection, self._organizationId)
 
-        return (json.loads(queryResult.value.content[self._organizationId][0]['VALUE']) if len(queryResult.value.content[self._organizationId]) else None)
+        return (json.loads(result[0]['value']) if len(result) else None)
 
     def _getNewData(self, query) -> "list[dict[str, Any]]":
         getNewDataResult = self._querySnowflake.execute(
@@ -267,12 +204,8 @@ class ExecuteTest(IUseCase):
 
     def _updateLastAlertSent(self, lastAlertSent: str, isQualTest: bool):
         tableType = CitoTableType.TestSuitesQual if isQualTest else CitoTableType.TestSuites
-        lastAlertSentQuery = getUpdateQuery('last_alert_sent', lastAlertSent, tableType, self._testDefinition['ID'])
-        lastAlertSentInsertResult = self._querySnowflake.execute(
-            QuerySnowflakeRequestDto(lastAlertSentQuery, self._targetOrgId), QuerySnowflakeAuthDto(self._jwt))
 
-        if not lastAlertSentInsertResult.success:
-            raise Exception(lastAlertSentInsertResult.error)
+        updateTableData(self._testSuiteId, tableType, 'last_alert_sent', lastAlertSent, self._dbConnection, self._organizationId)
 
     def _calculateLastAlertSent(self, lastAlertSent: str, isQualTest: bool):
         if not lastAlertSent:
@@ -292,21 +225,21 @@ class ExecuteTest(IUseCase):
         return CommonModel(newData, historicalData, testType, forcedLowerThreshold, forcedUpperThreshold, ).run()
 
     def _runTest(self, newDataPoint, historicalData: "list[tuple[str,float]]") -> QuantTestExecutionResult:
-        databaseName = self._testDefinition['DATABASE_NAME']
-        schemaName = self._testDefinition['SCHEMA_NAME']
-        materializationName = self._testDefinition['MATERIALIZATION_NAME']
-        materializationType = self._testDefinition['MATERIALIZATION_TYPE']
-        columnName = self._testDefinition['COLUMN_NAME']
-        testSuiteId = self._testDefinition['ID']
-        customLowerThreshold = self._testDefinition['CUSTOM_LOWER_THRESHOLD']
-        customLowerThresholdMode = self._testDefinition['CUSTOM_LOWER_THRESHOLD_MODE']
-        customUpperThreshold = self._testDefinition['CUSTOM_UPPER_THRESHOLD']
-        customUpperThresholdMode = self._testDefinition['CUSTOM_UPPER_THRESHOLD_MODE']
-        targetResourceId = self._testDefinition['TARGET_RESOURCE_ID']
-        testType = self._testDefinition['TEST_TYPE']
-        feedbackLowerThreshold = self._testDefinition['FEEDBACK_LOWER_THRESHOLD']
-        feedbackUpperThreshold = self._testDefinition['FEEDBACK_UPPER_THRESHOLD']
-        lastAlertSent = self._testDefinition['LAST_ALERT_SENT']
+        databaseName = self._testDefinition['database_name']
+        schemaName = self._testDefinition['schema_name']
+        materializationName = self._testDefinition['materialization_name']
+        materializationType = self._testDefinition['materialization_type']
+        columnName = self._testDefinition['column_name']
+        testSuiteId = self._testDefinition['id']
+        customLowerThreshold = self._testDefinition['custom_lower_threshold']
+        customLowerThresholdMode = self._testDefinition['custom_lower_threshold_mode']
+        customUpperThreshold = self._testDefinition['custom_upper_threshold']
+        customUpperThresholdMode = self._testDefinition['custom_upper_threshold_mode']
+        targetResourceId = self._testDefinition['target_resource_id']
+        testType = self._testDefinition['test_type']
+        feedbackLowerThreshold = self._testDefinition['feedback_lower_threshold']
+        feedbackUpperThreshold = self._testDefinition['feedback_upper_threshold']
+        lastAlertSent = self._testDefinition['last_alert_sent']
 
         executedOn = datetime.utcnow()
         executedOnISOFormat = executedOn.isoformat()
@@ -380,15 +313,15 @@ class ExecuteTest(IUseCase):
         return SchemaChangeModel(newSchema, oldSchema).run()
 
     def _runSchemaChangeTest(self, oldSchema: "dict[str, ColumnDefinition]", newSchema: "dict[str, ColumnDefinition]") -> QualTestExecutionResult:
-        databaseName = self._testDefinition['DATABASE_NAME']
-        schemaName = self._testDefinition['SCHEMA_NAME']
-        materializationName = self._testDefinition['MATERIALIZATION_NAME']
-        materializationType = self._testDefinition['MATERIALIZATION_TYPE']
-        columnName = self._testDefinition['COLUMN_NAME']
-        testSuiteId = self._testDefinition['ID']
-        testType = self._testDefinition['TEST_TYPE']
-        targetResourceId = self._testDefinition['TARGET_RESOURCE_ID']
-        lastAlertSent = self._testDefinition['LAST_ALERT_SENT']
+        databaseName = self._testDefinition['database_name']
+        schemaName = self._testDefinition['schema_name']
+        materializationName = self._testDefinition['materialization_name']
+        materializationType = self._testDefinition['materialization_type']
+        columnName = self._testDefinition['column_name']
+        testSuiteId = self._testDefinition['id']
+        testType = self._testDefinition['test_type']
+        targetResourceId = self._testDefinition['target_resource_id']
+        lastAlertSent = self._testDefinition['last_alert_sent']
 
         executedOn = datetime.utcnow().isoformat()
 
@@ -404,7 +337,7 @@ class ExecuteTest(IUseCase):
         alertId = None
         if not testResult.isIdentical:
             anomalyMessage = getAnomalyMessage(
-                targetResourceId, databaseName, schemaName, materializationName, columnName, self._testDefinition['TEST_TYPE'])
+                targetResourceId, databaseName, schemaName, materializationName, columnName, self._testDefinition['test_type'])
             alertId = str(uuid.uuid4())
             self._insertAlertEntry(
                 alertId, anomalyMessage, CitoTableType.TestAlertsQual)
@@ -422,10 +355,10 @@ class ExecuteTest(IUseCase):
         return QualTestExecutionResult(testSuiteId, testType, self._executionId, targetResourceId, self._organizationId, testData, alertData, lastAlertSent)
 
     def _runMaterializationRowCountTest(self) -> QuantTestExecutionResult:
-        databaseName = self._testDefinition['DATABASE_NAME']
-        schemaName = self._testDefinition['SCHEMA_NAME']
-        materializationName = self._testDefinition['MATERIALIZATION_NAME']
-        materializationType = self._testDefinition['MATERIALIZATION_TYPE']
+        databaseName = self._testDefinition['database_name']
+        schemaName = self._testDefinition['schema_name']
+        materializationName = self._testDefinition['materialization_name']
+        materializationType = self._testDefinition['materialization_type']
 
         newDataQuery = getRowCountQuery(
             databaseName, schemaName, materializationName, MaterializationType[materializationType])
@@ -440,17 +373,15 @@ class ExecuteTest(IUseCase):
 
         historicalData = self._getHistoricalData()
 
-        historicalData
-
         testResult = self._runTest(
             newDataPoint, historicalData)
 
         return testResult
 
     def _runMaterializationColumnCountTest(self) -> QuantTestExecutionResult:
-        databaseName = self._testDefinition['DATABASE_NAME']
-        schemaName = self._testDefinition['SCHEMA_NAME']
-        materializationName = self._testDefinition['MATERIALIZATION_NAME']
+        databaseName = self._testDefinition['database_name']
+        schemaName = self._testDefinition['schema_name']
+        materializationName = self._testDefinition['materialization_name']
 
         newDataQuery = getColumnCountQuery(
             databaseName, schemaName, materializationName)
@@ -471,10 +402,10 @@ class ExecuteTest(IUseCase):
         return testResult
 
     def _runMaterializationFreshnessTest(self) -> QuantTestExecutionResult:
-        databaseName = self._testDefinition['DATABASE_NAME']
-        schemaName = self._testDefinition['SCHEMA_NAME']
-        materializationName = self._testDefinition['MATERIALIZATION_NAME']
-        materializationType = self._testDefinition['MATERIALIZATION_TYPE']
+        databaseName = self._testDefinition['database_name']
+        schemaName = self._testDefinition['schema_name']
+        materializationName = self._testDefinition['materialization_name']
+        materializationType = self._testDefinition['materialization_type']
 
         newDataQuery = getFreshnessQuery(
             databaseName, schemaName, materializationName, materializationType)
@@ -495,9 +426,9 @@ class ExecuteTest(IUseCase):
         return testResult
 
     def _runMaterializationSchemaChangeTest(self) -> QualTestExecutionResult:
-        databaseName = self._testDefinition['DATABASE_NAME']
-        schemaName = self._testDefinition['SCHEMA_NAME']
-        materializationName = self._testDefinition['MATERIALIZATION_NAME']
+        databaseName = self._testDefinition['database_name']
+        schemaName = self._testDefinition['schema_name']
+        materializationName = self._testDefinition['materialization_name']
 
         newDataQuery = getSchemaChangeQuery(
             databaseName, schemaName, materializationName)
@@ -522,10 +453,10 @@ class ExecuteTest(IUseCase):
         return testResult
 
     def _runColumnCardinalityTest(self) -> QuantTestExecutionResult:
-        databaseName = self._testDefinition['DATABASE_NAME']
-        schemaName = self._testDefinition['SCHEMA_NAME']
-        materializationName = self._testDefinition['MATERIALIZATION_NAME']
-        columnName = self._testDefinition['COLUMN_NAME']
+        databaseName = self._testDefinition['database_name']
+        schemaName = self._testDefinition['schema_name']
+        materializationName = self._testDefinition['materialization_name']
+        columnName = self._testDefinition['column_name']
 
         newDataQuery = getCardinalityQuery(
             databaseName, schemaName, materializationName, columnName)
@@ -546,10 +477,10 @@ class ExecuteTest(IUseCase):
         return testResult
 
     def _runColumnDistributionTest(self) -> QuantTestExecutionResult:
-        databaseName = self._testDefinition['DATABASE_NAME']
-        schemaName = self._testDefinition['SCHEMA_NAME']
-        materializationName = self._testDefinition['MATERIALIZATION_NAME']
-        columnName = self._testDefinition['COLUMN_NAME']
+        databaseName = self._testDefinition['database_name']
+        schemaName = self._testDefinition['schema_name']
+        materializationName = self._testDefinition['materialization_name']
+        columnName = self._testDefinition['column_name']
 
         newDataQuery = getDistributionQuery(
             databaseName, schemaName, materializationName, columnName)
@@ -570,10 +501,10 @@ class ExecuteTest(IUseCase):
         return testResult
 
     def _runColumnFreshnessTest(self) -> QuantTestExecutionResult:
-        databaseName = self._testDefinition['DATABASE_NAME']
-        schemaName = self._testDefinition['SCHEMA_NAME']
-        materializationName = self._testDefinition['MATERIALIZATION_NAME']
-        columnName = self._testDefinition['COLUMN_NAME']
+        databaseName = self._testDefinition['database_name']
+        schemaName = self._testDefinition['schema_name']
+        materializationName = self._testDefinition['materialization_name']
+        columnName = self._testDefinition['column_name']
 
         newDataQuery = getColumnFreshnessQuery(
             databaseName, schemaName, materializationName, columnName)
@@ -594,10 +525,10 @@ class ExecuteTest(IUseCase):
         return testResult
 
     def _runColumnNullnessTest(self) -> QuantTestExecutionResult:
-        databaseName = self._testDefinition['DATABASE_NAME']
-        schemaName = self._testDefinition['SCHEMA_NAME']
-        materializationName = self._testDefinition['MATERIALIZATION_NAME']
-        columnName = self._testDefinition['COLUMN_NAME']
+        databaseName = self._testDefinition['database_name']
+        schemaName = self._testDefinition['schema_name']
+        materializationName = self._testDefinition['materialization_name']
+        columnName = self._testDefinition['column_name']
 
         newDataQuery = getNullnessQuery(
             databaseName, schemaName, materializationName, columnName)
@@ -618,10 +549,10 @@ class ExecuteTest(IUseCase):
         return testResult
 
     def _runColumnUniquenessTest(self) -> QuantTestExecutionResult:
-        databaseName = self._testDefinition['DATABASE_NAME']
-        schemaName = self._testDefinition['SCHEMA_NAME']
-        materializationName = self._testDefinition['MATERIALIZATION_NAME']
-        columnName = self._testDefinition['COLUMN_NAME']
+        databaseName = self._testDefinition['database_name']
+        schemaName = self._testDefinition['schema_name']
+        materializationName = self._testDefinition['materialization_name']
+        columnName = self._testDefinition['column_name']
 
         newDataQuery = getUniquenessQuery(
             databaseName, schemaName, materializationName, columnName)
@@ -644,12 +575,7 @@ class ExecuteTest(IUseCase):
     def _getTestDefinition(self):
         getTestEntryResult = self._getTestEntry()
 
-        if not getTestEntryResult.success:
-            raise Exception(getTestEntryResult.error)
-        if not getTestEntryResult.value:
-            raise Exception(f'Sf query error - operation: test entry')
-
-        organizationResult = getTestEntryResult.value.content[self._organizationId]
+        organizationResult = [getTestEntryResult]
         if not len(organizationResult) == 1:
             raise Exception('Test Definition - More than one or no test found')
 
@@ -681,7 +607,7 @@ class ExecuteTest(IUseCase):
             self._jwt = auth.jwt
             self._testDefinition = self._getTestDefinition()
 
-            testTypeKey = 'TEST_TYPE'
+            testTypeKey = 'test_type'
 
             if self._testDefinition[testTypeKey] == QuantMatTest.MaterializationRowCount.value:
                 testResult = self._runMaterializationRowCountTest()
