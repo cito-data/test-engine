@@ -21,6 +21,14 @@ Parameters:
     Type: String
     Description: prod integration api root
     Default: https://hnyjrlph7pkg2ty2trf3bo7o6m0emujf.lambda-url.eu-central-1.on.aws
+  MongoDbName:
+    Type: String
+    Description: database name
+    Default: user-env-prod
+  MongoDbUrl:
+    Type: String
+    Description: database url
+    Default: mongodb+srv://service-account-data-observability:Wc0QRNonGbZStDpD@lineage-analytics-dev.jwevci4.mongodb.net/?retryWrites=true&w=majority
 
 Resources:
   TestSuiteExecution:
@@ -41,6 +49,8 @@ Resources:
           ENVIRONMENT: !Ref Environment
           API_ROOT_ACCOUNT_SERVICE: !Ref ApiRootAccountService
           API_ROOT_INTEGRATION_SERVICE: !Ref ApiRootIntegrationService
+          MONGODB_DB_NAME: !Ref MongoDbName
+          MONGODB_DB_URL: !Ref MongoDbUrl
     Metadata:
       Dockerfile: Dockerfile
       DockerContext: ./src

@@ -21,7 +21,7 @@
               "targetOrgId": "631789bf27518f97cf1c82b7"
             },
             "headers": {
-              "Authorization": "BearereyJraWQiOiI3Wld4S1wvUEYrWU1rUWhcLzlpR1JzZEtjVDE1ZFpUdFNnMXRxMTFPcEdCdW89IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoic3lzdGVtLWludGVybmFsXC9zeXN0ZW0taW50ZXJuYWwiLCJhdXRoX3RpbWUiOjE2ODI0MTk5OTgsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS1jZW50cmFsLTEuYW1hem9uYXdzLmNvbVwvZXUtY2VudHJhbC0xXzBtdUd0S01rMyIsImV4cCI6MTY4MjQyMzU5OCwiaWF0IjoxNjgyNDE5OTk4LCJ2ZXJzaW9uIjoyLCJqdGkiOiJhZTk3ZDUzMC1mNzhmLTQ0NzItYjlkMC1jNzQyZGRiMjQ1NmYiLCJjbGllbnRfaWQiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSJ9.CsE0Ksm0HieLsyGq0XWEY4fP1umQJn-xlO-VvSOGYf2Um4pDFVnGXIrcqSTinCtck14rsspmEuUVjL8Cj1HXEVQeNpgyLiqNP48R84TYUF9BoObOAFezMRZpbWNYFf0a4diXBZf0NkNOWzLtnPXJP4hI7qNcy-d82HCHbKw9Qwhv6QaeU6uLct1VYEq_ZTtFOc3lOLRZEvs9ikgkfW1N_vS9t-FNFrNL5BpIvJSKOtmRl7_qfX6JpkInNNSYkfYydHd9yDufaC1DD0hz8OkjScvvePazRo_OsLRcCz2dswWrRbQldHBMb1pZQtUJZTNm2wRh-iFowEJ-o_dzeQkE4g"
+              "Authorization": "BearereyJraWQiOiI3Wld4S1wvUEYrWU1rUWhcLzlpR1JzZEtjVDE1ZFpUdFNnMXRxMTFPcEdCdW89IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoic3lzdGVtLWludGVybmFsXC9zeXN0ZW0taW50ZXJuYWwiLCJhdXRoX3RpbWUiOjE2ODI2OTMwMzIsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS1jZW50cmFsLTEuYW1hem9uYXdzLmNvbVwvZXUtY2VudHJhbC0xXzBtdUd0S01rMyIsImV4cCI6MTY4MjY5NjYzMiwiaWF0IjoxNjgyNjkzMDMyLCJ2ZXJzaW9uIjoyLCJqdGkiOiI0NDg2N2UwOS05NWY5LTQ0OGYtODVkZS1mYjU4NTQ1MGIzZTEiLCJjbGllbnRfaWQiOiI1NG4xaWc5c2IwN2Q0ZDl0aWloZGkwa2lmcSJ9.FGvd6sr-X3QBJ9yyP7dWSh27_19NY38LjfjX7JvCE4r70HZVhWzkGdgKlE-LlGu3pBbQ2h6976qJ-xMrJwQ6Qo6f5DG4FNBphzNUANEyGmfaL6oiDRE_JS_6nx0hN8SL4LVw8lPw-qvzERJx_WY4lO8ZLce6hrvnMMHnXtSTHWMLkXhELj9wEIO7CCiNMU7GKw8erNnzLjpuQjFWgSpOEY4kh05eeOFw2hOjkZAhUm-qcFtP2dPHL1dfIoqMVncT4HzQjxXnyrAesyYihDV91ENfzlPtnoLB3yPm4WmO11vlnCItL0kzHUSLJps--peTRNKAtZSEs1mpv_OexoBFYw"
             },
             "pathParameters": {
               "testSuiteId": "f540b96d-2cd0-4424-b3d1-7d62e301acfc"
@@ -38,8 +38,8 @@
           "ENVIRONMENT": "production",
           "API_ROOT_ACCOUNT_SERVICE": "https://b5oerjsr53kgpitik7yu3i6eca0pklio.lambda-url.eu-central-1.on.aws",
           "API_ROOT_INTEGRATION_SERVICE": "https://hnyjrlph7pkg2ty2trf3bo7o6m0emujf.lambda-url.eu-central-1.on.aws",
-          "MONGODB_DB_NAME": "user-env-prod",
-          "MONGODB_DB_URL": "mongodb+srv://service-account-data-observability:Wc0QRNonGbZStDpD@lineage-analytics-dev.jwevci4.mongodb.net/?retryWrites=true&w=majority"
+          "MONGODB_DB_NAME": "user-env-dev",
+          "MONGODB_DB_URL": "mongodb+srv://service-account-data-observability:Wc0QRNonGbZStDpD@lineage-analytics-dev.jwevci4.mongodb.net/?retryWrites=true&w=majority",
         }
       }
     }
