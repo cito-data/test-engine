@@ -37,7 +37,7 @@ def getHistoryData(testSuiteId: str, dbConnection: database.Database, organizati
           '$match': {
             'test_suite_id': testSuiteId,
             '$or': [
-              { 'is_anomaly': { '$ne': 'true' } },
+              { 'is_anomaly': { '$ne': True } },
               { 'user_feedback_is_anomaly': { '$eq': 0 } }
             ]
           }
