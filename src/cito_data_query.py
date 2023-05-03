@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Any, Union
 from pymongo import database
-from test_type import QuantColumnTest, QuantMatTest, QualMatTest
+from test_type import QuantColumnTest, QuantMatTest, QualMatTest, CustomTest
 
 
 class CitoTableType(Enum):
@@ -15,11 +15,13 @@ class CitoTableType(Enum):
     TestResultsQual = 'test_results_qual'
     TestExecutionsQual = 'test_executions_qual'
     TestAlertsQual = 'test_alerts_qual'
+    CustomTestSuites = 'test_suites_custom'
 
 
 quantColumnTest = set(item.value for item in QuantColumnTest)
 quantMatTest = set(item.value for item in QuantMatTest)
 qualMatTest = set(item.value for item in QualMatTest)
+customTest = set(item.value for item in CustomTest)
 
 
 def insertTableData(document: "dict[str, Any]", tableType: CitoTableType, dbConnection: database.Database, organizationId: str):
@@ -98,8 +100,15 @@ def getLastMatSchemaData(testSuiteId: str, dbConnection: database.Database, orga
     else:
         raise Exception('Last mat schema data not found')
 
-def getTestData(testSuiteId: str, testType: Union[QuantColumnTest, QuantMatTest, QualMatTest], dbConnection: database.Database, organizationId: str):
-    table = CitoTableType.TestSuites if testType in quantColumnTest or testType in quantMatTest else CitoTableType.TestSuitesQual
+def getTestData(testSuiteId: str, testType: Union[QuantColumnTest, QuantMatTest, QualMatTest, CustomTest], dbConnection: database.Database, organizationId: str):
+
+    if testType in quantColumnTest or testType in quantMatTest:
+        table = CitoTableType.TestSuites
+    elif testType in customTest:
+        table = CitoTableType.CustomTestSuites
+    else:
+        table = CitoTableType.TestSuitesQual
+
     collection = dbConnection[table.value + '_' + organizationId]
 
     result = collection.find_one({ 'id': testSuiteId })

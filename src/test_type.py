@@ -17,3 +17,6 @@ class QuantColumnTest(Enum):
     ColumnUniqueness = 'ColumnUniqueness'
     ColumnNullness = 'ColumnNullness'
     ColumnDistribution = 'ColumnDistribution'
+
+class CustomTest(Enum):
+    CustomTest = 'Custom'

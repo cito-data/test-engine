@@ -1,5 +1,5 @@
 from i_forced_threshold import ForcedThreshold, ForcedThresholdMode, ForcedThresholdType
-from test_type import QuantColumnTest, QuantMatTest
+from test_type import CustomTest, QuantColumnTest, QuantMatTest
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import datetime
@@ -57,19 +57,19 @@ def _closestValue(arr: "list[float]", x: float) -> float:
     return closestValue
 
 
-def _adjustValue(value: float, testType: Union[QuantMatTest, QuantColumnTest]) -> float:
-    return value if testType == QuantColumnTest.ColumnDistribution or testType == QuantColumnTest.ColumnDistribution.value or testType == QuantColumnTest.ColumnFreshness or testType == QuantColumnTest.ColumnFreshness.value or value > 0 else 0
+def _adjustValue(value: float, testType: Union[QuantMatTest, QuantColumnTest, CustomTest]) -> float:
+    return value if testType == CustomTest.CustomTest or testType == CustomTest.CustomTest.value or testType == QuantColumnTest.ColumnDistribution or testType == QuantColumnTest.ColumnDistribution.value or testType == QuantColumnTest.ColumnFreshness or testType == QuantColumnTest.ColumnFreshness.value or value > 0 else 0
 
 
 class _Analysis(ABC):
     _newDataPoint: pd.DataFrame
     _historicalData: pd.DataFrame
-    _testType: Union[QuantMatTest, QuantColumnTest]
+    _testType: Union[QuantMatTest, QuantColumnTest, CustomTest]
     _forcedLowerThreshold: "Union[ForcedThreshold, None]"
     _forcedUpperThreshold: "Union[ForcedThreshold, None]"
 
     @abstractmethod
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]",  testType: Union[QuantMatTest, QuantColumnTest], forcedLowerThreshold: "Union[ForcedThreshold, None]", forcedUpperThreshold: "Union[ForcedThreshold, None]") -> None:
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]",  testType: Union[QuantMatTest, QuantColumnTest, CustomTest], forcedLowerThreshold: "Union[ForcedThreshold, None]", forcedUpperThreshold: "Union[ForcedThreshold, None]") -> None:
         self._newDataPoint = self._buildNewDataPointFrame(newDataPoint)
         self._historicalData = self._buildHistoricalDF(historicalData)
         self._testType = testType
@@ -110,7 +110,7 @@ class _ZScoreAnalysis(_Analysis):
     _modifiedZScoreThresholdUpper: Union[float, None]
     _modifiedZScoreThresholdLower: Union[float, None]
 
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]",  testType: Union[QuantMatTest, QuantColumnTest], forcedLowerThreshold: "Union[ForcedThreshold, None]", forcedUpperThreshold: "Union[ForcedThreshold, None]", ) -> None:
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]",  testType: Union[QuantMatTest, QuantColumnTest, CustomTest], forcedLowerThreshold: "Union[ForcedThreshold, None]", forcedUpperThreshold: "Union[ForcedThreshold, None]", ) -> None:
         super().__init__(newDataPoint, historicalData, testType,
                          forcedLowerThreshold, forcedUpperThreshold)
         self._modifiedZScoreThresholdUpper = 8 if self._testType == QuantColumnTest.ColumnNullness or self._testType == QuantColumnTest.ColumnNullness.value \
@@ -267,7 +267,7 @@ class _ForecastAnalysis(_Analysis):
     _yearly_lower: Union[float, None]
     _yearly_upper: Union[float, None]
 
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]",  testType: Union[QuantMatTest, QuantColumnTest], forcedLowerThreshold: "Union[ForcedThreshold, None]", forcedUpperThreshold: "Union[ForcedThreshold, None]") -> None:
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]",  testType: Union[QuantMatTest, QuantColumnTest, CustomTest], forcedLowerThreshold: "Union[ForcedThreshold, None]", forcedUpperThreshold: "Union[ForcedThreshold, None]") -> None:
         super().__init__(newDataPoint, historicalData,
                          testType, forcedLowerThreshold, forcedUpperThreshold)
 
@@ -371,10 +371,10 @@ class _QuantModel(ABC):
     _zScoreAnalysis: _ZScoreAnalysis
     _forecastAnalysis: _ForecastAnalysis
 
-    _testType: Union[QuantMatTest, QuantColumnTest]
+    _testType: Union[QuantMatTest, QuantColumnTest, CustomTest]
 
     @ abstractmethod
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]",  testType: Union[QuantMatTest, QuantColumnTest], forcedLowerThreshold: "Union[ForcedThreshold, None]", forcedUpperThreshold: "Union[ForcedThreshold, None]", ) -> None:
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]",  testType: Union[QuantMatTest, QuantColumnTest, CustomTest], forcedLowerThreshold: "Union[ForcedThreshold, None]", forcedUpperThreshold: "Union[ForcedThreshold, None]", ) -> None:
         self._zScoreAnalysis = _ZScoreAnalysis(
             newDataPoint, historicalData,  testType, forcedLowerThreshold, forcedUpperThreshold)
         self._forecastAnalysis = _ForecastAnalysis(
@@ -422,6 +422,6 @@ class _QuantModel(ABC):
 
 
 class CommonModel(_QuantModel):
-    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest], forcedLowerThreshold: "Union[ForcedThreshold, None]", forcedUpperThreshold: "Union[ForcedThreshold, None]") -> None:
+    def __init__(self, newDataPoint: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest, CustomTest], forcedLowerThreshold: "Union[ForcedThreshold, None]", forcedUpperThreshold: "Union[ForcedThreshold, None]") -> None:
         super().__init__(newDataPoint, historicalData,
                          testType, forcedLowerThreshold, forcedUpperThreshold)

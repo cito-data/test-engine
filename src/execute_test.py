@@ -10,8 +10,8 @@ from qual_model import ColumnDefinition, SchemaChangeModel, ResultDto as QualRes
 from quant_model import ResultDto as QuantTestResultDto, CommonModel
 from query_snowflake import QuerySnowflake, QuerySnowflakeAuthDto, QuerySnowflakeRequestDto, QuerySnowflakeResponseDto
 from i_forced_threshold import ForcedThreshold, ForcedThresholdMode, ForcedThresholdType
-from test_execution_result import QualTestAlertData, QualTestData, QualTestExecutionResult, QuantTestAlertData, QuantTestData, QuantTestExecutionResult, AnomalyData
-from test_type import QuantColumnTest, QuantMatTest, QualMatTest
+from test_execution_result import CustomTestAlertData, CustomTestData, CustomTestExecutionResult, QualTestAlertData, QualTestData, QualTestExecutionResult, QuantTestAlertData, QuantTestData, QuantTestExecutionResult, AnomalyData
+from test_type import QuantColumnTest, QuantMatTest, QualMatTest, CustomTest
 from use_case import IUseCase
 import logging
 import uuid
@@ -22,7 +22,10 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def getAnomalyMessage(targetResourceId: str, databaseName: str, schemaName: str, materializationName: str, columnName: Union[str, None], testType: str):
+def getAnomalyMessage(targetResourceId: Union[str, None], databaseName: Union[str, None], schemaName: Union[str, None], materializationName: Union[str, None], columnName: Union[str, None], testType: str):
+    if (testType == CustomTest.CustomTest.value):
+        return f"<__base_url__?metric={columnName if columnName else ''}>"
+    
     targetResourceUrlTemplate = f'__base_url__?targetResourceId={targetResourceId}&ampisColumn={not not columnName}'
 
     if (testType == QuantColumnTest.ColumnFreshness.value):
@@ -50,7 +53,7 @@ def getAnomalyMessage(targetResourceId: str, databaseName: str, schemaName: str,
 @dataclass
 class ExecuteTestRequestDto:
     testSuiteId: str
-    testType: Union[QuantColumnTest, QuantMatTest, QualMatTest]
+    testType: Union[QuantColumnTest, QuantMatTest, QualMatTest, CustomTest]
     targetOrgId: Union[str, None]
 
 
@@ -72,7 +75,7 @@ class ExecuteTest(IUseCase):
     _MIN_HISTORICAL_DATA_DAY_NUMBER_CONDITION = 7
 
     _testSuiteId: str
-    _testType: Union[QuantColumnTest, QuantMatTest, QualMatTest]
+    _testType: Union[QuantColumnTest, QuantMatTest, QualMatTest, CustomTest]
     _testDefinition: "dict[str, Any]"
 
     _targetOrgId: Union[str, None]
@@ -202,26 +205,117 @@ class ExecuteTest(IUseCase):
 
         return newData
 
-    def _updateLastAlertSent(self, lastAlertSent: str, isQualTest: bool):
-        tableType = CitoTableType.TestSuitesQual if isQualTest else CitoTableType.TestSuites
+    def _updateLastAlertSent(self, lastAlertSent: str, tableType: CitoTableType):
 
         updateTableData(self._testSuiteId, tableType, 'last_alert_sent', lastAlertSent, self._dbConnection, self._organizationId)
 
-    def _calculateLastAlertSent(self, lastAlertSent: str, isQualTest: bool):
+    def _calculateLastAlertSent(self, lastAlertSent: str, tableType: CitoTableType):
         if not lastAlertSent:
             lastAlertSent = datetime.utcnow().isoformat()
-            self._updateLastAlertSent(lastAlertSent, isQualTest=isQualTest)
+            self._updateLastAlertSent(lastAlertSent, tableType=tableType)
         else:
             lastAlertSentDt = datetime.fromisoformat(lastAlertSent)
             currTime = datetime.utcnow()
             diff = currTime - lastAlertSentDt
             if diff >= timedelta(hours=24):
                 currTimeISO = currTime.isoformat()
-                self._updateLastAlertSent(currTimeISO, isQualTest=isQualTest)
+                self._updateLastAlertSent(currTimeISO, tableType=tableType)
         
         return lastAlertSent
 
-    def _runModel(self, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest], forcedLowerThreshold: "Union[ForcedThreshold, None]", forcedUpperThreshold: "Union[ForcedThreshold, None]", ) -> QuantTestResultDto:
+    def _runCustomTest(self) -> CustomTestExecutionResult:
+        sqlLogic = self._testDefinition['sql_logic']
+        targetResourceIds = self._testDefinition['target_resource_ids']
+        testSuiteId = self._testDefinition['id']
+        customLowerThreshold = self._testDefinition['custom_lower_threshold']
+        customLowerThresholdMode = self._testDefinition['custom_lower_threshold_mode']
+        customUpperThreshold = self._testDefinition['custom_upper_threshold']
+        customUpperThresholdMode = self._testDefinition['custom_upper_threshold_mode']
+        feedbackLowerThreshold = self._testDefinition['feedback_lower_threshold']
+        feedbackUpperThreshold = self._testDefinition['feedback_upper_threshold']
+        lastAlertSent = self._testDefinition['last_alert_sent']
+        testType = self._testDefinition['name']
+
+        newData = self._getNewData(sqlLogic)
+
+        if (len(newData) != 1):
+            raise Exception(
+                testType + '- More than one or no matching new data entries found')
+        
+        metric, newDataPoint = newData[0].popitem()
+
+        historicalData = self._getHistoricalData()
+
+        executedOn = datetime.utcnow()
+        executedOnISOFormat = executedOn.isoformat()
+        
+        self._insertExecutionEntry(
+            executedOnISOFormat, CitoTableType.TestExecutions)
+        
+        historicalDataLength = len(historicalData)
+        belowDayBoundary = True if historicalDataLength == 0 else (executedOn - datetime.fromisoformat(
+            historicalData[0][0].replace('Z', ''))).days <= self._MIN_HISTORICAL_DATA_DAY_NUMBER_CONDITION
+        if (belowDayBoundary and historicalDataLength <= self._MIN_HISTORICAL_DATA_TEST_NUMBER_CONDITION):
+            self._insertHistoryEntry(
+                newDataPoint, False, None)
+
+            return CustomTestExecutionResult(testSuiteId, testType, self._executionId, self._organizationId, targetResourceIds, True, None, None, lastAlertSent)
+
+        lowerThreshold = None if feedbackLowerThreshold is None else ForcedThreshold(
+            feedbackLowerThreshold, ForcedThresholdMode.ABSOLUTE, ForcedThresholdType.FEEDBACK)
+        upperThreshold = None if feedbackUpperThreshold is None else ForcedThreshold(
+            feedbackUpperThreshold, ForcedThresholdMode.ABSOLUTE, ForcedThresholdType.FEEDBACK)
+
+        forcedLowerThresholdMode = ForcedThresholdMode.ABSOLUTE
+        if customLowerThresholdMode == ForcedThresholdMode.RELATIVE.value:
+            forcedLowerThresholdMode = ForcedThresholdMode.RELATIVE
+        elif customLowerThresholdMode != ForcedThresholdMode.ABSOLUTE.value:
+            raise Exception('Invalid custom lower threshold mode')
+
+        lowerThreshold = lowerThreshold if customLowerThreshold is None else ForcedThreshold(
+            customLowerThreshold, forcedLowerThresholdMode, ForcedThresholdType.CUSTOM)
+
+        forcedUpperThresholdMode = ForcedThresholdMode.ABSOLUTE
+        if customUpperThresholdMode == ForcedThresholdMode.RELATIVE.value:
+            forcedUpperThresholdMode = ForcedThresholdMode.RELATIVE
+        elif customUpperThresholdMode != ForcedThresholdMode.ABSOLUTE.value:
+            raise Exception('Invalid custom upper threshold mode')
+
+        upperThreshold = upperThreshold if customUpperThreshold is None else ForcedThreshold(
+            customUpperThreshold, forcedUpperThresholdMode, ForcedThresholdType.CUSTOM)
+
+        testResult = self._runModel(
+            (executedOnISOFormat, newDataPoint), historicalData, CustomTest.CustomTest, lowerThreshold, upperThreshold)
+
+        self._insertResultEntry(testResult)
+
+        alertData = None
+        alertId = None
+
+        if testResult.anomaly:
+            print('Anomaly detected for test suite: ' + testSuiteId +
+                  ' and organization: ' + self._organizationId)
+            anomalyMessage = getAnomalyMessage(
+                None, None, None, None, metric, testType)
+            alertId = str(uuid.uuid4())
+            self._insertAlertEntry(
+                alertId, anomalyMessage, CitoTableType.TestAlerts)
+
+            alertData = CustomTestAlertData(alertId, anomalyMessage, testResult.expectedValue)
+
+            lastAlertSent = self._calculateLastAlertSent(lastAlertSent, tableType=CitoTableType.CustomTestSuites)
+        
+        testData = CustomTestData(
+            executedOnISOFormat, newDataPoint, testResult.expectedValueUpper,
+            testResult.expectedValueLower, testResult.modifiedZScore, testResult.deviation, AnomalyData(testResult.anomaly.importance) if testResult.anomaly else None)
+
+        self._insertHistoryEntry(
+            newDataPoint, bool(testResult.anomaly), alertId)
+
+        return CustomTestExecutionResult(testSuiteId, testType, self._executionId, self._organizationId, targetResourceIds, False, testData, alertData, lastAlertSent)
+
+
+    def _runModel(self, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest, CustomTest], forcedLowerThreshold: "Union[ForcedThreshold, None]", forcedUpperThreshold: "Union[ForcedThreshold, None]", ) -> QuantTestResultDto:
         return CommonModel(newData, historicalData, testType, forcedLowerThreshold, forcedUpperThreshold, ).run()
 
     def _runTest(self, newDataPoint, historicalData: "list[tuple[str,float]]") -> QuantTestExecutionResult:
@@ -254,7 +348,7 @@ class ExecuteTest(IUseCase):
             self._insertHistoryEntry(
                 newDataPoint, False, None)
 
-            return QuantTestExecutionResult(testSuiteId, testType, self._executionId, targetResourceId, self._organizationId, True, None, None, lastAlertSent)
+            return QuantTestExecutionResult(testSuiteId, testType, self._executionId, self._organizationId, targetResourceId, True, None, None, lastAlertSent)
 
         lowerThreshold = None if feedbackLowerThreshold is None else ForcedThreshold(
             feedbackLowerThreshold, ForcedThresholdMode.ABSOLUTE, ForcedThresholdType.FEEDBACK)
@@ -298,7 +392,7 @@ class ExecuteTest(IUseCase):
             alertData = QuantTestAlertData(alertId, anomalyMessage, databaseName, schemaName,
                                            materializationName, materializationType, testResult.expectedValue, columnName)
 
-            lastAlertSent = self._calculateLastAlertSent(lastAlertSent, isQualTest=False)
+            lastAlertSent = self._calculateLastAlertSent(lastAlertSent, tableType=CitoTableType.TestSuites)
 
         testData = QuantTestData(
             executedOnISOFormat, newDataPoint, testResult.expectedValueUpper,
@@ -307,7 +401,7 @@ class ExecuteTest(IUseCase):
         self._insertHistoryEntry(
             newDataPoint, bool(testResult.anomaly), alertId)
 
-        return QuantTestExecutionResult(testSuiteId, testType, self._executionId, targetResourceId, self._organizationId, False, testData, alertData, lastAlertSent)
+        return QuantTestExecutionResult(testSuiteId, testType, self._executionId, self._organizationId, targetResourceId, False, testData, alertData, lastAlertSent)
 
     def _runSchemaChangeModel(self, oldSchema: "dict[str, ColumnDefinition]", newSchema: "dict[str, ColumnDefinition]") -> QualResultDto:
         return SchemaChangeModel(newSchema, oldSchema).run()
@@ -345,14 +439,14 @@ class ExecuteTest(IUseCase):
             alertData = QualTestAlertData(alertId, anomalyMessage, databaseName, schemaName,
                                           materializationName, materializationType, testResult.deviations)
 
-            lastAlertSent = self._calculateLastAlertSent(lastAlertSent, isQualTest=True)
+            lastAlertSent = self._calculateLastAlertSent(lastAlertSent, tableType=CitoTableType.TestSuitesQual)
 
         self._insertQualHistoryEntry(
             newSchema, testResult.isIdentical, alertId)
 
         testData = QualTestData(
             executedOn, testResult.deviations, testResult.isIdentical)
-        return QualTestExecutionResult(testSuiteId, testType, self._executionId, targetResourceId, self._organizationId, testData, alertData, lastAlertSent)
+        return QualTestExecutionResult(testSuiteId, testType, self._executionId, self._organizationId, targetResourceId, testData, alertData, lastAlertSent)
 
     def _runMaterializationRowCountTest(self) -> QuantTestExecutionResult:
         databaseName = self._testDefinition['database_name']
