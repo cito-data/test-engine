@@ -8,7 +8,7 @@ from new_column_data_query import getCardinalityQuery, getDistributionQuery, get
 from new_materialization_data_query import MaterializationType, getColumnCountQuery, getFreshnessQuery, getRowCountQuery, getSchemaChangeQuery
 from qual_model import ColumnDefinition, SchemaChangeModel, ResultDto as QualResultDto
 from quant_model import ResultDto as QuantTestResultDto, CommonModel
-from query_snowflake import QuerySnowflake, QuerySnowflakeAuthDto, QuerySnowflakeRequestDto, QuerySnowflakeResponseDto
+from query_snowflake import QuerySnowflake, QuerySnowflakeAuthDto, QuerySnowflakeRequestDto
 from i_forced_threshold import ForcedThreshold, ForcedThresholdMode, ForcedThresholdType
 from test_execution_result import CustomTestAlertData, CustomTestData, CustomTestExecutionResult, QualTestAlertData, QualTestData, QualTestExecutionResult, QuantTestAlertData, QuantTestData, QuantTestExecutionResult, AnomalyData
 from test_type import QuantColumnTest, QuantMatTest, QualMatTest, CustomTest
@@ -118,9 +118,14 @@ class ExecuteTest(IUseCase):
 
     def _insertHistoryEntry(self, value: str, isAnomaly: bool, alertId: Union[str, None]):
 
+        if 'test_type' in self._testDefinition:
+            testType = self._testDefinition['test_type']
+        else:
+            testType = self._testDefinition['name']
+
         doc = {
             'id': str(uuid.uuid4()),
-            'test_type': self._testDefinition['test_type'],
+            'test_type': testType,
             'value': value,
             'is_anomaly': isAnomaly,
             'user_feedback_is_anomaly': -1,
@@ -147,9 +152,14 @@ class ExecuteTest(IUseCase):
 
     def _insertResultEntry(self, testResult: QuantTestResultDto):
 
+        if 'test_type' in self._testDefinition:
+            testType = self._testDefinition['test_type']
+        else:
+            testType = self._testDefinition['name']
+
         doc = {
             'id': str(uuid.uuid4()),
-            'test_type': self._testDefinition['test_type'],
+            'test_type': testType,
             'mean_ad': testResult.meanAbsoluteDeviation,
             'median_ad': testResult.medianAbsoluteDeviation,
             'modified_z_score': testResult.modifiedZScore,
@@ -167,9 +177,14 @@ class ExecuteTest(IUseCase):
 
     def _insertAlertEntry(self, id, message: str, tableType: CitoTableType):
 
+        if 'test_type' in self._testDefinition:
+            testType = self._testDefinition['test_type']
+        else:
+            testType = self._testDefinition['name']
+
         doc = {
             'id': id,
-            'test_type': self._testDefinition['test_type'],
+            'test_type': testType,
             'message': message,
             'test_suite_id': self._testSuiteId,
             'execution_id': self._executionId
@@ -297,7 +312,7 @@ class ExecuteTest(IUseCase):
             print('Anomaly detected for test suite: ' + testSuiteId +
                   ' and organization: ' + self._organizationId)
             anomalyMessage = getAnomalyMessage(
-                None, None, None, None, metric, testType)
+                None, None, None, None, metric, CustomTest.CustomTest.value)
             alertId = str(uuid.uuid4())
             self._insertAlertEntry(
                 alertId, anomalyMessage, CitoTableType.TestAlerts)
