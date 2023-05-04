@@ -15,7 +15,7 @@ class CitoTableType(Enum):
     TestResultsQual = 'test_results_qual'
     TestExecutionsQual = 'test_executions_qual'
     TestAlertsQual = 'test_alerts_qual'
-    CustomTestSuites = 'test_suites_custom'
+    TestSuitesCustom = 'test_suites_custom'
 
 
 quantColumnTest = set(item.value for item in QuantColumnTest)
@@ -105,7 +105,7 @@ def getTestData(testSuiteId: str, testType: Union[QuantColumnTest, QuantMatTest,
     if testType in quantColumnTest or testType in quantMatTest:
         table = CitoTableType.TestSuites
     elif testType in customTest:
-        table = CitoTableType.CustomTestSuites
+        table = CitoTableType.TestSuitesCustom
     else:
         table = CitoTableType.TestSuitesQual
 

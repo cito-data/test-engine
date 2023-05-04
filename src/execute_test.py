@@ -65,7 +65,8 @@ class ExecuteTestAuthDto:
 
 
 ExecuteTestResponseDto = Result[Union[QuantTestExecutionResult,
-                                      QualTestExecutionResult]]
+                                      QualTestExecutionResult, 
+                                      CustomTestExecutionResult]]
 
 
 class ExecuteTest(IUseCase):
@@ -303,7 +304,7 @@ class ExecuteTest(IUseCase):
 
             alertData = CustomTestAlertData(alertId, anomalyMessage, testResult.expectedValue)
 
-            lastAlertSent = self._calculateLastAlertSent(lastAlertSent, tableType=CitoTableType.CustomTestSuites)
+            lastAlertSent = self._calculateLastAlertSent(lastAlertSent, tableType=CitoTableType.TestSuitesCustom)
         
         testData = CustomTestData(
             executedOnISOFormat, newDataPoint, testResult.expectedValueUpper,
@@ -703,7 +704,9 @@ class ExecuteTest(IUseCase):
 
             testTypeKey = 'test_type'
 
-            if self._testDefinition[testTypeKey] == QuantMatTest.MaterializationRowCount.value:
+            if testTypeKey not in self._testDefinition:
+                testResult = self._runCustomTest()
+            elif self._testDefinition[testTypeKey] == QuantMatTest.MaterializationRowCount.value:
                 testResult = self._runMaterializationRowCountTest()
             elif self._testDefinition[testTypeKey] == QuantMatTest.MaterializationColumnCount.value:
                 testResult = self._runMaterializationColumnCountTest()
