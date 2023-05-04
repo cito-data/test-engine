@@ -108,7 +108,7 @@ class ExecuteTest(IUseCase):
         doc = {
             'id': str(uuid.uuid4()),
             'test_type': self._testDefinition['test_type'],
-            'is_identical': 'true' if isIdentical else 'false',
+            'is_identical': isIdentical,
             'test_suite_id': self._testSuiteId,
             'execution_id': self._executionId,
             'alert_id': alertId
@@ -122,7 +122,7 @@ class ExecuteTest(IUseCase):
             'id': str(uuid.uuid4()),
             'test_type': self._testDefinition['test_type'],
             'value': value,
-            'is_anomaly': 'true' if isAnomaly else 'false',
+            'is_anomaly': isAnomaly,
             'user_feedback_is_anomaly': -1,
             'test_suite_id': self._testSuiteId,
             'execution_id': self._executionId,
