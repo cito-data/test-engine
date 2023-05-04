@@ -73,30 +73,52 @@ def getHistoryData(testSuiteId: str, dbConnection: database.Database, organizati
         raise Exception('History data matching testSuiteId not found')
 
 def getLastMatSchemaData(testSuiteId: str, dbConnection: database.Database, organizationId: str):
-    testExecutionQualCollection = dbConnection[CitoTableType.TestExecutionsQual.value + '_' + organizationId]
-    executionIdCte = testExecutionQualCollection.find({ 'test_suite_id': testSuiteId }).sort('executed_on', -1)
+    testExecQualCollectionName = CitoTableType.TestExecutionsQual.value + '_' + organizationId
+
+    testExecQualCollection = dbConnection[testExecQualCollectionName]
+    # executionIdCte = list(testExecQualCollection.find({ 'test_suite_id': testSuiteId }).sort('executed_on', -1).limit(1))
     
-    testHistoryQualCollection = dbConnection[CitoTableType.TestHistoryQual.value + '_' + organizationId]
+    testHistoryQualCollectionName = CitoTableType.TestHistoryQual.value + '_' + organizationId
+
     pipeline = [
         {
-          '$match': {
-            'execution_id': executionIdCte[0]['id']
-          }
+            '$match': {
+                'test_suite_id': testSuiteId
+            }
         },
         {
-          '$project': {
-            'execution_id': 1, 
-            'value': 1
-          }
+            '$sort': {
+                'executed_on': -1
+            }
+        },
+        {
+            '$limit': 1
+        },
+        {
+            '$lookup': {
+                'from': testHistoryQualCollectionName,
+                'localField': 'id',
+                'foreignField': 'execution_id',
+                'as': 'test_history_qual' 
+            }
+        },
+        {
+            '$unwind': {
+                'path': '$test_history_qual',
+                'preserveNullAndEmptyArrays': False
+            }
+        },
+        {
+            '$project': {
+                'id': 1,
+                'value': '$test_history_qual.value'
+            }
         }
     ]
 
-    results = list(testHistoryQualCollection.aggregate(pipeline))
+    results = list(testExecQualCollection.aggregate(pipeline))
 
-    if results is not None:
-        return results
-    else:
-        raise Exception('Last mat schema data not found')
+    return results
 
 def getTestData(testSuiteId: str, testType: Union[QuantColumnTest, QuantMatTest, QualMatTest], dbConnection: database.Database, organizationId: str):
     table = CitoTableType.TestSuites if testType in quantColumnTest or testType in quantMatTest else CitoTableType.TestSuitesQual
