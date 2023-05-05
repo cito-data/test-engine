@@ -105,9 +105,14 @@ class ExecuteTest(IUseCase):
 
     def _insertQualHistoryEntry(self, value: "dict[str, ColumnDefinition]", isIdentical: bool, alertId: Union[str, None]):
 
+        valueObj = {}
+        for key, val in value.items():
+            valueObj[key] = self._convertColumnDefToObject(val)
+
         doc = {
             'id': str(uuid.uuid4()),
             'test_type': self._testDefinition['test_type'],
+            'value': json.dumps(valueObj),
             'is_identical': isIdentical,
             'test_suite_id': self._testSuiteId,
             'execution_id': self._executionId,
@@ -136,12 +141,27 @@ class ExecuteTest(IUseCase):
 
         insertTableData(doc, CitoTableType.TestHistory, self._dbConnection, self._organizationId)
 
+    def _convertColumnDefToObject(self, colDef: ColumnDefinition):
+        obj = {}
+        obj['columnName'] = colDef.columnName
+        obj['dataType'] = colDef.dataType
+        obj['isIdentity'] = colDef.isIdentity
+        obj['isNullable'] = colDef.isNullable
+        obj['ordinalPosition'] = colDef.ordinalPosition
+
+        return obj
+
     def _insertQualTestResultEntry(self, testResult: QualResultDto):
+
+        expectedValue = {}        
+        if testResult.expectedValue:
+            for key, value in testResult.expectedValue.items():
+                expectedValue[key] = self._convertColumnDefToObject(value)
 
         doc = {
             'id': str(uuid.uuid4()),
             'test_type': self._testDefinition['test_type'],
-            'expected_value': json.dumps(testResult.expectedValue) if testResult.expectedValue else None,
+            'expected_value': json.dumps(expectedValue) if testResult.expectedValue else None,
             'deviation': json.dumps([asdict(el) for el in testResult.deviations]),
             'is_identical': testResult.isIdentical,
             'test_suite_id': self._testSuiteId,
@@ -206,7 +226,14 @@ class ExecuteTest(IUseCase):
 
         result = getLastMatSchemaData(self._testSuiteId, self._dbConnection, self._organizationId)
 
-        return (json.loads(result[0]['value']) if len(result) else None)
+        oldSchema = {}
+        if len(result):
+            oldSchema = json.loads(result[0]['value'])
+            for key, value in oldSchema.items():
+                    colDef = ColumnDefinition(value['columnName'], value['dataType'], value['isIdentity'], value['isNullable'], value['ordinalPosition'])
+                    oldSchema[key] = colDef 
+
+        return (oldSchema if len(result) else None)
 
     def _getNewData(self, query) -> "list[dict[str, Any]]":
         getNewDataResult = self._querySnowflake.execute(
@@ -275,7 +302,7 @@ class ExecuteTest(IUseCase):
             self._insertHistoryEntry(
                 newDataPoint, False, None)
 
-            return CustomTestExecutionResult(testSuiteId, testType, self._executionId, self._organizationId, targetResourceIds, True, None, None, lastAlertSent)
+            return CustomTestExecutionResult(testSuiteId, CustomTest.CustomTest.value, self._executionId, self._organizationId, testType, targetResourceIds, True, None, None, lastAlertSent)
 
         lowerThreshold = None if feedbackLowerThreshold is None else ForcedThreshold(
             feedbackLowerThreshold, ForcedThresholdMode.ABSOLUTE, ForcedThresholdType.FEEDBACK)
@@ -328,7 +355,7 @@ class ExecuteTest(IUseCase):
         self._insertHistoryEntry(
             newDataPoint, bool(testResult.anomaly), alertId)
 
-        return CustomTestExecutionResult(testSuiteId, testType, self._executionId, self._organizationId, targetResourceIds, False, testData, alertData, lastAlertSent)
+        return CustomTestExecutionResult(testSuiteId, CustomTest.CustomTest.value, self._executionId, self._organizationId, testType, targetResourceIds, False, testData, alertData, lastAlertSent)
 
 
     def _runModel(self, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest, CustomTest], forcedLowerThreshold: "Union[ForcedThreshold, None]", forcedUpperThreshold: "Union[ForcedThreshold, None]", ) -> QuantTestResultDto:
@@ -555,8 +582,7 @@ class ExecuteTest(IUseCase):
         oldSchema = self._getLastMatSchema()
 
         if not oldSchema:
-            raise Exception(
-                'Cannot test for schema change. Missing old schema.')
+            oldSchema = newSchema
 
         testResult = self._runSchemaChangeTest(oldSchema, newSchema)
 

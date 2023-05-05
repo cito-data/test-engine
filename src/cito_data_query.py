@@ -78,7 +78,6 @@ def getLastMatSchemaData(testSuiteId: str, dbConnection: database.Database, orga
     testExecQualCollectionName = CitoTableType.TestExecutionsQual.value + '_' + organizationId
 
     testExecQualCollection = dbConnection[testExecQualCollectionName]
-    # executionIdCte = list(testExecQualCollection.find({ 'test_suite_id': testSuiteId }).sort('executed_on', -1).limit(1))
     
     testHistoryQualCollectionName = CitoTableType.TestHistoryQual.value + '_' + organizationId
 

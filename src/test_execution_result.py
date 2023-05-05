@@ -91,6 +91,7 @@ class QualTestExecutionResult(_TestExecutionResult):
 
 @dataclass
 class CustomTestExecutionResult(_TestExecutionResult):
+    name: str
     targetResourceIds: "list[str]"
     isWarmup: bool
     testData: Union[CustomTestData, None]
