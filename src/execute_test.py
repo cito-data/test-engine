@@ -256,13 +256,15 @@ class ExecuteTest(IUseCase):
         if not lastAlertSent:
             lastAlertSent = datetime.utcnow().isoformat()
             self._updateLastAlertSent(lastAlertSent, tableType=tableType)
-        else:
-            lastAlertSentDt = datetime.fromisoformat(lastAlertSent)
-            currTime = datetime.utcnow()
-            diff = currTime - lastAlertSentDt
-            if diff >= timedelta(hours=24):
-                currTimeISO = currTime.isoformat()
-                self._updateLastAlertSent(currTimeISO, tableType=tableType)
+
+            return None
+        
+        lastAlertSentDt = datetime.fromisoformat(lastAlertSent)
+        currTime = datetime.utcnow()
+        diff = currTime - lastAlertSentDt
+        if diff >= timedelta(hours=24):
+            currTimeISO = currTime.isoformat()
+            self._updateLastAlertSent(currTimeISO, tableType=tableType)
         
         return lastAlertSent
 
@@ -277,13 +279,13 @@ class ExecuteTest(IUseCase):
         feedbackLowerThreshold = self._testDefinition['feedback_lower_threshold']
         feedbackUpperThreshold = self._testDefinition['feedback_upper_threshold']
         lastAlertSent = self._testDefinition['last_alert_sent']
-        testType = self._testDefinition['name']
+        testName = self._testDefinition['name']
 
         newData = self._getNewData(sqlLogic)
 
         if (len(newData) != 1):
             raise Exception(
-                testType + '- More than one or no matching new data entries found')
+                testName + '- More than one or no matching new data entries found')
         
         metric, newDataPoint = newData[0].popitem()
 
@@ -302,7 +304,7 @@ class ExecuteTest(IUseCase):
             self._insertHistoryEntry(
                 newDataPoint, False, None)
 
-            return CustomTestExecutionResult(testSuiteId, CustomTest.CustomTest.value, self._executionId, self._organizationId, testType, targetResourceIds, True, None, None, lastAlertSent)
+            return CustomTestExecutionResult(testSuiteId, CustomTest.CustomTest.value, self._executionId, self._organizationId, testName, targetResourceIds, True, None, None, lastAlertSent)
 
         lowerThreshold = None if feedbackLowerThreshold is None else ForcedThreshold(
             feedbackLowerThreshold, ForcedThresholdMode.ABSOLUTE, ForcedThresholdType.FEEDBACK)
@@ -355,7 +357,7 @@ class ExecuteTest(IUseCase):
         self._insertHistoryEntry(
             newDataPoint, bool(testResult.anomaly), alertId)
 
-        return CustomTestExecutionResult(testSuiteId, CustomTest.CustomTest.value, self._executionId, self._organizationId, testType, targetResourceIds, False, testData, alertData, lastAlertSent)
+        return CustomTestExecutionResult(testSuiteId, CustomTest.CustomTest.value, self._executionId, self._organizationId, testName, targetResourceIds, False, testData, alertData, lastAlertSent)
 
 
     def _runModel(self, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest, CustomTest], forcedLowerThreshold: "Union[ForcedThreshold, None]", forcedUpperThreshold: "Union[ForcedThreshold, None]", ) -> QuantTestResultDto:

@@ -79,7 +79,7 @@ class QuantTestExecutionResult(_TestExecutionResult):
     isWarmup: bool
     testData: Union[QuantTestData, None]
     alertData: Union[QuantTestAlertData, None]
-    lastAlertSent: str
+    lastAlertSent: Union[str, None]
 
 
 @dataclass
@@ -87,7 +87,7 @@ class QualTestExecutionResult(_TestExecutionResult):
     targetResourceId: str
     testData: QualTestData
     alertData: Union[QualTestAlertData, None]
-    lastAlertSent: str
+    lastAlertSent: Union[str, None]
 
 @dataclass
 class CustomTestExecutionResult(_TestExecutionResult):
@@ -96,4 +96,4 @@ class CustomTestExecutionResult(_TestExecutionResult):
     isWarmup: bool
     testData: Union[CustomTestData, None]
     alertData: Union[CustomTestAlertData, None]
-    lastAlertSent: str
+    lastAlertSent: Union[str, None]
