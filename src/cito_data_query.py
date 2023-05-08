@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import Any, Union
-
+from pymongo import database
 from test_type import QuantColumnTest, QuantMatTest, QualMatTest
 
 
@@ -22,42 +22,119 @@ quantMatTest = set(item.value for item in QuantMatTest)
 qualMatTest = set(item.value for item in QualMatTest)
 
 
-def getInsertQuery(valueSets: "list[dict[str, Any]]", type: CitoTableType):
-    valueString = ', '.join(f"'{str(set['value'])}'" if set['value']
-                            or set['value'] == 0 else 'NULL' for set in valueSets)
+def insertTableData(document: "dict[str, Any]", tableType: CitoTableType, dbConnection: database.Database, organizationId: str):
+    collection = dbConnection[tableType.value + '_' + organizationId]
 
-    return f"""
-  insert into cito.observability.{type.value}
-  values
-  ({valueString});"""
+    result = collection.insert_one(document)
 
+    if not result.acknowledged:
+        raise Exception('Insertion of documents failed')
 
-def getHistoryQuery(testSuiteId: str):
-    return f""" select test_executions.executed_on as executed_on, test_history.value as value 
-  from cito.observability.test_history as test_history
-  inner join cito.observability.test_executions as test_executions
-    on test_history.execution_id = test_executions.id
-    where test_history.test_suite_id = '{testSuiteId}' and (not test_history.is_anomaly or test_history.user_feedback_is_anomaly = 0);
-  """
+def getHistoryData(testSuiteId: str, dbConnection: database.Database, organizationId: str):
+    collection = dbConnection[CitoTableType.TestHistory.value + '_' + organizationId]
+    pipeline = [
+        {
+          '$match': {
+            'test_suite_id': testSuiteId,
+            '$or': [
+              { 'is_anomaly': { '$ne': True } },
+              { 'user_feedback_is_anomaly': { '$eq': 0 } }
+            ]
+          }
+        },
+        {
+          '$lookup': {
+            'from': 'test_executions_' + organizationId,
+            'localField': 'execution_id',
+            'foreignField': 'id',
+            'as': 'test_executions'
+          }
+         },
+         {
+          '$unwind': {
+            'path': '$test_executions',
+            'preserveNullAndEmptyArrays': False
+          }
+         },
+         {
+          '$project': {
+            '_id': 0,
+            'executed_on': '$test_executions.executed_on',
+            'value': 1
+          }
+         }
+    ]
 
+    results = list(collection.aggregate(pipeline))
 
-def getLastMatSchemaQuery(testSuiteId: str):
-    return f"""
-  with
-  execution_id_cte as (select id from cito.observability.{CitoTableType.TestExecutionsQual.value} where test_suite_id = '{testSuiteId}' order by executed_on desc limit 1)
-  select execution_id_cte.id, test_history_qual.value from execution_id_cte join (select value, execution_id from cito.observability.{CitoTableType.TestHistoryQual.value}) as test_history_qual
-  on execution_id_cte.id = test_history_qual.execution_id
-  """
+    if results is not None:
+        return results
+    else:
+        raise Exception('History data matching testSuiteId not found')
 
+def getLastMatSchemaData(testSuiteId: str, dbConnection: database.Database, organizationId: str):
+    testExecQualCollectionName = CitoTableType.TestExecutionsQual.value + '_' + organizationId
 
-def getTestQuery(testSuiteId: str, testType: Union[QuantColumnTest, QuantMatTest, QualMatTest]):
-    return f""" select * from cito.observability.{CitoTableType.TestSuites.value if testType in quantColumnTest or testType in quantMatTest else CitoTableType.TestSuitesQual.value}
-  where id = '{testSuiteId}';
-  """
+    testExecQualCollection = dbConnection[testExecQualCollectionName]
+    # executionIdCte = list(testExecQualCollection.find({ 'test_suite_id': testSuiteId }).sort('executed_on', -1).limit(1))
+    
+    testHistoryQualCollectionName = CitoTableType.TestHistoryQual.value + '_' + organizationId
 
-def getUpdateQuery(columnName: str, value: str, tableType: CitoTableType, testSuiteId: str):
-    return f"""
-  update cito.observability.{tableType.value} 
-  set {columnName} = '{value}'
-  where id = '{testSuiteId}';
-  """
+    pipeline = [
+        {
+            '$match': {
+                'test_suite_id': testSuiteId
+            }
+        },
+        {
+            '$sort': {
+                'executed_on': -1
+            }
+        },
+        {
+            '$limit': 1
+        },
+        {
+            '$lookup': {
+                'from': testHistoryQualCollectionName,
+                'localField': 'id',
+                'foreignField': 'execution_id',
+                'as': 'test_history_qual' 
+            }
+        },
+        {
+            '$unwind': {
+                'path': '$test_history_qual',
+                'preserveNullAndEmptyArrays': False
+            }
+        },
+        {
+            '$project': {
+                'id': 1,
+                'value': '$test_history_qual.value'
+            }
+        }
+    ]
+
+    results = list(testExecQualCollection.aggregate(pipeline))
+
+    return results
+
+def getTestData(testSuiteId: str, testType: Union[QuantColumnTest, QuantMatTest, QualMatTest], dbConnection: database.Database, organizationId: str):
+    table = CitoTableType.TestSuites if testType in quantColumnTest or testType in quantMatTest else CitoTableType.TestSuitesQual
+    collection = dbConnection[table.value + '_' + organizationId]
+
+    result = collection.find_one({ 'id': testSuiteId })
+
+    if result is not None:
+        return result
+    else:
+        raise Exception('Test data matching testSuiteId not found')
+
+def updateTableData(testSuiteId: str, tableType: CitoTableType, columnName: str, value: str, dbConnection: database.Database, organizationId: str):
+    collection = dbConnection[tableType.value + '_' + organizationId]
+
+    result = collection.update_one({ 'id': testSuiteId }, { '$set': { columnName: value } })
+
+    if result.modified_count != 1:
+        raise Exception('Updating document failed')
