@@ -23,8 +23,9 @@ logger.setLevel(logging.INFO)
 
 
 def getAnomalyMessage(targetResourceId: Union[str, None], databaseName: Union[str, None], schemaName: Union[str, None], materializationName: Union[str, None], columnName: Union[str, None], testType: str):
+    
     if (testType == CustomTest.CustomTest.value):
-        return f"<__base_url__?metric={columnName if columnName else ''}>"
+        return f"<__base_url__>"
     
     targetResourceUrlTemplate = f'__base_url__?targetResourceId={targetResourceId}&ampisColumn={not not columnName}'
 
