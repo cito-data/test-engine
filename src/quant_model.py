@@ -5,7 +5,6 @@ from dataclasses import dataclass
 import datetime
 from typing import Union
 import pandas as pd
-import numpy as np
 from prophet import Prophet
 import math
 
@@ -122,13 +121,13 @@ class _ZScoreAnalysis(_Analysis):
         return abs(x - self._median)
 
     def _calculateMedianAbsoluteDeviation(self) -> float:
-        values = self._historicalData['y']
+        values = pd.Series(self._historicalData['y'])
         self._median = float(values.median())
         absoluteDeviation = values.apply(self._absoluteDeviation)
         return float(absoluteDeviation.median())
 
     def _mad(self):
-        values = self._historicalData['y']
+        values = pd.Series(self._historicalData['y'])
         return (values - values.mean()).abs().mean()
 
     def _calculateModifiedZScore(self, y: float) -> Union[float, None]:

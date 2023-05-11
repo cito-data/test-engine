@@ -67,8 +67,7 @@ ExecuteTestResponseDto = Result[Union[QuantTestExecutionResult,
 
 class ExecuteTest(IUseCase):
 
-    # _MIN_HISTORICAL_DATA_TEST_NUMBER_CONDITION = 10
-    _MIN_HISTORICAL_DATA_TEST_NUMBER_CONDITION = 30
+    _MIN_HISTORICAL_DATA_TEST_NUMBER_CONDITION = 10
     _MIN_HISTORICAL_DATA_DAY_NUMBER_CONDITION = 7
 
     _testSuiteId: str
@@ -96,8 +95,9 @@ class ExecuteTest(IUseCase):
             'executed_on': executedOn,
             'test_suite_id': self._testSuiteId
         }
-        
-        insertTableData(doc, tableType, self._dbConnection, self._organizationId)
+
+        insertTableData(doc, tableType, self._dbConnection,
+                        self._organizationId)
 
     def _insertQualHistoryEntry(self, value: "dict[str, ColumnDefinition]", isIdentical: bool, alertId: Union[str, None]):
 
@@ -110,7 +110,8 @@ class ExecuteTest(IUseCase):
             'alert_id': alertId
         }
 
-        insertTableData(doc, CitoTableType.TestHistoryQual, self._dbConnection, self._organizationId)
+        insertTableData(doc, CitoTableType.TestHistoryQual,
+                        self._dbConnection, self._organizationId)
 
     def _insertHistoryEntry(self, value: str, isAnomaly: bool, alertId: Union[str, None]):
 
@@ -125,7 +126,8 @@ class ExecuteTest(IUseCase):
             'alert_id': alertId
         }
 
-        insertTableData(doc, CitoTableType.TestHistory, self._dbConnection, self._organizationId)
+        insertTableData(doc, CitoTableType.TestHistory,
+                        self._dbConnection, self._organizationId)
 
     def _insertQualTestResultEntry(self, testResult: QualResultDto):
 
@@ -139,7 +141,8 @@ class ExecuteTest(IUseCase):
             'execution_id': self._executionId
         }
 
-        insertTableData(doc, CitoTableType.TestResultsQual, self._dbConnection, self._organizationId)
+        insertTableData(doc, CitoTableType.TestResultsQual,
+                        self._dbConnection, self._organizationId)
 
     def _insertResultEntry(self, testResult: QuantTestResultDto):
 
@@ -159,7 +162,8 @@ class ExecuteTest(IUseCase):
             'importance': testResult.anomaly.importance if testResult.anomaly else None
         }
 
-        insertTableData(doc, CitoTableType.TestResults, self._dbConnection, self._organizationId)
+        insertTableData(doc, CitoTableType.TestResults,
+                        self._dbConnection, self._organizationId)
 
     def _insertAlertEntry(self, id, message: str, tableType: CitoTableType):
 
@@ -171,21 +175,30 @@ class ExecuteTest(IUseCase):
             'execution_id': self._executionId
         }
 
-        insertTableData(doc, tableType, self._dbConnection, self._organizationId)
+        insertTableData(doc, tableType, self._dbConnection,
+                        self._organizationId)
 
     def _getTestEntry(self) -> Any:
 
         return getTestData(self._testSuiteId, self._testType, self._dbConnection, self._organizationId)
 
+    def _fromIsoFormatToDateTime(self, dateTime: str) -> datetime:
+        return datetime.fromisoformat(dateTime.split('.')[0])
+
+    def _toProphetDtFormat(self, dt: datetime) -> str:
+        return dt.strftime('%Y-%m-%d %H:%M:%S')
+
     def _getHistoricalData(self) -> "list[tuple[str, float]]":
 
-        historyData = getHistoryData(self._testSuiteId, self._dbConnection, self._organizationId)
+        historyData = getHistoryData(
+            self._testSuiteId, self._dbConnection, self._organizationId)
 
-        return sorted([(element['executed_on'], element['value']) for element in historyData])
+        return sorted([(self._toProphetDtFormat(self._fromIsoFormatToDateTime(element['executed_on'])), element['value']) for element in historyData])
 
     def _getLastMatSchema(self) -> Union["dict[str, ColumnDefinition]", None]:
 
-        result = getLastMatSchemaData(self._testSuiteId, self._dbConnection, self._organizationId)
+        result = getLastMatSchemaData(
+            self._testSuiteId, self._dbConnection, self._organizationId)
 
         return (json.loads(result[0]['value']) if len(result) else None)
 
@@ -205,20 +218,21 @@ class ExecuteTest(IUseCase):
     def _updateLastAlertSent(self, lastAlertSent: str, isQualTest: bool):
         tableType = CitoTableType.TestSuitesQual if isQualTest else CitoTableType.TestSuites
 
-        updateTableData(self._testSuiteId, tableType, 'last_alert_sent', lastAlertSent, self._dbConnection, self._organizationId)
+        updateTableData(self._testSuiteId, tableType, 'last_alert_sent',
+                        lastAlertSent, self._dbConnection, self._organizationId)
 
     def _calculateLastAlertSent(self, lastAlertSent: str, isQualTest: bool):
         if not lastAlertSent:
             lastAlertSent = datetime.utcnow().isoformat()
             self._updateLastAlertSent(lastAlertSent, isQualTest=isQualTest)
         else:
-            lastAlertSentDt = datetime.fromisoformat(lastAlertSent)
+            lastAlertSentDt = self._fromIsoFormatToDateTime(lastAlertSent)
             currTime = datetime.utcnow()
             diff = currTime - lastAlertSentDt
             if diff >= timedelta(hours=24):
                 currTimeISO = currTime.isoformat()
                 self._updateLastAlertSent(currTimeISO, isQualTest=isQualTest)
-        
+
         return lastAlertSent
 
     def _runModel(self, newData: "tuple[str, float]", historicalData: "list[tuple[str, float]]", testType: Union[QuantMatTest, QuantColumnTest], forcedLowerThreshold: "Union[ForcedThreshold, None]", forcedUpperThreshold: "Union[ForcedThreshold, None]", ) -> QuantTestResultDto:
@@ -248,9 +262,9 @@ class ExecuteTest(IUseCase):
             executedOnISOFormat, CitoTableType.TestExecutions)
 
         historicalDataLength = len(historicalData)
-        belowDayBoundary = True if historicalDataLength == 0 else (executedOn - datetime.fromisoformat(
-            historicalData[0][0].replace('Z', ''))).days <= self._MIN_HISTORICAL_DATA_DAY_NUMBER_CONDITION
-        if (belowDayBoundary and historicalDataLength <= self._MIN_HISTORICAL_DATA_TEST_NUMBER_CONDITION):
+        belowDayBoundary = True if historicalDataLength == 0 else (
+            executedOn - self._fromIsoFormatToDateTime(historicalData[0][0])).days <= self._MIN_HISTORICAL_DATA_DAY_NUMBER_CONDITION
+        if (belowDayBoundary or historicalDataLength <= self._MIN_HISTORICAL_DATA_TEST_NUMBER_CONDITION):
             self._insertHistoryEntry(
                 newDataPoint, False, None)
 
@@ -298,7 +312,8 @@ class ExecuteTest(IUseCase):
             alertData = QuantTestAlertData(alertId, anomalyMessage, databaseName, schemaName,
                                            materializationName, materializationType, testResult.expectedValue, columnName)
 
-            lastAlertSent = self._calculateLastAlertSent(lastAlertSent, isQualTest=False)
+            lastAlertSent = self._calculateLastAlertSent(
+                lastAlertSent, isQualTest=False)
 
         testData = QuantTestData(
             executedOnISOFormat, newDataPoint, testResult.expectedValueUpper,
@@ -345,7 +360,8 @@ class ExecuteTest(IUseCase):
             alertData = QualTestAlertData(alertId, anomalyMessage, databaseName, schemaName,
                                           materializationName, materializationType, testResult.deviations)
 
-            lastAlertSent = self._calculateLastAlertSent(lastAlertSent, isQualTest=True)
+            lastAlertSent = self._calculateLastAlertSent(
+                lastAlertSent, isQualTest=True)
 
         self._insertQualHistoryEntry(
             newSchema, testResult.isIdentical, alertId)
