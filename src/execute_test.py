@@ -262,6 +262,7 @@ class ExecuteTest(IUseCase):
             executedOnISOFormat, CitoTableType.TestExecutions)
 
         historicalDataLength = len(historicalData)
+        print('Historical data length: ' + str(historicalDataLength))
         belowDayBoundary = True if historicalDataLength == 0 else (
             executedOn - self._fromIsoFormatToDateTime(historicalData[0][0])).days <= self._MIN_HISTORICAL_DATA_DAY_NUMBER_CONDITION
         if (belowDayBoundary or historicalDataLength <= self._MIN_HISTORICAL_DATA_TEST_NUMBER_CONDITION):
