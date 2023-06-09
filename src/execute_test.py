@@ -294,8 +294,11 @@ class ExecuteTest(IUseCase):
         upperThreshold = upperThreshold if customUpperThreshold is None else ForcedThreshold(
             customUpperThreshold, forcedUpperThresholdMode, ForcedThresholdType.CUSTOM)
 
+        relevantHistoricalData = historicalData if len(
+            historicalData) <= 25 else historicalData[-25:]
+
         testResult = self._runModel(
-            (executedOnISOFormat, newDataPoint), historicalData, testType, lowerThreshold, upperThreshold)
+            (executedOnISOFormat, newDataPoint), relevantHistoricalData, testType, lowerThreshold, upperThreshold)
 
         self._insertResultEntry(testResult)
 
