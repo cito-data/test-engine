@@ -125,10 +125,10 @@ def getTestData(testSuiteId: str, testType: Union[QuantColumnTest, QuantMatTest,
 
     if testType in quantColumnTest or testType in quantMatTest:
         table = CitoTableType.TestSuites
-    elif testType in customTest:
-        table = CitoTableType.TestSuitesCustom
-    else:
+    elif testType in qualMatTest:
         table = CitoTableType.TestSuitesQual
+    else:
+        table = CitoTableType.TestSuitesCustom
 
     collection = dbConnection[table.value + '_' + organizationId]
 
